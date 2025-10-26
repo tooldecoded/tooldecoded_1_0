@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
     ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
@@ -768,3 +768,63 @@ def component_detail(request, component_id):
     }
     
     return render(request, 'frontend/component_detail.html', context)
+
+def home(request):
+    """Home page with site overview and statistics"""
+    # Get basic statistics for the home page
+    total_products = Products.objects.count()
+    total_components = Components.objects.count()
+    total_brands = Brands.objects.count()
+    total_categories = ItemCategories.objects.count()
+    
+    # Get some popular categories for the home page
+    try:
+        # Power Tools (Level 1)
+        power_tools_category = ItemCategories.objects.filter(
+            name='Power Tools', level=1
+        ).first()
+        power_tools_category_id = str(power_tools_category.id) if power_tools_category else ''
+        
+        # Batteries and Chargers (Level 2)
+        batteries_chargers_category = ItemCategories.objects.filter(
+            name='Batteries and Chargers', level=2
+        ).first()
+        batteries_chargers_category_id = str(batteries_chargers_category.id) if batteries_chargers_category else ''
+        
+        # Outdoor Power Equipment (Level 1)
+        outdoor_category = ItemCategories.objects.filter(
+            name='Outdoor Power Equipment', level=1
+        ).first()
+        outdoor_category_id = str(outdoor_category.id) if outdoor_category else ''
+        
+        # Shop, Cleaning and Lifestyle (Level 1)
+        shop_cleaning_category = ItemCategories.objects.filter(
+            name='Shop, Cleaning and Lifestyle', level=1
+        ).first()
+        shop_cleaning_category_id = str(shop_cleaning_category.id) if shop_cleaning_category else ''
+    except:
+        power_tools_category_id = ''
+        batteries_chargers_category_id = ''
+        outdoor_category_id = ''
+        shop_cleaning_category_id = ''
+    
+    context = {
+        'total_products': total_products,
+        'total_components': total_components,
+        'total_brands': total_brands,
+        'total_categories': total_categories,
+        'power_tools_category_id': power_tools_category_id,
+        'batteries_chargers_category_id': batteries_chargers_category_id,
+        'outdoor_category_id': outdoor_category_id,
+        'shop_cleaning_category_id': shop_cleaning_category_id,
+    }
+    
+    return render(request, 'frontend/home.html', context)
+
+def about(request):
+    """About page with information about the database"""
+    return render(request, 'frontend/about.html')
+
+def contact(request):
+    """Contact page with contact information and form"""
+    return render(request, 'frontend/contact.html')

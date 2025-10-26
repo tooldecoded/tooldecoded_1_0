@@ -7,7 +7,7 @@
 <div class="min-h-screen bg-gray-50">
     <!-- Back Button -->
     <div class="bg-white border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto px-2 py-4">
             <button onclick="history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -17,73 +17,77 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Product Header Section (Images + Info) - max-w-7xl -->
+    <div class="max-w-7xl mx-auto px-2 py-4">
+        <div class="grid grid-cols-1 lg:grid-cols-9 gap-4">
             <!-- Left Column - Product Images -->
-            <div class="lg:col-span-1">
+            <div class="lg:col-span-4">
                 <!-- Main Product Image with Carousel -->
-                <div class="bg-white rounded-lg shadow-sm border p-4 mb-4">
-                    <div class="relative bg-white border border-gray-200 rounded-lg overflow-hidden">
-                        {% if product.image %}
-                            <div class="aspect-square bg-white flex items-center justify-center relative">
-                                <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="previousImage()">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                    </svg>
-                                </button>
-                                <img id="mainImage" src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
-                                <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="nextImage()">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        {% elif product.productimages_set.all %}
-                            <div class="aspect-square bg-white flex items-center justify-center relative">
-                                <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="previousImage()">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                                    </svg>
-                                </button>
-                                <img id="mainImage" src="{{ product.productimages_set.first.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
-                                <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="nextImage()">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        {% else %}
-                            <div class="aspect-square bg-white flex items-center justify-center text-gray-400">
-                                <div class="text-center">
-                                    <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <p class="text-sm">No Image Available</p>
+                <div class="bg-white rounded-lg shadow-sm border p-2 mb-2">
+                    <div class="flex gap-2">
+                        <!-- Thumbnails on the left -->
+                        {% if product.image or product.productimages_set.all %}
+                        <div class="flex flex-col gap-2 overflow-y-auto h-80 flex-shrink-0">
+                            {% if product.image %}
+                                <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer border-2 border-blue-500 thumbnail flex-shrink-0" onclick="changeMainImageByIndex(0)">
+                                    <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                                 </div>
-                            </div>
+                            {% endif %}
+                            {% for image in product.productimages_set.all %}
+                                <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-500 border-2 border-transparent transition-colors thumbnail flex-shrink-0" onclick="changeMainImageByIndex({% if product.image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %})">
+                                    <img src="{{ image.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
+                                </div>
+                            {% endfor %}
+                        </div>
                         {% endif %}
+                        
+                        <!-- Main image on the right -->
+                        <div class="flex-1 relative bg-white border border-gray-200 rounded-lg overflow-hidden">
+                            {% if product.image %}
+                                <div class="aspect-[4/3] bg-white flex items-center justify-center relative">
+                                    <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="previousImage()">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <img id="mainImage" src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
+                                    <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="nextImage()">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% elif product.productimages_set.all %}
+                                <div class="aspect-[4/3] bg-white flex items-center justify-center relative">
+                                    <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="previousImage()">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                                        </svg>
+                                    </button>
+                                    <img id="mainImage" src="{{ product.productimages_set.first.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
+                                    <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="nextImage()">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% else %}
+                                <div class="aspect-[4/3] bg-white flex items-center justify-center text-gray-400">
+                                    <div class="text-center">
+                                        <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <p class="text-sm">No Image Available</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
-                    
-                    <!-- Image Thumbnails -->
-                    {% if product.image or product.productimages_set.all %}
-                    <div class="flex gap-2 mt-4 overflow-x-auto pb-2">
-                        {% if product.image %}
-                            <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer border-2 border-blue-500 thumbnail flex-shrink-0" onclick="changeMainImageByIndex(0)">
-                                <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
-                            </div>
-                        {% endif %}
-                        {% for image in product.productimages_set.all %}
-                            <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-500 border-2 border-transparent transition-colors thumbnail flex-shrink-0" onclick="changeMainImageByIndex({% if product.image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %})">
-                                <img src="{{ image.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
-                            </div>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
                 </div>
             </div>
 
             <!-- Right Column - Product Information -->
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-5">
                 <!-- Product Header -->
                 <div class="bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex items-start justify-between mb-4">
@@ -137,104 +141,138 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Components Table -->
-                {% if product.productcomponents_set.all %}
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">COMPONENTS</h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse border border-gray-300 text-sm">
-                            <thead>
-                                <tr class="bg-gray-100">
-                                    <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Qty</th>
-                                    <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
-                                    <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Model #</th>
-                                    {% for attr in product.productcomponents_set.first.component.componentattributes_set.all|slice:":4" %}
-                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">{{ attr.attribute.name }}</th>
-                                    {% endfor %}
-                                    <!-- Fill remaining headers if less than 4 attributes -->
-                                    {% for i in "1234" %}
-                                        {% if forloop.counter > product.productcomponents_set.first.component.componentattributes_set.count %}
-                                            <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">-</th>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for product_component in product.productcomponents_set.all %}
-                                <tr>
-                                    <td class="border border-gray-300 px-2 py-1 text-xs">{{ product_component.quantity }}</td>
-                                    <td class="border border-gray-300 px-2 py-1 text-xs">
-                                        <div class="flex items-center gap-2">
-                                            {% if component_products|lookup:product_component.component.id %}
-                                                <img src="{{ component_products|lookup:product_component.component.id }}" alt="{{ product_component.component.name }}" class="w-8 h-8 object-contain bg-white border border-gray-200 rounded">
-                                            {% endif %}
-                                            <a href="{% url 'component_detail' product_component.component.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                                {{ product_component.component.name }}
-                                            </a>
-                                        </div>
-                                    </td>
-                                    <td class="border border-gray-300 px-2 py-1 text-xs">{{ product_component.component.sku|default:"-" }}</td>
-                                    {% for attr in product_component.component.componentattributes_set.all|slice:":4" %}
-                                        <td class="border border-gray-300 px-2 py-1 text-xs">{{ attr.value|default:"-" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}</td>
-                                    {% endfor %}
-                                    <!-- Fill remaining columns if less than 4 attributes -->
-                                    {% for i in "1234" %}
-                                        {% if forloop.counter > product_component.component.componentattributes_set.count %}
-                                            <td class="border border-gray-300 px-2 py-1 text-xs">-</td>
-                                        {% endif %}
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Accessories Table -->
-                {% if product.productaccessories_set.all %}
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">ACCESSORIES</h2>
-                    <div class="overflow-x-auto">
-                        <table class="w-full border-collapse border border-gray-300">
-                            <thead>
-                                <tr class="bg-gray-100">
-                                    <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Qty</th>
-                                    <th class="border border-gray-300 px-3 py-2 text-left font-semibold">Name</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for accessory in product.productaccessories_set.all %}
-                                <tr>
-                                    <td class="border border-gray-300 px-3 py-2">{{ accessory.quantity }}</td>
-                                    <td class="border border-gray-300 px-3 py-2">{{ accessory.name }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Description Section -->
-                {% if product.description %}
-                <div class="bg-white rounded-lg shadow-sm border p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Product Description</h3>
-                    <p class="text-gray-700 leading-relaxed">{{ product.description }}</p>
-                </div>
-                {% endif %}
-
-                <!-- Product Bullets Section -->
-                {% if product.bullets %}
-                <div class="bg-white rounded-lg shadow-sm border p-4">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Product Bullets</h3>
-                    <div class="text-gray-700 whitespace-pre-line">{{ product.bullets }}</div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
+
+    <!-- Components Table Section - max-w-7xl for consistency -->
+    {% if product.productcomponents_set.all %}
+    <div class="max-w-7xl mx-auto px-2 pb-6">
+        <div class="bg-white rounded-lg shadow-sm border p-6 space-y-6">
+            <!-- Components Table - full width -->
+            <div>
+                <h2 class="text-xl font-bold text-gray-900 mb-4">COMPONENTS</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Qty</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Model #</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Length</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Width</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Weight</th>
+                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Capacity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product_component in product.productcomponents_set.all %}
+                            <tr>
+                                <td class="border border-gray-300 px-2 py-1 text-md">{{ product_component.quantity }}</td>
+                                <td class="border border-gray-300 px-2 py-1 text-md">
+                                    <div class="flex items-center gap-2">
+                                        {% if component_products|lookup:product_component.component.id %}
+                                            <a href="{% url 'component_detail' product_component.component.id %}">
+                                                <img src="{{ component_products|lookup:product_component.component.id }}" alt="{{ product_component.component.name }}" class="w-8 h-8 object-contain bg-white">
+                                            </a>
+                                        {% endif %}
+                                        <a href="{% url 'component_detail' product_component.component.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                            {{ product_component.component.name }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1 text-xs">{{ product_component.component.sku|default:"" }}</td>
+                                <td class="border border-gray-300 px-2 py-1 text-xs">
+                                    {% for attr in product_component.component.componentattributes_set.all %}
+                                        {% if attr.attribute.name == "Length" %}
+                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1 text-xs">
+                                    {% for attr in product_component.component.componentattributes_set.all %}
+                                        {% if attr.attribute.name == "Width" %}
+                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1 text-xs">
+                                    {% for attr in product_component.component.componentattributes_set.all %}
+                                        {% if attr.attribute.name == "Weight" %}
+                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td class="border border-gray-300 px-2 py-1 text-xs">
+                                    {% for attr in product_component.component.componentattributes_set.all %}
+                                        {% if attr.attribute.name == "Capacity" %}
+                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Product Description and Accessories - side by side -->
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Product Description - 1/2 width -->
+                {% if product.description %}
+                <div class="col-span-1">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">PRODUCT DESCRIPTION</h3>
+                    <div class="text-sm text-gray-700 leading-relaxed">
+                        {{ product.description }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Accessories and Key Features - 1/2 width, stacked vertically -->
+                <div class="col-span-1 space-y-6">
+                    <!-- Accessories Table -->
+                    {% if product.productaccessories_set.all %}
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">ACCESSORIES</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse border border-gray-300 text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Qty</th>
+                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for accessory in product.productaccessories_set.all %}
+                                    <tr>
+                                        <td class="border border-gray-300 px-2 py-1 text-xs">{{ accessory.quantity }}</td>
+                                        <td class="border border-gray-300 px-2 py-1 text-xs">{{ accessory.name }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Key Features -->
+                    {% if product.bullets %}
+                    <div>
+                        <h3 class="text-base font-bold text-gray-900 mb-3">Key Features</h3>
+                        <div class="text-sm text-gray-700">
+                            <div class="space-y-2 [&>p]:flex [&>p]:items-start [&>p]:before:content-['•'] [&>p]:before:text-gray-500 [&>p]:before:mr-2 [&>p]:before:mt-1">
+                                {{ product.bullets|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
 
     <script>
     let currentImageIndex = 0;
@@ -251,6 +289,7 @@
         
         // Initialize thumbnail highlighting and navigation button visibility
         updateActiveThumbnail(false);
+        
     });
     
     function changeMainImageByIndex(index) {
@@ -325,6 +364,7 @@
             }
         }
     }
+    
     </script>
 </div>
 {% endblock %}

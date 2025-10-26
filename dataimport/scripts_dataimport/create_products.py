@@ -9,7 +9,7 @@ django.setup()
 from toolanalysis.models import Products, ItemCategories, Brands, ListingTypes
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='Product')
+df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='Product (2)')
 
 for i in range(len(df)):
     name = str(df.iloc[i]['product_name'])

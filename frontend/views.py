@@ -294,8 +294,28 @@ def product_detail(request, product_id):
     """Product detail view"""
     product = get_object_or_404(Products, id=product_id)
     
+    # For each component, look up products with the same SKU and brand
+    component_products = {}
+    for product_component in product.productcomponents_set.all():
+        component = product_component.component
+        if component.sku and component.brand:
+            # Find products with same SKU and brand as the component
+            matching_products = Products.objects.filter(
+                sku=component.sku,
+                brand=component.brand
+            ).exclude(id=product.id)  # Exclude current product
+            
+            if matching_products.exists():
+                # Get the first matching product's image
+                first_product = matching_products.first()
+                if first_product.image:
+                    component_products[component.id] = first_product.image
+                elif first_product.productimages_set.exists():
+                    component_products[component.id] = first_product.productimages_set.first().image
+    
     context = {
         'product': product,
+        'component_products': component_products,
     }
     
     return render(request, 'frontend/product_detail.html', context)

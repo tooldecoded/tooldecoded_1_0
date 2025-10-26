@@ -29,10 +29,10 @@
                 </div>
                 <!-- Navigation Tabs -->
                 <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                    <a href="{% url 'index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'index' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
+                    <a href="{% url 'index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
                         Products
                     </a>
-                    <a href="{% url 'components_index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'components_index' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
+                    <a href="{% url 'components_index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
                         Components
                     </a>
                 </div>

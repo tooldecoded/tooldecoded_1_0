@@ -151,69 +151,81 @@
         <div class="bg-white rounded-lg shadow-sm border p-6 space-y-6">
             <!-- Components Table - full width -->
             <div>
-                <h2 class="text-xl font-bold text-gray-900 mb-4">COMPONENTS</h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse border border-gray-300 text-sm">
-                        <thead>
-                            <tr class="bg-gray-100">
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Qty</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Model #</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Length</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Width</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Weight</th>
-                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Capacity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for product_component in product.productcomponents_set.all %}
-                            <tr>
-                                <td class="border border-gray-300 px-2 py-1 text-md">{{ product_component.quantity }}</td>
-                                <td class="border border-gray-300 px-2 py-1 text-md">
-                                    <div class="flex items-center gap-2">
-                                        {% if component_products|lookup:product_component.component.id %}
-                                            <a href="{% url 'component_detail' product_component.component.id %}">
-                                                <img src="{{ component_products|lookup:product_component.component.id }}" alt="{{ product_component.component.name }}" class="w-8 h-8 object-contain bg-white">
-                                            </a>
+                <button type="button" class="w-full flex items-center justify-between text-left" onclick="toggleComponentsSection()" 
+                        aria-expanded="true" aria-controls="components-content" aria-labelledby="components-header"
+                        onkeydown="handleComponentsKeydown(event)" tabindex="0">
+                    <h2 id="components-header" class="text-xl font-bold text-gray-900">COMPONENTS</h2>
+                    <svg class="w-5 h-5 transform transition-transform" id="components-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div id="components-content" class="mt-4 space-y-6">
+                    {% for group_name, group_data in component_groups.items %}
+                        {% if group_data.components %}
+                            <div>
+                                {% if component_groups|length > 1 %}
+                                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                        {% if group_name == 'power_tools' %}Power Tools
+                                        {% elif group_name == 'batteries' %}Batteries
+                                        {% elif group_name == 'chargers' %}Chargers
+                                        {% elif group_name == 'accessories' %}Accessories
+                                        {% else %}Other Components
                                         {% endif %}
-                                        <a href="{% url 'component_detail' product_component.component.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
-                                            {{ product_component.component.name }}
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="border border-gray-300 px-2 py-1 text-xs">{{ product_component.component.sku|default:"" }}</td>
-                                <td class="border border-gray-300 px-2 py-1 text-xs">
-                                    {% for attr in product_component.component.componentattributes_set.all %}
-                                        {% if attr.attribute.name == "Length" %}
-                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                                <td class="border border-gray-300 px-2 py-1 text-xs">
-                                    {% for attr in product_component.component.componentattributes_set.all %}
-                                        {% if attr.attribute.name == "Width" %}
-                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                                <td class="border border-gray-300 px-2 py-1 text-xs">
-                                    {% for attr in product_component.component.componentattributes_set.all %}
-                                        {% if attr.attribute.name == "Weight" %}
-                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                                <td class="border border-gray-300 px-2 py-1 text-xs">
-                                    {% for attr in product_component.component.componentattributes_set.all %}
-                                        {% if attr.attribute.name == "Capacity" %}
-                                            {{ attr.value|default:"" }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}
-                                        {% endif %}
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    </h3>
+                                {% endif %}
+                                
+                                <div class="overflow-x-auto">
+                                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                                        <thead>
+                                            <tr class="bg-gray-100">
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Model #</th>
+                                                {% for column in group_data.columns %}
+                                                    <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
+                                                        {{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}
+                                                    </th>
+                                                {% endfor %}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for component_data in group_data.components %}
+                                            <tr>
+                                                <td class="border border-gray-300 px-2 py-1 text-md w-10">{{ component_data.product_component.quantity }}</td>
+                                                <td class="border border-gray-300 px-2 py-1 text-md">
+                                                    <div class="flex items-center gap-2">
+                                                        {% if component_data.product_component.component.image %}
+                                                            <a href="{% url 'component_detail' component_data.product_component.component.id %}">
+                                                                <img src="{{ component_data.product_component.component.image }}" alt="{{ component_data.product_component.component.name }}" class="w-8 h-8 object-contain bg-white">
+                                                            </a>
+                                                        {% elif component_products|lookup:component_data.product_component.component.id %}
+                                                            <a href="{% url 'component_detail' component_data.product_component.component.id %}">
+                                                                <img src="{{ component_products|lookup:component_data.product_component.component.id }}" alt="{{ component_data.product_component.component.name }}" class="w-8 h-8 object-contain bg-white">
+                                                            </a>
+                                                        {% endif %}
+                                                        <a href="{% url 'component_detail' component_data.product_component.component.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                                            {{ component_data.product_component.component.name }}
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                <td class="border border-gray-300 px-2 py-1 text-xs">{{ component_data.product_component.component.sku|default:"" }}</td>
+                                                {% for column in group_data.columns %}
+                                                    <td class="border border-gray-300 px-2 py-1 text-xs">
+                                                        {% for attr in component_data.product_component.component.componentattributes_set.all %}
+                                                            {% if attr.attribute.id == column.id %}
+                                                                {{ attr.value|default:"" }}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             
@@ -239,14 +251,14 @@
                             <table class="w-full border-collapse border border-gray-300 text-sm">
                                 <thead>
                                     <tr class="bg-gray-100">
-                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Qty</th>
+                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
                                         <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for accessory in product.productaccessories_set.all %}
                                     <tr>
-                                        <td class="border border-gray-300 px-2 py-1 text-xs">{{ accessory.quantity }}</td>
+                                        <td class="border border-gray-300 px-2 py-1 text-xs w-10">{{ accessory.quantity }}</td>
                                         <td class="border border-gray-300 px-2 py-1 text-xs">{{ accessory.name }}</td>
                                     </tr>
                                     {% endfor %}
@@ -362,6 +374,36 @@
             } else {
                 nextBtn.style.display = 'block';
             }
+        }
+    }
+    
+    // Components section toggle functionality
+    function toggleComponentsSection() {
+        const content = document.getElementById('components-content');
+        const chevron = document.getElementById('components-chevron');
+        const button = document.querySelector('[aria-controls="components-content"]');
+        
+        if (content && chevron && button) {
+            const isExpanded = button.getAttribute('aria-expanded') === 'true';
+            
+            if (isExpanded) {
+                // Collapse
+                content.style.display = 'none';
+                chevron.style.transform = 'rotate(-90deg)';
+                button.setAttribute('aria-expanded', 'false');
+            } else {
+                // Expand
+                content.style.display = 'block';
+                chevron.style.transform = 'rotate(0deg)';
+                button.setAttribute('aria-expanded', 'true');
+            }
+        }
+    }
+    
+    function handleComponentsKeydown(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleComponentsSection();
         }
     }
     

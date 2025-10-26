@@ -17,6 +17,7 @@ class ItemCategories(models.Model):
     parent = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
     level = models.IntegerField(blank=True, null=True)
     sortorder = models.IntegerField(blank=True, null=True)
+    attributes = models.ManyToManyField('Attributes')
     class Meta:
         db_table = 'ItemCategories'
         ordering = ['level', 'sortorder']

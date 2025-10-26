@@ -294,9 +294,17 @@ def product_detail(request, product_id):
     """Product detail view"""
     product = get_object_or_404(Products, id=product_id)
     
+    # Get product components with prefetched data
+    product_components = product.productcomponents_set.select_related(
+        'component__brand'
+    ).prefetch_related(
+        'component__itemcategories__attributes',
+        'component__componentattributes_set__attribute'
+    ).all()
+    
     # For each component, look up products with the same SKU and brand
     component_products = {}
-    for product_component in product.productcomponents_set.all():
+    for product_component in product_components:
         component = product_component.component
         if component.sku and component.brand:
             # Find products with same SKU and brand as the component
@@ -313,9 +321,69 @@ def product_detail(request, product_id):
                 elif first_product.productimages_set.exists():
                     component_products[component.id] = first_product.productimages_set.first().image
     
+    # Group components by their primary category and get dynamic columns
+    # Order: power_tools first, then batteries, then chargers, then accessories, then other
+    component_groups = {
+        'power_tools': {'components': [], 'columns': []},
+        'batteries': {'components': [], 'columns': []},
+        'chargers': {'components': [], 'columns': []},
+        'accessories': {'components': [], 'columns': []},
+        'other': {'components': [], 'columns': []}
+    }
+    
+    # Categorize components and get their data
+    for product_component in product_components:
+        component = product_component.component
+        
+        # Determine component category based on item categories
+        component_category = 'other'  # default
+        for category in component.itemcategories.all():
+            category_name = category.name.lower()
+            if category_name == 'batteries':
+                component_category = 'batteries'
+                break
+            elif category_name == 'chargers':
+                component_category = 'chargers'
+                break
+            elif any(tool in category_name for tool in ['drill', 'saw', 'driver', 'impact', 'grinder', 'tool']):
+                component_category = 'power_tools'
+                break
+            elif any(acc in category_name for acc in ['accessory', 'case', 'bag', 'bit', 'blade']):
+                component_category = 'accessories'
+                break
+        
+        component_data = {
+            'product_component': product_component
+        }
+        
+        component_groups[component_category]['components'].append(component_data)
+    
+    # Get dynamic columns for each group based on item category attributes
+    for group_name, group_data in component_groups.items():
+        if group_data['components']:
+            # Get all unique item categories for this group
+            group_categories = set()
+            for component_data in group_data['components']:
+                component = component_data['product_component'].component
+                for category in component.itemcategories.all():
+                    group_categories.add(category)
+            
+            # Get all attributes for these categories
+            group_attributes = set()
+            for category in group_categories:
+                for attribute in category.attributes.all():
+                    group_attributes.add(attribute)
+            
+            # Convert to list and sort by name
+            group_data['columns'] = sorted(list(group_attributes), key=lambda x: x.name)
+    
+    # Remove empty groups
+    component_groups = {k: v for k, v in component_groups.items() if v['components']}
+    
     context = {
         'product': product,
         'component_products': component_products,
+        'component_groups': component_groups,
     }
     
     return render(request, 'frontend/product_detail.html', context)

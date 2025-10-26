@@ -14,7 +14,7 @@
                         </svg>
                         Filters
                     </h2>
-                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.status or current_filters.listing_type %}
+                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.status %}
                             <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                                 Clear All
                             </a>
@@ -64,15 +64,6 @@
                                 {% endif %}
                             {% endfor %}
                             
-                            <!-- Listing Type Chips -->
-                            {% for listing_type in listing_types %}
-                                {% if listing_type.id|stringformat:"s" in selected_listing_type_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                        {{ listing_type.name }}
-                                        <button type="button" onclick="removeFilter('listing_type', '{{ listing_type.id }}')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
-                                    </span>
-                                {% endif %}
-                            {% endfor %}
                             
                             <!-- Category Chips -->
                             {% if current_filters.category_level1 %}
@@ -274,7 +265,7 @@
                         <!-- Status Filter -->
                         <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
                             <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('status')" 
-                                    aria-expanded="true" aria-controls="status-content" aria-labelledby="status-header"
+                                    aria-expanded="false" aria-controls="status-content" aria-labelledby="status-header"
                                     onkeydown="handleFilterKeydown(event, 'status')" tabindex="0">
                                 <span id="status-header" class="text-sm font-medium text-gray-700">
                                     Status
@@ -288,7 +279,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="status-content" class="filter-content">
+                            <div id="status-content" class="filter-content hidden">
                                 <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
                                     {% for status in statuses %}
                                         <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer">
@@ -303,37 +294,6 @@
                             </div>
                         </div>
 
-                        <!-- Listing Type Filter -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('listing_type')" 
-                                    aria-expanded="true" aria-controls="listing_type-content" aria-labelledby="listing_type-header"
-                                    onkeydown="handleFilterKeydown(event, 'listing_type')" tabindex="0">
-                                <span id="listing_type-header" class="text-sm font-medium text-gray-700">
-                                    Listing Type
-                                    {% if filter_counts.listing_types.selected > 0 %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ filter_counts.listing_types.selected }}/{{ filter_counts.listing_types.total }}
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <svg class="w-4 h-4 transform transition-transform" id="listing_type-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </button>
-                            <div id="listing_type-content" class="filter-content">
-                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
-                                    {% for listing_type in listing_types %}
-                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer">
-                                            <input type="checkbox" name="listing_type" value="{{ listing_type.id }}" 
-                                                   {% if listing_type.id|stringformat:"s" in selected_listing_type_ids %}checked{% endif %}
-                                                   class="mr-2 text-blue-600 focus:ring-blue-500"
-                                                   onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm">{{ listing_type.name }}</span>
-                                        </label>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
 
 
                         <!-- Hidden inputs to preserve page parameter -->
@@ -426,32 +386,58 @@
 
                     <!-- Pagination -->
                     {% if products.has_other_pages %}
-                        <div class="mt-8 flex justify-center">
-                            <nav class="flex items-center space-x-2">
+                        <div class="mt-8 flex justify-between items-center">
+                            <!-- Viewing info -->
+                            <div class="text-sm text-gray-600">
+                                Viewing <span class="font-semibold">{{ products.start_index }}-{{ products.end_index }}</span> of <span class="font-semibold">{{ products.paginator.count }}</span>
+                            </div>
+                            
+                            <!-- Pagination controls -->
+                            <nav class="flex items-center gap-2">
+                                <!-- Previous arrow -->
                                 {% if products.has_previous %}
                                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ products.previous_page_number }}" 
-                                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                        Previous
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        <
                                     </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
                                 {% endif %}
 
+                                <!-- Page numbers -->
                                 {% for num in products.paginator.page_range %}
                                     {% if products.number == num %}
-                                        <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md">{{ num }}</span>
-                                    {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                                        <span class="font-semibold text-gray-900 border-b-2 border-orange-500 text-md">{{ num }}</span>
+                                    {% elif num >= products.number|add:'-2' and num <= products.number|add:'2' or products.number <= 3 and num <= 5 %}
                                         <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
-                                           class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                    {% elif num == 1 and products.number > 4 %}
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                        <span class="text-gray-400 text-sm">...</span>
+                                    {% elif num == products.paginator.num_pages and products.number < products.paginator.num_pages|add:'-3' %}
+                                        <span class="text-gray-400 text-sm">...</span>
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
                                             {{ num }}
                                         </a>
                                     {% endif %}
                                 {% endfor %}
 
+                                <!-- Next arrow -->
                                 {% if products.has_next %}
                                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ products.next_page_number }}" 
-                                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                        Next
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        >
                                     </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
                                 {% endif %}
+
                             </nav>
                         </div>
                     {% endif %}
@@ -517,12 +503,12 @@
             document.querySelector('[name="search"]').value = search;
             document.querySelector('[name="sort"]').value = sort;
             
-            // Note: Multi-select filters (brand, voltage, platform, status, listing_type) 
+            // Note: Multi-select filters (brand, voltage, platform, status) 
             // are handled by the server-side template rendering and don't need JavaScript updates
         }
         
         // Multi-select filter functionality
-        const filterTypes = ['brand', 'voltage', 'platform', 'status', 'listing_type'];
+        const filterTypes = ['brand', 'voltage', 'platform', 'status'];
         
         filterTypes.forEach(filterType => {
             const checkboxes = document.querySelectorAll(`input[name="${filterType}"]`);
@@ -685,10 +671,17 @@
             if (header && content && chevron) {
                 const sectionId = header.getAttribute('onclick').match(/toggleSection\('([^']+)'\)/)[1];
                 
-                // Set all sections to expanded by default
-                content.classList.remove('hidden');
-                chevron.style.transform = 'rotate(0deg)';
-                header.setAttribute('aria-expanded', 'true');
+                // Set sections based on their initial state
+                if (content.classList.contains('hidden')) {
+                    // Section is collapsed by default
+                    chevron.style.transform = 'rotate(-90deg)';
+                    header.setAttribute('aria-expanded', 'false');
+                } else {
+                    // Section is expanded by default
+                    content.classList.remove('hidden');
+                    chevron.style.transform = 'rotate(0deg)';
+                    header.setAttribute('aria-expanded', 'true');
+                }
                 
                 header.addEventListener('click', function() {
                     toggleSection(sectionId);

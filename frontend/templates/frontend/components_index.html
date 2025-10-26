@@ -432,32 +432,58 @@
 
                     <!-- Pagination -->
                     {% if components.has_other_pages %}
-                        <div class="mt-8 flex justify-center">
-                            <nav class="flex items-center space-x-2">
+                        <div class="mt-8 flex justify-between items-center">
+                            <!-- Viewing info -->
+                            <div class="text-sm text-gray-600">
+                                Viewing <span class="font-semibold">{{ components.start_index }}-{{ components.end_index }}</span> of <span class="font-semibold">{{ components.paginator.count }}</span>
+                            </div>
+                            
+                            <!-- Pagination controls -->
+                            <nav class="flex items-center gap-2">
+                                <!-- Previous arrow -->
                                 {% if components.has_previous %}
                                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ components.previous_page_number }}" 
-                                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                        Previous
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        <
                                     </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
                                 {% endif %}
 
+                                <!-- Page numbers -->
                                 {% for num in components.paginator.page_range %}
                                     {% if num == components.number %}
-                                        <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md">{{ num }}</span>
-                                    {% elif num > components.number|add:'-3' and num < components.number|add:'3' %}
+                                        <span class="font-semibold text-gray-900 border-b-2 border-orange-500 text-md">{{ num }}</span>
+                                    {% elif num >= components.number|add:'-2' and num <= components.number|add:'2' or components.number <= 3 and num <= 5 %}
                                         <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
-                                           class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                    {% elif num == 1 and components.number > 4 %}
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                        <span class="text-gray-400 text-sm">...</span>
+                                    {% elif num == components.paginator.num_pages and components.number < components.paginator.num_pages|add:'-3' %}
+                                        <span class="text-gray-400 text-sm">...</span>
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
                                             {{ num }}
                                         </a>
                                     {% endif %}
                                 {% endfor %}
 
+                                <!-- Next arrow -->
                                 {% if components.has_next %}
                                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ components.next_page_number }}" 
-                                       class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
-                                        Next
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        >
                                     </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
                                 {% endif %}
+
                             </nav>
                         </div>
                     {% endif %}

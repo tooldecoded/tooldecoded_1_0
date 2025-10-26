@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ToolDecoded - Product Database{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-blue': '#1e40af',
+                        'brand-gray': '#6b7280',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">ToolDecoded</h1>
+                    <p class="text-sm text-gray-600">Product Database and Component Analysis</p>
+                </div>
+                <!-- Navigation Tabs -->
+                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+                    <a href="{% url 'index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'index' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
+                        Products
+                    </a>
+                    <a href="{% url 'components_index' %}" class="px-4 py-2 text-sm font-medium {% if request.resolver_match.url_name == 'components_index' %}text-white bg-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} rounded-md transition-colors">
+                        Components
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

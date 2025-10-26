@@ -1,0 +1,233 @@
+{% extends 'frontend/base.html' %}
+
+{% block title %}{{ product.name }} - ToolDecoded{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Back Button -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <button onclick="history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                Back to Products
+            </button>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column - Product Images -->
+            <div class="space-y-4">
+                <!-- Main Product Image -->
+                <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
+                    {% if product.image %}
+                        <div class="aspect-square bg-gray-100 flex items-center justify-center">
+                            <img id="mainImage" src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
+                        </div>
+                    {% elif product.productimages_set.all %}
+                        <div class="aspect-square bg-gray-100 flex items-center justify-center">
+                            <img id="mainImage" src="{{ product.productimages_set.first.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
+                        </div>
+                    {% else %}
+                        <div class="aspect-square bg-gray-100 flex items-center justify-center text-gray-400">
+                            <div class="text-center">
+                                <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                </svg>
+                                <p class="text-sm">No Image Available</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Image Thumbnails -->
+                {% if product.productimages_set.all %}
+                <div class="bg-white rounded-lg shadow-sm border p-3">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Product Images</h3>
+                    <div class="grid grid-cols-6 gap-2">
+                        {% if product.image %}
+                            <div class="aspect-square bg-gray-100 rounded overflow-hidden cursor-pointer border-2 border-blue-500" onclick="changeMainImage('{{ product.image }}')">
+                                <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                            </div>
+                        {% endif %}
+                        {% for image in product.productimages_set.all %}
+                            <div class="aspect-square bg-gray-100 rounded overflow-hidden cursor-pointer hover:border-blue-500 border-2 border-transparent transition-colors" onclick="changeMainImage('{{ image.image }}')">
+                                <img src="{{ image.image }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column - Product Information -->
+            <div class="space-y-4">
+                <!-- Product Header -->
+                <div>
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h1 class="text-2xl font-bold text-gray-900 mb-2 leading-tight">{{ product.name }}</h1>
+                            <div class="flex items-center space-x-3 mb-3">
+                                <span class="text-lg text-gray-600">{{ product.brand.name }}</span>
+                                {% if product.sku %}
+                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">SKU: {{ product.sku }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="ml-3">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if product.status.name == 'Active' %}bg-green-100 text-green-800
+                                {% elif product.status.name == 'Discontinued' %}bg-red-100 text-red-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ product.status.name }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Specs -->
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% if product.batteryvoltages.all %}
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-gray-500">Voltage:</span>
+                            {% for voltage in product.batteryvoltages.all %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ voltage.value }}V</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if product.batteryplatforms.all %}
+                        <div class="flex items-center space-x-1">
+                            <span class="text-xs text-gray-500">Platform:</span>
+                            {% for platform in product.batteryplatforms.all %}
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800">{{ platform.name }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Component Analysis - PRIMARY FOCUS -->
+                {% if product.productcomponents_set.all %}
+                <div class="bg-white rounded-lg shadow-sm border p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">Component Analysis</h2>
+                        <span class="text-sm text-gray-500">{{ product.productcomponents_set.count }} components</span>
+                    </div>
+                    <div class="grid gap-4">
+                        {% for product_component in product.productcomponents_set.all %}
+                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ product_component.component.name }}</h3>
+                                        <div class="flex items-center space-x-4 text-sm text-gray-600 mb-3">
+                                            {% if product_component.component.brand %}
+                                            <span class="font-medium">{{ product_component.component.brand.name }}</span>
+                                            {% endif %}
+                                            {% if product_component.component.sku %}
+                                            <span>Model#: {{ product_component.component.sku }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Component Specifications -->
+                                        {% if product_component.component.componentattributes_set.all %}
+                                        <div class="grid grid-cols-2 gap-2 text-sm">
+                                            {% for attr in product_component.component.componentattributes_set.all %}
+                                                <div class="flex justify-between">
+                                                    <span class="text-gray-600">{{ attr.attribute.name }}:</span>
+                                                    <span class="font-medium">{{ attr.value }}{% if attr.attribute.unit %} {{ attr.attribute.unit }}{% endif %}</span>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="ml-4 text-right">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                            Qty: {{ product_component.quantity }}
+                                        </span>
+                                        <div class="mt-2">
+                                            <a href="{% url 'component_detail' product_component.component.id %}" 
+                                               class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                                View Details →
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Description - SECONDARY -->
+                {% if product.description %}
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-2">Product Description</h3>
+                    <p class="text-sm text-gray-700 leading-relaxed">{{ product.description|truncatewords:50 }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Additional Information (Collapsed by default) -->
+                <div class="space-y-3">
+                    <!-- Categories -->
+                    {% if product.itemcategories.all %}
+                    <details class="bg-gray-50 rounded-lg p-3">
+                        <summary class="text-sm font-semibold text-gray-900 cursor-pointer">Categories</summary>
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            {% for category in product.itemcategories.all %}
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    {{ category.name }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </details>
+                    {% endif %}
+
+                    <!-- Specifications -->
+                    {% if product.productspecifications_set.all %}
+                    <details class="bg-gray-50 rounded-lg p-3">
+                        <summary class="text-sm font-semibold text-gray-900 cursor-pointer">Product Specifications</summary>
+                        <div class="space-y-1 mt-2">
+                            {% for spec in product.productspecifications_set.all %}
+                                <div class="flex justify-between items-center py-1">
+                                    <span class="text-xs font-medium text-gray-700">{{ spec.attribute.name }}:</span>
+                                    <span class="text-xs text-gray-900">{{ spec.value }}{% if spec.attribute.unit %} {{ spec.attribute.unit }}{% endif %}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                    {% endif %}
+
+                    <!-- Accessories -->
+                    {% if product.productaccessories_set.all %}
+                    <details class="bg-gray-50 rounded-lg p-3">
+                        <summary class="text-sm font-semibold text-gray-900 cursor-pointer">Accessories</summary>
+                        <div class="space-y-2 mt-2">
+                            {% for accessory in product.productaccessories_set.all %}
+                                <div class="p-2 bg-white rounded">
+                                    <h4 class="text-sm font-medium text-gray-900">{{ accessory.name }}</h4>
+                                    <p class="text-xs text-gray-600 mt-1">{{ accessory.description }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </details>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function changeMainImage(imageSrc) {
+        document.getElementById('mainImage').src = imageSrc;
+        // Update active thumbnail
+        document.querySelectorAll('.aspect-square').forEach(thumb => {
+            thumb.classList.remove('border-blue-500');
+            thumb.classList.add('border-transparent');
+        });
+        event.currentTarget.classList.add('border-blue-500');
+        event.currentTarget.classList.remove('border-transparent');
+    }
+    </script>
+</div>
+{% endblock %}

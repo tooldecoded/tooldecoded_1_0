@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -240,6 +241,26 @@
             margin-top: 0.5rem;
             margin-bottom: 0.5rem;
         }
+        
+        /* Logo responsive styles */
+        .logo {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        
+        /* Ensure logo maintains aspect ratio on all devices */
+        @media (max-width: 768px) {
+            .logo {
+                max-height: 2rem;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .logo {
+                max-height: 3rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -247,18 +268,16 @@
     <header class="bg-white shadow-sm border-b sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
-                <!-- Logo/Brand -->
+                <!-- Logo/Brand - Updated v2 -->
                 <div class="flex items-center">
-                    <a href="{% url 'home' %}" class="flex items-center space-x-3">
-                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
+                    <a href="{% url 'home' %}" class="flex items-center">
+                        <!-- Desktop Logo -->
+                        <div class="hidden md:block">
+                            <img src="{% static 'frontend/images/logo.png' %}?v=2" alt="ToolDecoded - Decode the Tool Market" class="logo h-12 w-auto">
                         </div>
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-900">ToolDecoded</h1>
-                            <p class="text-xs text-gray-600">Product Database & Analysis</p>
+                        <!-- Mobile Logo -->
+                        <div class="md:hidden">
+                            <img src="{% static 'frontend/images/logo.png' %}?v=2" alt="ToolDecoded - Decode the Tool Market" class="logo h-8 w-auto">
                         </div>
                     </a>
                 </div>
@@ -332,14 +351,8 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <!-- Brand Section -->
                 <div class="col-span-1 md:col-span-2">
-                    <div class="flex items-center space-x-3 mb-4">
-                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold">ToolDecoded</h3>
+                    <div class="mb-4">
+                        <img src="{% static 'frontend/images/logo.png' %}" alt="ToolDecoded - Decode the Tool Market" class="logo h-8 w-auto">
                     </div>
                     <p class="text-gray-300 text-sm leading-relaxed mb-4">
                         A comprehensive database and analysis platform for power tools, components, and accessories. 

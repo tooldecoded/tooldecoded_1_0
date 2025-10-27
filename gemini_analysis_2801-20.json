@@ -1,0 +1,24 @@
+```json
+{
+  "component_sku": "2801-20",
+  "component_name": "M18 Compact Brushless 1/2\" Drill Driver",
+  "fair_price_standalone": 129.99,
+  "fair_price_kit_prorated": 99.99,
+  "reasoning": "The Milwaukee 2801-20 is a solid, entry-level compact brushless drill driver within the M18 ecosystem. Its performance (500/1800 RPM, 500 in-lbs torque) is sufficient for most common professional and serious DIY tasks, such as drilling holes in wood, metal, and driving fasteners. The brushless motor contributes to better efficiency and longevity. Build quality is typical Milwaukee M18 – robust and designed for job site durability, though it's a more compact and lighter unit, suggesting it might not be the absolute toughest hammer drill for heavy-duty demolition or extreme continuous use. The ergonomics are good, with a comfortable grip and balanced weight for its class.  Market comparison reveals it sits at the lower end of Milwaukee's M18 drill offerings, with higher-performance models (like the 2704-20 FUEL) commanding significantly higher prices.  While a successor might exist or be imminent, this model is a staple and often available in discounted kits.  Milwaukee's brand reputation for reliability and performance is a strong selling point. Its typical sale pricing often hovers around $100-$130 for the bare tool.  In kits, the value proposition is often stronger, making a prorated price closer to $100 a fair assessment when considering the bundled value of batteries and chargers, which are expensive components.",
+  "pros": [
+    "Brushless motor for improved performance and longevity",
+    "Compact and lightweight design for good maneuverability",
+    "Sufficient power (500 in-lbs torque, 1800 RPM) for most common tasks",
+    "Robust Milwaukee M18 build quality",
+    "Excellent ergonomics and comfortable grip",
+    "Well-established and reliable brand reputation",
+    "Commonly available in discounted kits, offering good value"
+  ],
+  "cons": [
+    "Not the highest torque or RPM in Milwaukee's M18 lineup; may struggle with very demanding applications",
+    "Lacks some of the advanced features found on higher-end models (e.g., more speed settings, advanced clutch control)",
+    "May not be the most durable option for extremely harsh, continuous professional use compared to heavier-duty models"
+  ],
+  "market_notes": "The 2801-20 is frequently found as a bare tool on sale for around $100-$130. It's a very common inclusion in Milwaukee M18 starter kits and tool combo kits, often at significantly reduced prices. When prorating its value within a kit, consider that batteries and chargers are often the most expensive components. A fair proration for the drill itself, assuming it's part of a kit with batteries and a charger, would likely be in the $75-$100 range.  This model competes with other entry-level compact brushless drills from brands like DeWalt and Makita, often at a similar price point when comparing bare tools.  Milwaukee's strength is its extensive M18 battery platform, making existing users more inclined to purchase bare tools."
+}
+```

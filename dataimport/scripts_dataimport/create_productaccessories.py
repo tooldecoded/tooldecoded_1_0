@@ -9,7 +9,7 @@ django.setup()
 from toolanalysis.models import ProductAccessories, Products
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ProductAccessory')
+df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ProductAccessory (3)')
 
 for i in range(len(df)):
     product = Products.objects.get(sku=str(df.iloc[i]['product_sku']))

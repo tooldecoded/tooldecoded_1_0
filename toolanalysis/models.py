@@ -20,7 +20,7 @@ class ItemCategories(models.Model):
     attributes = models.ManyToManyField('Attributes')
     class Meta:
         db_table = 'ItemCategories'
-        ordering = ['level', 'sortorder']
+        ordering = ['level', 'sortorder', 'name']
         unique_together = ('parent', 'name', 'level')
 
 class ListingTypes(models.Model):
@@ -100,6 +100,7 @@ class Components(models.Model):
     productlines = models.ManyToManyField('ProductLines')
     image = models.TextField(blank=True, null=True)
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
+    fair_price_narrative = models.JSONField(blank=True, null=True)
     class Meta:
         db_table = 'Components'
         ordering = ['name']

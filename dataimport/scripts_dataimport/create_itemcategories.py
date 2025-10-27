@@ -9,11 +9,11 @@ django.setup()
 from toolanalysis.models import ItemCategories
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ItemCategory')
+df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ItemCategory (2)')
 
 for i in range(len(df)):
     _name = str(df.iloc[i]['itemcategory_name'])
-    #_parent = str(df.iloc[i]['itemcategory_parent'])
+    _parent = str(df.iloc[i]['itemcategory_parent'])
     _level = int(df.iloc[i]['itemcategory_level'])
     _sortorder = (df.iloc[i]['itemcategory_sortOrder'])
     if pd.isna(_sortorder):
@@ -23,10 +23,14 @@ for i in range(len(df)):
         _sortorder = int(_sortorder)
 
     new_item, created = ItemCategories.objects.update_or_create (
-    item_category_name=_name, item_category_level=_level, item_category_sortorder=_sortorder)
+    name=_name, level=_level, sortorder=_sortorder)
 
     if created:
         print(f"Item Category {_name} created")
+        parent = ItemCategories.objects.get(name=_parent)
+        new_item.parent = parent
+        new_item.save()
+        print(f"Item Category {_name} parent set to {parent.name}")
     else:
         print(f"Item Category {_name} already exists")
 

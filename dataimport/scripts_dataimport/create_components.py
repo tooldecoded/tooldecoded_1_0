@@ -9,13 +9,17 @@ django.setup()
 from toolanalysis.models import Components, ItemCategories, Brands, ListingTypes
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ComponentDewalt')
+df = pd.read_excel('dataimport/ryobi full tools detail 2.xlsx', sheet_name='Component')
 
 for i in range(len(df)):
     name = str(df.iloc[i]['component_name'])
     brand = Brands.objects.get(name=str(df.iloc[i]['brand_name']))
     sku = str(df.iloc[i]['component_sku'])
-    image = str(df.iloc[i]['component_image'])
+    image = df.iloc[i]['component_image']
+    if pd.isna(image):
+        image = None
+    else:
+        image = str(image)
 
 
     new_item, created = Components.objects.update_or_create (

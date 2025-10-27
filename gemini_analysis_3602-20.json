@@ -1,0 +1,32 @@
+```json
+{
+  "component_sku": "3602-20",
+  "component_name": "M18™ Compact Brushless 1/2\" Hammer Drill/Driver",
+  "fair_price_standalone": 119.00,
+  "fair_price_kit_prorated": 85.00,
+  "reasoning": "The M18™ Compact Brushless 1/2\" Hammer Drill/Driver (3602-20) is a solid, albeit not top-tier, performer within the Milwaukee M18 lineup. Its brushless motor provides good power for its compact size, making it suitable for a wide range of professional and serious DIY tasks, from general drilling to occasional heavier-duty driving. The 550 in-lbs of torque is respectable for a compact model, and the two-speed gearing (0-500/0-1700 RPM) offers versatility. Build quality is expectedly robust for Milwaukee, featuring durable housing and a metal chuck.  Ergonomically, it's designed for comfort and control, typical of Milwaukee's M18 tools.  However, it's important to note that this is a 'compact' model, meaning it won't match the sustained power or torque of Milwaukee's larger M18 FUEL hammer drill/drivers.  Its market position is generally as a more affordable, entry-level brushless option within the M18 system.  Newer, more powerful M18 FUEL hammer drill/drivers exist, often retailing for $150-$200+ as bare tools, which influences the perceived value of this slightly older, less powerful model. Milwaukee tools frequently go on sale, especially during holidays or promotional events.  Standalone bare tool pricing typically falls into the $100-$140 range during sales.  When included in kits, the perceived value often drops significantly, making prorated pricing more realistic.  A fair standalone sale price would be around $120.  In kits, its prorated value, considering it's a less premium model, would likely be in the $80-$90 range, especially if the kit includes higher-value items.",
+  "pros": [
+    "Compact and lightweight design (2.3 lbs, 5.8\" length) for excellent maneuverability and reduced fatigue.",
+    "Brushless motor offers good power and efficiency for its size.",
+    "550 in-lbs of max torque is sufficient for most common drilling and driving tasks.",
+    "Two-speed gearing (0-500 / 0-1700 RPM) provides good control for various applications.",
+    "Durable build quality expected from Milwaukee.",
+    "Metal chuck for secure bit grip.",
+    "Excellent integration into the M18 battery ecosystem.",
+    "Often available at competitive sale prices."
+  ],
+  "cons": [
+    "Hammer drill functionality is present but not its primary strength; it's a competent secondary feature, not for heavy-duty masonry.",
+    "Less power and torque compared to Milwaukee's M18 FUEL line of hammer drill/drivers.",
+    "May struggle with very large auger bits or prolonged heavy-duty tasks requiring sustained high torque.",
+    "Some competitors might offer slightly higher torque or more advanced features in a similar price bracket.",
+    "No variable speed trigger lock (a minor ergonomic point for some users)."
+  ],
+  "market_notes": {
+    "comparable_models": "Competitors in this segment include DeWalt's 20V MAX XR Compact Brushless Drill/Driver, Makita's 18V LXT Brushless Cordless Drill/Driver, and Ryobi's HP Brushless Drill/Driver.  These often offer similar torque figures and compact designs.",
+    "successor_models": "Milwaukee's M18 FUEL Hammer Drill/Driver (e.g., 2902-20) is a direct, more powerful successor, typically priced significantly higher as a bare tool ($170-$200+).  This 3602-20 model often serves as a more budget-friendly entry into their brushless M18 system.",
+    "pricing_patterns": "Milwaukee M18 tools are frequently on sale, particularly during major retail events (Black Friday, Father's Day, Holiday Sales).  Bare tools like this often see discounts of 20-30% off MSRP.  Kits with batteries and chargers are where the best overall value is usually found, and the prorated value of a single tool within a kit can be substantially lower than its standalone sale price. Look for bundles that include multiple popular M18 tools or high-capacity batteries.",
+    "brand_reputation": "Milwaukee has a strong reputation among professionals and serious DIYers for durability, performance, and innovation, especially within its M18 and M12 platforms."
+  }
+}
+```

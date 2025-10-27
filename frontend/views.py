@@ -199,20 +199,20 @@ def index(request):
             level=2, 
             parent=category_level1,
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__sortorder', 'sortorder', 'name')
         
         if category_level2:
             level3_categories = ItemCategories.objects.filter(
                 level=3, 
                 parent=category_level2,
                 id__in=relevant_category_ids
-            ).order_by('sortorder', 'name')
+            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
         else:
             level3_categories = ItemCategories.objects.filter(
                 level=3, 
                 parent__parent=category_level1,
                 id__in=relevant_category_ids
-            ).order_by('sortorder', 'name')
+            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
     else:
         level1_categories = ItemCategories.objects.filter(
             level=1, 
@@ -222,12 +222,12 @@ def index(request):
         level2_categories = ItemCategories.objects.filter(
             level=2, 
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__sortorder', 'sortorder', 'name')
         
         level3_categories = ItemCategories.objects.filter(
             level=3, 
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
     
     # Get categories with parent for cascading dropdowns
     level2_categories_with_parent = level2_categories.values('id', 'name', 'parent', 'sortorder')
@@ -620,20 +620,20 @@ def components_index(request):
             level=2, 
             parent=category_level1,
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__sortorder', 'sortorder', 'name')
         
         if category_level2:
             level3_categories = ItemCategories.objects.filter(
                 level=3, 
                 parent=category_level2,
                 id__in=relevant_category_ids
-            ).order_by('sortorder', 'name')
+            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
         else:
             level3_categories = ItemCategories.objects.filter(
                 level=3, 
                 parent__parent=category_level1,
                 id__in=relevant_category_ids
-            ).order_by('sortorder', 'name')
+            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
     else:
         level1_categories = ItemCategories.objects.filter(
             level=1, 
@@ -643,12 +643,12 @@ def components_index(request):
         level2_categories = ItemCategories.objects.filter(
             level=2, 
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__sortorder', 'sortorder', 'name')
         
         level3_categories = ItemCategories.objects.filter(
             level=3, 
             id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
+        ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
     
     # Get categories with parent for cascading dropdowns
     level2_categories_with_parent = level2_categories.values('id', 'name', 'parent', 'sortorder')

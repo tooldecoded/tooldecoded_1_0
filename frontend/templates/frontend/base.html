@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ToolDecoded - Product Database{% endblock %}</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.tailwindcss.com/3.4.0/plugins/typography.js"></script>
     <script>
@@ -268,16 +271,42 @@
     <header class="bg-white shadow-sm border-b sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
-                <!-- Logo/Brand - Updated v2 -->
+                <!-- Logo/Brand - HTML/CSS Version v3 -->
                 <div class="flex items-center">
-                    <a href="{% url 'home' %}" class="flex items-center">
+                    <a href="{% url 'home' %}" class="flex items-center group">
                         <!-- Desktop Logo -->
                         <div class="hidden md:block">
-                            <img src="{% static 'frontend/images/logo.png' %}?v=2" alt="ToolDecoded - Decode the Tool Market" class="logo h-12 w-auto">
+                            <div class="flex items-center space-x-3">
+                                <!-- Drill Icon -->
+                                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" transform="translate(0, 2)"/>
+                                    </svg>
+                                </div>
+                                <!-- Text -->
+                                <div class="flex flex-col">
+                                    <h1 class="text-2xl font-bold text-gray-800 group-hover:text-blue-600 transition-colors">TOOLDECODED</h1>
+                                    <p class="text-sm text-gray-500 group-hover:text-blue-500 transition-colors">DECODE THE TOOL MARKET</p>
+                                </div>
+                            </div>
                         </div>
                         <!-- Mobile Logo -->
                         <div class="md:hidden">
-                            <img src="{% static 'frontend/images/logo.png' %}?v=2" alt="ToolDecoded - Decode the Tool Market" class="logo h-8 w-auto">
+                            <div class="flex items-center space-x-2">
+                                <!-- Drill Icon -->
+                                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                                        <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" transform="translate(0, 2)"/>
+                                    </svg>
+                                </div>
+                                <!-- Text -->
+                                <div class="flex flex-col">
+                                    <h1 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">TOOLDECODED</h1>
+                                    <p class="text-xs text-gray-500 group-hover:text-blue-500 transition-colors">DECODE THE TOOL MARKET</p>
+                                </div>
+                            </div>
                         </div>
                     </a>
                 </div>
@@ -352,7 +381,20 @@
                 <!-- Brand Section -->
                 <div class="col-span-1 md:col-span-2">
                     <div class="mb-4">
-                        <img src="{% static 'frontend/images/logo.png' %}" alt="ToolDecoded - Decode the Tool Market" class="logo h-8 w-auto">
+                        <div class="flex items-center space-x-3">
+                            <!-- Drill Icon -->
+                            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z"/>
+                                    <path d="M12 2L13.09 8.26L22 9L13.09 9.74L12 16L10.91 9.74L2 9L10.91 8.26L12 2Z" transform="translate(0, 2)"/>
+                                </svg>
+                            </div>
+                            <!-- Text -->
+                            <div class="flex flex-col">
+                                <h1 class="text-xl font-bold text-white">TOOLDECODED</h1>
+                                <p class="text-sm text-gray-300">DECODE THE TOOL MARKET</p>
+                            </div>
+                        </div>
                     </div>
                     <p class="text-gray-300 text-sm leading-relaxed mb-4">
                         A comprehensive database and analysis platform for power tools, components, and accessories. 

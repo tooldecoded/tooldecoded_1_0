@@ -6,6 +6,7 @@ from toolanalysis.models import (
     ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
     ProductLines, ProductComponents
 )
+from .models import LearningArticle, Tag
 
 def index(request):
     """Product catalog with filtering and pagination"""
@@ -774,8 +775,8 @@ def home(request):
     # Get basic statistics for the home page
     total_products = Products.objects.count()
     total_components = Components.objects.count()
-    total_brands = Brands.objects.count()
-    total_categories = ItemCategories.objects.count()
+    total_brands = Brands.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
+    total_categories = ItemCategories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     
     # Get some popular categories for the home page
     try:
@@ -828,3 +829,71 @@ def about(request):
 def contact(request):
     """Contact page with contact information and form"""
     return render(request, 'frontend/contact.html')
+
+def learning_index(request):
+    """Learning articles index page"""
+    articles = LearningArticle.objects.filter(is_published=True).prefetch_related('tags')
+    
+    # Get search parameter
+    search = request.GET.get('search', '')
+    if search:
+        articles = articles.filter(
+            Q(title__icontains=search) | 
+            Q(summary__icontains=search) |
+            Q(content__icontains=search)
+        )
+    
+    # Get tag filter parameter
+    tag_slug = request.GET.get('tag', '')
+    if tag_slug:
+        articles = articles.filter(tags__slug=tag_slug)
+    
+    # Get all available tags with article counts
+    all_tags = Tag.objects.annotate(
+        article_count=Count('articles', filter=Q(articles__is_published=True))
+    ).filter(article_count__gt=0).order_by('name')
+    
+    # Paginate articles
+    paginator = Paginator(articles, 12)
+    page = int(request.GET.get('page', 1))
+    try:
+        page_obj = paginator.page(page)
+    except:
+        page_obj = paginator.page(1)
+    
+    context = {
+        'articles': page_obj,
+        'search': search,
+        'tag_slug': tag_slug,
+        'all_tags': all_tags,
+    }
+    
+    return render(request, 'frontend/learning_index.html', context)
+
+def learning_detail(request, slug):
+    """Learning article detail page"""
+    article = get_object_or_404(LearningArticle, slug=slug, is_published=True)
+    
+    # Get related articles - prefer articles with same tags, then other published articles
+    related_articles = LearningArticle.objects.filter(
+        is_published=True
+    ).exclude(id=article.id)
+    
+    # If article has tags, try to find articles with same tags first
+    if article.tags.exists():
+        same_tag_articles = related_articles.filter(tags__in=article.tags.all()).distinct()[:3]
+        if same_tag_articles.count() >= 3:
+            related_articles = same_tag_articles
+        else:
+            # Fill remaining slots with other articles
+            other_articles = related_articles.exclude(tags__in=article.tags.all())[:3-same_tag_articles.count()]
+            related_articles = list(same_tag_articles) + list(other_articles)
+    else:
+        related_articles = related_articles[:3]
+    
+    context = {
+        'article': article,
+        'related_articles': related_articles,
+    }
+    
+    return render(request, 'frontend/learning_detail.html', context)

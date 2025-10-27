@@ -9,11 +9,11 @@ django.setup()
 from toolanalysis.models import Components, ItemCategories, Brands, ListingTypes
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='Component (2)')
+df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ComponentDewalt')
 
 for i in range(len(df)):
     name = str(df.iloc[i]['component_name'])
-    brand = Brands.objects.get(name='Milwaukee')
+    brand = Brands.objects.get(name=str(df.iloc[i]['brand_name']))
     sku = str(df.iloc[i]['component_sku'])
     image = str(df.iloc[i]['component_image'])
 

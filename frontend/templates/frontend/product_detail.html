@@ -96,7 +96,12 @@
                             <div class="text-sm font-semibold text-gray-700 mb-0">{{ product.brand.name|upper }}</div>
                             
                             <!-- Product Name -->
-                            <h1 class="text-2xl font-bold text-gray-900 mb-3">{{ product.name }}</h1>
+                            <h1 class="text-2xl font-bold text-gray-900 mb-0">{{ product.name }}</h1>
+                            
+                            <!-- Model # -->
+                            {% if product.sku %}
+                            <div class="text-sm text-gray-600 mb-3">Model #: {{ product.sku }}</div>
+                            {% endif %}
                             
                             <!-- Product Line with Battery Voltage -->
                             {% if product.batteryvoltages.all %}

@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db.models import F
-from .models import LearningArticle, Tag
+from .models import LearningArticle, Tag, SiteSettings
 
 # Register your models here.
 
@@ -94,3 +94,31 @@ class LearningArticleAdmin(admin.ModelAdmin):
         self.message_user(request, f"Unpinned {updated} articles.")
     
     unpin_articles.short_description = "Unpin selected articles"
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ['show_fair_price_status', 'created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def show_fair_price_status(self, obj):
+        return "Enabled" if obj.show_fair_price_feature else "Disabled"
+    show_fair_price_status.short_description = "Fair Price Feature"
+    
+    def has_add_permission(self, request):
+        # Only allow one instance
+        return not SiteSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of the settings instance
+        return False
+    
+    fieldsets = (
+        ('Site Configuration', {
+            'fields': ('show_fair_price_feature',),
+            'description': 'Control site-wide features and settings'
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

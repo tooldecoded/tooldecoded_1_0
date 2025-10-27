@@ -27,6 +27,11 @@ for i in range(len(df)):
     if created:
         print(f"Component {name} created")
     else:
-        print(f"Component {name} already exists")
+        if image != new_item.image:
+            new_item.image = image
+            new_item.save() # update the image if it changed
+            print(f"Component {name} image updated")
+        else:
+            print(f"Component {name} image unchanged")
 
 

@@ -6,7 +6,7 @@ from toolanalysis.models import (
     ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
     ProductLines, ProductComponents
 )
-from .models import LearningArticle, Tag
+from .models import LearningArticle, Tag, SiteSettings
 
 def index(request):
     """Product catalog with filtering and pagination"""
@@ -716,6 +716,9 @@ def components_index(request):
         }
     }
     
+    # Get site settings for fair price feature
+    site_settings = SiteSettings.get_settings()
+    
     context = {
         'components': page_obj,
         'brands': brands,
@@ -748,6 +751,7 @@ def components_index(request):
         'selected_product_line_ids': product_line_ids,
         'selected_attribute_filters': attribute_filters,
         'selected_feature_filters': feature_filters,
+        'show_fair_price': site_settings.show_fair_price_feature,
     }
     
     return render(request, 'frontend/components_index.html', context)
@@ -762,10 +766,14 @@ def component_detail(request, component_id):
     # Get products that use this component
     product_components = ProductComponents.objects.filter(component=component).select_related('product')
     
+    # Get site settings for fair price feature
+    site_settings = SiteSettings.get_settings()
+    
     context = {
         'component': component,
         'component_attributes': component_attributes,
         'product_components': product_components,
+        'show_fair_price': site_settings.show_fair_price_feature,
     }
     
     return render(request, 'frontend/component_detail.html', context)

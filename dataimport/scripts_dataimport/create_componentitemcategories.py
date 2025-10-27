@@ -9,11 +9,11 @@ django.setup()
 from toolanalysis.models import Components, ItemCategories
 import pandas as pd
 
-df = pd.read_excel('dataimport/M18 Database.xlsx', sheet_name='ComponentItemCategory (2)')
+df = pd.read_excel('dataimport/ryobi full tools detail 2.xlsx', sheet_name='Component')
 
 for i in range(len(df)):
     component = Components.objects.get(sku=str(df.iloc[i]['component_sku']))
     itemcategory = ItemCategories.objects.get(name=str(df.iloc[i]['itemcategory_name']))
     component.itemcategories.add(itemcategory)
     component.save()
-    print(f"Component {component.name} {itemcategory.name} added to Component {component.name}")
+    print(f"{itemcategory.name} added to Component {component.name}")

@@ -420,7 +420,7 @@
                                         {% endif %}
                                         
                                         <!-- Fair Price Badge -->
-                                        {% if component.fair_price_narrative %}
+                                        {% if show_fair_price and component.fair_price_narrative %}
                                             <div class="mt-2">
                                                 <!-- Hidden data elements for this component -->
                                                 <div id="component-{{ component.id }}-data" style="display: none;">

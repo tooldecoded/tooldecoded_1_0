@@ -4,6 +4,35 @@ from django.utils.text import slugify
 
 # Create your models here.
 
+class SiteSettings(models.Model):
+    """Singleton model for site-wide settings"""
+    show_fair_price_feature = models.BooleanField(
+        default=True,
+        help_text="Enable or disable the fair price feature across the site"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Site Settings"
+        verbose_name_plural = "Site Settings"
+    
+    def __str__(self):
+        return "Site Settings"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists
+        if not self.pk and SiteSettings.objects.exists():
+            # If this is a new instance and one already exists, don't create another
+            return
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_settings(cls):
+        """Get the site settings instance, creating it if it doesn't exist"""
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings
+
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
     slug = models.SlugField(unique=True, max_length=50)

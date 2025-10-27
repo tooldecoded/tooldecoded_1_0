@@ -4,6 +4,7 @@ import sys
 import google.generativeai as genai
 import time
 import json
+import argparse
 
 # Set up Django environment
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -13,16 +14,32 @@ django.setup()
 # Import your models
 from toolanalysis.models import Components, ItemCategories, Brands, BatteryPlatforms, ComponentAttributes
 
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Analyze drill driver components with Gemini AI')
+parser.add_argument('--skip-existing', action='store_true', 
+                    help='Skip components that already have analysis data')
+args = parser.parse_args()
+
 # Configure Gemini
 genai.configure(api_key="AIzaSyCBU440DFi_w0L77QPpCKpO319nSU1hLBY")
 model = genai.GenerativeModel("gemini-2.5-flash")
+
+# SKIP TRIGGER CONFIGURATION
+# Change this to True/False to enable/disable skip logic
+SKIP_IF_HAS_DATA = True  # Set to False to process all components regardless of existing data
 
 # Filter for drill driver components
 try:
     drill_driver_category = ItemCategories.objects.get(name__icontains="drill driver")
     drill_driver_components = Components.objects.filter(itemcategories=drill_driver_category)
     
+    # Initialize statistics counters
+    total_components = 0
+    skipped_components = 0
+    queried_components = 0
+    
     for component in drill_driver_components:
+        total_components += 1
         # Gather component information
         component_info = {
             "sku": component.sku,
@@ -38,6 +55,12 @@ try:
         attributes = ComponentAttributes.objects.filter(component=component)
         component_attributes = {attr.attribute.name: attr.value for attr in attributes}
         component_info["attributes"] = component_attributes
+        
+        # Check if we should skip this component
+        if args.skip_existing and SKIP_IF_HAS_DATA and component.fair_price_narrative:
+            print(f"⏭️  Skipping {component.sku} - already has analysis data")
+            skipped_components += 1
+            continue
         
         # Create input string for Gemini
         input_string = f"""# CRITICAL OUTPUT REQUIREMENTS
@@ -95,6 +118,7 @@ Attributes: {json.dumps(component_attributes, indent=2)}
 - Respond with ONLY the JSON object, no additional text
 """
         
+        queried_components += 1
         try:
             response = model.generate_content(input_string)
             print(f"\nAnalyzing: {component_info['name']} ({component_info['sku']})")
@@ -153,6 +177,16 @@ Attributes: {json.dumps(component_attributes, indent=2)}
             print(f"Error analyzing {component_info['sku']}: {str(e)}")
         
         time.sleep(5)  # Rate limiting
+    
+    # Print summary statistics
+    print(f"\n{'='*50}")
+    print("📊 ANALYSIS SUMMARY")
+    print(f"{'='*50}")
+    print(f"Total components processed: {total_components}")
+    print(f"Components skipped (already have data): {skipped_components}")
+    print(f"Components queried with Gemini: {queried_components}")
+    print(f"API calls saved: {skipped_components}")
+    print(f"{'='*50}")
         
 except ItemCategories.DoesNotExist:
     print("No 'drill driver' category found. Available categories:")

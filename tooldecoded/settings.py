@@ -150,3 +150,26 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# CSRF Settings for Production
+CSRF_COOKIE_SECURE = True  # Use HTTPS for CSRF cookies
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
+CSRF_COOKIE_SAMESITE = 'Lax'  # CSRF cookie SameSite attribute
+CSRF_TRUSTED_ORIGINS = [
+    'https://tooldecoded.com',
+    'https://www.tooldecoded.com',
+    'https://yt9wxe3q.up.railway.app',
+]
+
+# Session Settings
+SESSION_COOKIE_SECURE = True  # Use HTTPS for session cookies
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'  # Session cookie SameSite attribute
+
+# Security Settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# If you're behind a proxy (like Railway), add this:
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+

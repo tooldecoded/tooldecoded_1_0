@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Case, When, Value, F, FloatField
+from django.db.models.functions import Cast
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
     ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
@@ -21,6 +22,7 @@ def index(request):
     status = request.GET.get('status', '')
     listing_type = request.GET.get('listing_type', '')
     sort = request.GET.get('sort', 'name')
+    sort_direction = request.GET.get('sort_direction', 'asc')
     page = int(request.GET.get('page', 1))
     
     # Parse multi-select values - handle both single values and comma-separated
@@ -90,14 +92,26 @@ def index(request):
     
     # Apply sorting
     if sort == 'brand':
-        products = products.order_by('brand__name', 'name')
+        if sort_direction == 'desc':
+            products = products.order_by('-brand__name', 'name')
+        else:
+            products = products.order_by('brand__name', 'name')
     elif sort == 'voltage':
-        products = products.order_by('batteryvoltages__value', 'name')
+        if sort_direction == 'desc':
+            products = products.order_by('-batteryvoltages__value', 'name')
+        else:
+            products = products.order_by('batteryvoltages__value', 'name')
     elif sort == 'release_date':
-        products = products.order_by('-releasedate', 'name')
+        if sort_direction == 'desc':
+            products = products.order_by('-releasedate', 'name')
+        else:
+            products = products.order_by('releasedate', 'name')
     else:
         # Default: use category sortorder to deprioritize ProPEX, draw studs, etc.
-        products = products.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
+        if sort_direction == 'desc':
+            products = products.order_by('-itemcategories__parent__parent__sortorder', '-itemcategories__parent__sortorder', '-itemcategories__sortorder', '-name').distinct()
+        else:
+            products = products.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
     
     # Paginate
     paginator = Paginator(products, 24)
@@ -281,6 +295,7 @@ def index(request):
             'status': status,
             'listing_type': listing_type,
             'sort': sort,
+            'sort_direction': sort_direction,
         },
         'selected_brand_ids': brand_ids,
         'selected_voltage_ids': voltage_ids,
@@ -294,6 +309,10 @@ def index(request):
 def product_detail(request, product_id):
     """Product detail view"""
     product = get_object_or_404(Products, id=product_id)
+    
+    # Get sorting parameters
+    sort = request.GET.get('sort', 'name')
+    sort_direction = request.GET.get('sort_direction', 'asc')
     
     # Get product components with prefetched data
     product_components = product.productcomponents_set.select_related(
@@ -321,6 +340,23 @@ def product_detail(request, product_id):
                     component_products[component.id] = first_product.image
                 elif first_product.productimages_set.exists():
                     component_products[component.id] = first_product.productimages_set.first().image
+    
+    # Apply sorting to product components
+    if sort == 'quantity':
+        if sort_direction == 'desc':
+            product_components = product_components.order_by('-quantity', 'component__name')
+        else:
+            product_components = product_components.order_by('quantity', 'component__name')
+    elif sort == 'sku':
+        if sort_direction == 'desc':
+            product_components = product_components.order_by('-component__sku', 'component__name')
+        else:
+            product_components = product_components.order_by('component__sku', 'component__name')
+    else:  # Default: sort by component name
+        if sort_direction == 'desc':
+            product_components = product_components.order_by('-component__name')
+        else:
+            product_components = product_components.order_by('component__name')
     
     # Group components by their primary category and get dynamic columns
     # Order: power_tools first, then batteries, then chargers, then accessories, then other
@@ -385,6 +421,10 @@ def product_detail(request, product_id):
         'product': product,
         'component_products': component_products,
         'component_groups': component_groups,
+        'current_filters': {
+            'sort': sort,
+            'sort_direction': sort_direction,
+        },
     }
     
     return render(request, 'frontend/product_detail.html', context)
@@ -402,6 +442,7 @@ def components_index(request):
     product_line = request.GET.get('product_line', '')
     listing_type = request.GET.get('listing_type', '')
     sort = request.GET.get('sort', 'name')
+    sort_direction = request.GET.get('sort_direction', 'asc')
     page = int(request.GET.get('page', 1))
     
     # Parse multi-select values
@@ -499,12 +540,35 @@ def components_index(request):
     
     # Apply sorting
     if sort == 'brand':
-        components = components.order_by('brand__name', 'name')
+        if sort_direction == 'desc':
+            components = components.order_by('-brand__name', 'name')
+        else:
+            components = components.order_by('brand__name', 'name')
     elif sort == 'voltage':
-        components = components.order_by('batteryvoltages__value', 'name')
+        if sort_direction == 'desc':
+            components = components.order_by('-batteryvoltages__value', 'name')
+        else:
+            components = components.order_by('batteryvoltages__value', 'name')
+    elif sort == 'fair_price':
+        # Extract fair_price from JSONField and handle nulls
+        components = components.annotate(
+            fair_price_value=Case(
+                When(fair_price_narrative__fair_price__isnull=False,
+                     then=Cast(F('fair_price_narrative__fair_price'), FloatField())),
+                default=Value(None),
+                output_field=FloatField()
+            )
+        )
+        if sort_direction == 'desc':
+            components = components.order_by(F('fair_price_value').desc(nulls_last=True), 'name')
+        else:
+            components = components.order_by(F('fair_price_value').asc(nulls_last=True), 'name')
     else:
         # Default: use category sortorder to deprioritize ProPEX, draw studs, etc.
-        components = components.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
+        if sort_direction == 'desc':
+            components = components.order_by('-itemcategories__parent__parent__sortorder', '-itemcategories__parent__sortorder', '-itemcategories__sortorder', '-name').distinct()
+        else:
+            components = components.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
     
     # Paginate
     paginator = Paginator(components, 24)
@@ -744,6 +808,7 @@ def components_index(request):
             'product_line': product_line,
             'listing_type': listing_type,
             'sort': sort,
+            'sort_direction': sort_direction,
         },
         'selected_brand_ids': brand_ids,
         'selected_voltage_ids': voltage_ids,

@@ -165,6 +165,28 @@
                     </svg>
                 </button>
                 <div id="components-content" class="mt-4 space-y-6">
+                    <!-- Sort Controls -->
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Components</h3>
+                        <div class="flex items-center space-x-2">
+                            <label for="componentSortSelect" class="text-sm font-medium text-gray-700">Sort by:</label>
+                            <select id="componentSortSelect" name="sort" class="px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" onchange="handleComponentSortChange(this)">
+                                <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
+                                <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
+                                <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model #</option>
+                            </select>
+                            <button type="button" id="componentSortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    {% if current_filters.sort_direction == 'desc' %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                    {% else %}
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    {% endif %}
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
                     {% for group_name, group_data in component_groups.items %}
                         {% if group_data.components %}
                             <div>
@@ -183,9 +205,54 @@
                                     <table class="w-full border-collapse border border-gray-300 text-sm">
                                         <thead>
                                             <tr class="bg-gray-100">
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Model #</th>
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">
+                                                    <button onclick="sortComponents('quantity')" class="flex items-center space-x-1 hover:text-blue-600">
+                                                        <span>Qty</span>
+                                                        {% if current_filters.sort == 'quantity' %}
+                                                            {% if current_filters.sort_direction == 'desc' %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                </svg>
+                                                            {% else %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                </svg>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </button>
+                                                </th>
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
+                                                    <button onclick="sortComponents('name')" class="flex items-center space-x-1 hover:text-blue-600">
+                                                        <span>Name</span>
+                                                        {% if current_filters.sort == 'name' %}
+                                                            {% if current_filters.sort_direction == 'desc' %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                </svg>
+                                                            {% else %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                </svg>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </button>
+                                                </th>
+                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
+                                                    <button onclick="sortComponents('sku')" class="flex items-center space-x-1 hover:text-blue-600">
+                                                        <span>Model #</span>
+                                                        {% if current_filters.sort == 'sku' %}
+                                                            {% if current_filters.sort_direction == 'desc' %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                </svg>
+                                                            {% else %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                </svg>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </button>
+                                                </th>
                                                 {% for column in group_data.columns %}
                                                     <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
                                                         {{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}
@@ -410,6 +477,59 @@
             event.preventDefault();
             toggleComponentsSection();
         }
+    }
+    
+    // Component sorting functions
+    function handleComponentSortChange(selectElement) {
+        // Get current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Update the sort parameter
+        urlParams.set('sort', selectElement.value);
+        
+        // Preserve sort_direction parameter
+        const currentDirection = urlParams.get('sort_direction') || 'asc';
+        urlParams.set('sort_direction', currentDirection);
+        
+        // Navigate to the new URL
+        window.location.href = '?' + urlParams.toString();
+    }
+    
+    function toggleComponentSortDirection() {
+        // Get current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Toggle the sort direction
+        const currentDirection = urlParams.get('sort_direction') || 'asc';
+        const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+        
+        // Update the sort direction parameter
+        urlParams.set('sort_direction', newDirection);
+        
+        // Navigate to the new URL
+        window.location.href = '?' + urlParams.toString();
+    }
+    
+    function sortComponents(sortField) {
+        // Get current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Check if we're already sorting by this field
+        const currentSort = urlParams.get('sort') || 'name';
+        const currentDirection = urlParams.get('sort_direction') || 'asc';
+        
+        if (currentSort === sortField) {
+            // Toggle direction if same field
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+            urlParams.set('sort_direction', newDirection);
+        } else {
+            // Set new field with default ascending direction
+            urlParams.set('sort', sortField);
+            urlParams.set('sort_direction', 'asc');
+        }
+        
+        // Navigate to the new URL
+        window.location.href = '?' + urlParams.toString();
     }
     
     </script>

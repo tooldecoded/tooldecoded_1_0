@@ -323,6 +323,15 @@
                             <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage</option>
                             <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date</option>
                         </select>
+                        <button type="button" id="sortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleSortDirection()" title="Toggle sort direction">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {% if current_filters.sort_direction == 'desc' %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                {% else %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                {% endif %}
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -362,7 +371,11 @@
                                     <div class="space-y-2 mb-4">
                                         {% if product.brand %}
                                             <div class="text-sm">
-                                                <span class="font-semibold text-gray-900">{{ product.brand.name }}</span>
+                                                <span id="brand-{{ product.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold" 
+                                                      style="background-color: {{ product.brand.color|default:'#6b7280' }}; color: white;"
+                                                      data-brand-color="{{ product.brand.color|default:'#6b7280' }}">
+                                                    {{ product.brand.name }}
+                                                </span>
                                             </div>
                                         {% endif %}
                                         {% if product.sku %}
@@ -457,7 +470,38 @@
     </div>
 
     <script>
+    // Function to calculate luminance and determine appropriate text color
+    function calculateTextColor(hexColor) {
+        // Remove # if present
+        hexColor = hexColor.replace('#', '');
+        
+        // Parse hex to RGB
+        const r = parseInt(hexColor.substr(0, 2), 16);
+        const g = parseInt(hexColor.substr(2, 2), 16);
+        const b = parseInt(hexColor.substr(4, 2), 16);
+        
+        // Calculate relative luminance using WCAG formula
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        
+        // Return white for dark backgrounds, black for light backgrounds
+        return luminance < 0.5 ? 'white' : 'black';
+    }
+    
+    // Function to apply brand color styling
+    function applyBrandColorStyling() {
+        document.querySelectorAll('[data-brand-color]').forEach(element => {
+            const brandColor = element.getAttribute('data-brand-color');
+            if (brandColor) {
+                const textColor = calculateTextColor(brandColor);
+                element.style.color = textColor;
+            }
+        });
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
+        // Apply brand color styling
+        applyBrandColorStyling();
+        
         // Initialize collapsible sections
         initializeCollapsibleSections();
         
@@ -581,6 +625,27 @@
         // Update the sort parameter
         urlParams.set('sort', selectElement.value);
         urlParams.set('page', '1'); // Reset to first page when sorting
+        
+        // Preserve sort_direction parameter
+        const currentDirection = urlParams.get('sort_direction') || 'asc';
+        urlParams.set('sort_direction', currentDirection);
+        
+        // Navigate to the new URL
+        window.location.href = '?' + urlParams.toString();
+    }
+    
+    // Global function to toggle sort direction
+    function toggleSortDirection() {
+        // Get current URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Toggle the sort direction
+        const currentDirection = urlParams.get('sort_direction') || 'asc';
+        const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+        
+        // Update the sort direction parameter
+        urlParams.set('sort_direction', newDirection);
+        urlParams.set('page', '1'); // Reset to first page when changing direction
         
         // Navigate to the new URL
         window.location.href = '?' + urlParams.toString();

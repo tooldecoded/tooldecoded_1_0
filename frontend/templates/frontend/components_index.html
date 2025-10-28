@@ -43,12 +43,26 @@
                     </div>
                     
                     <!-- Compare Button -->
-                    <button id="compare-button" onclick="openComparisonModal()" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm mobile-button mobile-touch-target ripple">
+                    <button id="compare-button" onclick="openCompareModal()" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm mobile-button mobile-touch-target ripple">
                         Compare (0)
                     </button>
                     <button id="clear-compare-button" onclick="clearComparison()" class="hidden bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors">
                         Clear
                     </button>
+                    
+                    <!-- Sort Dropdown -->
+                    <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                        <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
+                        <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
+                        <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage (Low-High)</option>
+                        <option value="voltage_desc" {% if current_filters.sort == 'voltage_desc' %}selected{% endif %}>Voltage (High-Low)</option>
+                        {% if show_fair_price %}
+                        <option value="fair_price" {% if current_filters.sort == 'fair_price' %}selected{% endif %}>Fair Price (Low-High)</option>
+                        <option value="fair_price_desc" {% if current_filters.sort == 'fair_price_desc' %}selected{% endif %}>Fair Price (High-Low)</option>
+                        {% endif %}
+                    </select>
                     
                     <!-- Results per page -->
                     <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
@@ -428,35 +442,13 @@
                             No components found
                         {% endif %}
                     </h2>
-                    
-                    <!-- Sort Dropdown -->
-                    <div class="flex items-center space-x-2">
-                        <label for="sortSelect" class="text-sm font-medium text-gray-700">Sort by:</label>
-                        <select id="sortSelect" name="sort" class="custom-select" onchange="handleSortChange(this)">
-                            <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
-                            <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand</option>
-                            <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage</option>
-                            {% if show_fair_price %}
-                            <option value="fair_price" {% if current_filters.sort == 'fair_price' %}selected{% endif %}>Fair Value Price</option>
-                            {% endif %}
-                        </select>
-                        <button type="button" id="sortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleSortDirection()" title="Toggle sort direction">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {% if current_filters.sort_direction == 'desc' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                {% else %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                {% endif %}
-                            </svg>
-                        </button>
-                    </div>
                 </div>
 
                 {% if components %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {% for component in components %}
                             <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover-lift animate-fade-in mobile-card mobile-touch-target gradient-border">
-                                <a href="{% url 'component_detail' component.id %}" class="relative">
+                                <div class="relative">
                                     <div class="aspect-square bg-white rounded-t-xl overflow-hidden relative">
                                         {% if component.image %}
                                             <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300">
@@ -490,7 +482,7 @@
                                             </label>
                                         </div>
                                     </div>
-                                </a>
+                                </div>
                                 <div class="p-5 flex flex-col flex-grow">
                                     <div class="mb-3">
                                         <h3 class="font-semibold text-gray-900 line-clamp-2 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{{ component.name }}</h3>
@@ -631,8 +623,8 @@
     </div>
 
     <!-- Quick View Modal -->
-    <div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" onclick="closeQuickView()">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" onclick="event.stopPropagation()">
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-4">
@@ -908,8 +900,21 @@ function handleSortChange(selectElement) {
     // Get current URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     
-    // Update the sort parameter
-    urlParams.set('sort', selectElement.value);
+    // Parse the sort value to extract field and direction
+    const sortValue = selectElement.value;
+    let sortField, sortDirection;
+    
+    if (sortValue.endsWith('_desc')) {
+        sortField = sortValue.replace('_desc', '');
+        sortDirection = 'desc';
+    } else {
+        sortField = sortValue;
+        sortDirection = 'asc';
+    }
+    
+    // Update the sort parameters
+    urlParams.set('sort', sortField);
+    urlParams.set('sort_direction', sortDirection);
     urlParams.set('page', '1'); // Reset to first page when sorting
     
     // Navigate to the new URL
@@ -966,7 +971,7 @@ function openFairPriceModal(componentId) {
     
     // Set component info
     nameElement.textContent = name;
-    skuElement.textContent = sku ? `SKU: ${sku}` : '';
+    skuElement.textContent = sku ? `Model#: ${sku}` : '';
     
     // Set fair price
     if (fairPrice && !isNaN(parseFloat(fairPrice))) {
@@ -1114,27 +1119,50 @@ function openQuickView(componentId) {
                 return;
             }
             
+            // Truncate description
+            const description = data.description || '';
+            const truncatedDesc = description.length > 500 ? description.substring(0, 500) + '...' : description;
+            
+            // Build key attributes display
+            const keyAttributesHtml = data.key_attributes && data.key_attributes.length > 0
+                ? `<div class="mb-4">
+                     <span class="text-sm font-medium text-gray-700">Key Attributes:</span>
+                     <div class="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                       ${data.key_attributes.map((attr, index) => 
+                           `<div class="flex justify-between items-center text-sm px-3 py-2 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100 last:border-b-0">
+                              <span class="font-medium text-gray-900">${attr.name}</span>
+                              <span class="text-gray-700 bg-gray-100 px-2 py-1 rounded text-xs font-medium">${attr.value}${attr.unit ? ' ' + attr.unit : ''}</span>
+                            </div>`
+                       ).join('')}
+                     </div>
+                   </div>`
+                : '';
+            
             // Populate modal with component data
             content.innerHTML = `
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="md:w-1/2">
-                        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                            ${data.image ? `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain p-4">` : 
+                        <div class="aspect-square bg-white rounded-lg overflow-hidden border">
+                            ${data.image ? 
+                                `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-cover">` :
                                 `<div class="w-full h-full flex items-center justify-center text-gray-400">
-                                    <div class="text-center">
-                                        <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        <p class="text-sm">No Image</p>
-                                    </div>
-                                </div>`}
+                                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>`
+                            }
                         </div>
                     </div>
                     <div class="md:w-1/2">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                ${data.brand || 'Unknown Brand'}
+                            </span>
+                            ${data.sku ? `<span class="text-xs text-gray-500">Model#: ${data.sku}</span>` : ''}
+                        </div>
                         <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
-                        ${data.brand ? `<p class="text-sm text-gray-600 mb-2">Brand: ${data.brand}</p>` : ''}
-                        ${data.sku ? `<p class="text-sm text-gray-600 mb-2">SKU: ${data.sku}</p>` : ''}
-                        ${data.description ? `<p class="text-gray-700 mb-4">${data.description}</p>` : ''}
+                        ${keyAttributesHtml}
+                        ${truncatedDesc ? `<p class="text-gray-700 mb-4">${truncatedDesc}</p>` : ''}
                         <div class="flex gap-2">
                             <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
                                 View Full Details
@@ -1163,7 +1191,7 @@ function closeQuickView() {
 
 function toggleCompare(checkbox) {
     const componentId = checkbox.dataset.componentId;
-    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
     const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
     const checkmark = checkboxContainer.querySelector('.checkmark');
     const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
@@ -1176,7 +1204,6 @@ function toggleCompare(checkbox) {
         }
         if (!compareList.includes(componentId)) {
             compareList.push(componentId);
-            showToast('Component added to comparison', 'success');
         }
         // Show checkbox as checked
         checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
@@ -1187,46 +1214,51 @@ function toggleCompare(checkbox) {
         const index = compareList.indexOf(componentId);
         if (index > -1) {
             compareList.splice(index, 1);
-            showToast('Component removed from comparison', 'info');
         }
         // Show checkbox as unchecked
         checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
         checkmark.classList.add('hidden');
-        checkboxContainer.classList.add('opacity-0');
-        checkboxContainer.classList.remove('opacity-100');
+        // Keep checkbox visible but with reduced opacity
+        checkboxContainer.classList.remove('opacity-0');
+        checkboxContainer.classList.add('opacity-100');
     }
     
-    localStorage.setItem('compareList', JSON.stringify(compareList));
+    localStorage.setItem('componentCompareList', JSON.stringify(compareList));
     updateCompareButton();
 }
 
 function clearComparison() {
-    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
     
-    // Uncheck all checkboxes
+    // Uncheck all checkboxes that exist in the current DOM
     compareList.forEach(componentId => {
         const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
         if (checkbox) {
             checkbox.checked = false;
             const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            if (checkboxContainer) {
             const checkmark = checkboxContainer.querySelector('.checkmark');
             const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
             
+                if (checkboxVisual) {
             checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+                }
+                if (checkmark) {
             checkmark.classList.add('hidden');
+                }
             checkboxContainer.classList.add('opacity-0');
             checkboxContainer.classList.remove('opacity-100');
+            }
         }
     });
     
     // Clear localStorage
-    localStorage.setItem('compareList', JSON.stringify([]));
+    localStorage.setItem('componentCompareList', JSON.stringify([]));
     updateCompareButton();
-    showToast('Comparison cleared', 'info');
 }
 
 function updateCompareButton() {
-    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
     const compareButton = document.getElementById('compare-button');
     const clearButton = document.getElementById('clear-compare-button');
     
@@ -1244,7 +1276,355 @@ function updateCompareButton() {
 }
 
 function openCompareModal() {
-    openComparisonModal();
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
+    if (compareList.length < 2) {
+        showToast('Please select at least 2 components to compare', 'warning');
+        return;
+    }
+    
+    // Show loading indicator
+    showLoading('Loading comparison...');
+    
+    // Make AJAX call to get comparison data
+    fetch(`/api/compare-components/?component_ids=${compareList.join(',')}`)
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.error) {
+                showToast(data.error, 'error');
+                return;
+            }
+            buildComparisonModal(data);
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error loading comparison:', error);
+            showToast('Error loading comparison data', 'error');
+        });
+}
+
+function buildComparisonModal(data) {
+    const modal = document.getElementById('comparison-modal');
+    const content = document.getElementById('comparison-content');
+    
+    // Clear previous content
+    content.innerHTML = '';
+    
+    // Update modal title
+    const modalTitle = modal.querySelector('h2');
+    if (modalTitle) {
+        modalTitle.textContent = `Compare Components (${data.components.length})`;
+    }
+    
+    // Create comparison table
+    const table = document.createElement('div');
+    table.className = 'overflow-x-auto';
+    
+    // Build table HTML
+    let tableHTML = `
+        <div class="comparison-table-desktop">
+            <table class="comparison-table min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Specification</th>
+                        ${data.components.map(comp => `
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-48">
+                                <div class="flex flex-col items-center space-y-2">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                        ${comp.image ? 
+                                            `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-cover">` : 
+                                            `<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>`
+                                        }
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-semibold text-gray-900 text-sm">${comp.name}</div>
+                                        <div class="text-xs text-gray-500">${comp.brand}</div>
+                                        ${comp.sku ? `<div class="text-xs text-gray-400">Model#: ${comp.sku}</div>` : ''}
+                                    </div>
+                                    <div class="flex space-x-1">
+                                        <a href="/components/${comp.id}/" class="text-blue-600 hover:text-blue-800 text-xs">View Details</a>
+                                        <button onclick="removeFromComparison('${comp.id}')" class="text-red-600 hover:text-red-800 text-xs">Remove</button>
+                                    </div>
+                                </div>
+                            </th>
+                        `).join('')}
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+    `;
+    
+    // Basic Information Section
+    tableHTML += `
+        <tr class="bg-blue-50">
+            <td colspan="${data.components.length + 1}" class="px-4 py-2 text-sm font-semibold text-blue-900">Basic Information</td>
+        </tr>
+    `;
+    
+    // Brand
+    tableHTML += buildComparisonRow('Brand', data.components.map(comp => comp.brand || 'N/A'), 'text');
+    
+    // SKU
+    tableHTML += buildComparisonRow('SKU', data.components.map(comp => comp.sku || 'N/A'), 'text');
+    
+    // Product Lines
+    tableHTML += buildComparisonRow('Product Line', data.components.map(comp => comp.product_lines.join(', ') || 'N/A'), 'text');
+    
+    // Voltage
+    tableHTML += buildComparisonRow('Voltage', data.components.map(comp => comp.voltage.join(', ') + 'V' || 'N/A'), 'text');
+    
+    // Platform
+    tableHTML += buildComparisonRow('Platform', data.components.map(comp => comp.platform.join(', ') || 'N/A'), 'text');
+    
+    // Categories
+    tableHTML += buildComparisonRow('Categories', data.components.map(comp => comp.categories.join(', ') || 'N/A'), 'text');
+    
+    // Key Specifications Section
+    if (data.common_attributes.filter(attr => attr.type === 'important').length > 0) {
+        tableHTML += `
+            <tr class="bg-green-50">
+                <td colspan="${data.components.length + 1}" class="px-4 py-2 text-sm font-semibold text-green-900">Key Specifications</td>
+            </tr>
+        `;
+        
+        data.common_attributes
+            .filter(attr => attr.type === 'important')
+            .forEach(attr => {
+                const values = data.components.map(comp => {
+                    const attrData = comp.important_attributes[attr.name];
+                    return attrData ? `${attrData.value}${attrData.unit ? ' ' + attrData.unit : ''}` : 'N/A';
+                });
+                tableHTML += buildComparisonRow(attr.name, values, 'spec');
+            });
+    }
+    
+    // Additional Specifications Section
+    if (data.common_attributes.filter(attr => attr.type === 'additional').length > 0) {
+        tableHTML += `
+            <tr class="bg-gray-50">
+                <td colspan="${data.components.length + 1}" class="px-4 py-2 text-sm font-semibold text-gray-900">Additional Specifications</td>
+            </tr>
+        `;
+        
+        data.common_attributes
+            .filter(attr => attr.type === 'additional')
+            .forEach(attr => {
+                const values = data.components.map(comp => {
+                    const attrData = comp.additional_attributes[attr.name];
+                    return attrData ? `${attrData.value}${attrData.unit ? ' ' + attrData.unit : ''}` : 'N/A';
+                });
+                tableHTML += buildComparisonRow(attr.name, values, 'spec');
+            });
+    }
+    
+    // Fair Price Section (if enabled)
+    if (data.show_fair_price && data.components.some(comp => comp.fair_price !== null)) {
+        tableHTML += `
+            <tr class="bg-gray-50">
+                <td colspan="${data.components.length + 1}" class="px-4 py-2 text-sm font-semibold text-gray-900">Fair Price Analysis</td>
+            </tr>
+        `;
+        
+        // Fair Price
+        tableHTML += buildComparisonRow('Fair Price', data.components.map(comp => {
+            if (comp.fair_price && comp.fair_price.price) {
+                return `$${Math.round(comp.fair_price.price)}`;
+            }
+            return '<span class="text-gray-400 italic">Value Guide Available</span>';
+        }), 'price');
+        
+        // Reasoning
+        tableHTML += buildComparisonRow('Reasoning', data.components.map(comp => {
+            if (comp.fair_price && comp.fair_price.reasoning) {
+                return comp.fair_price.reasoning;
+            }
+            return '<span class="text-gray-400 italic">Value Guide Available</span>';
+        }), 'text');
+    }
+    
+    tableHTML += `
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Mobile View -->
+        <div class="comparison-table-mobile">
+            ${data.components.map(comp => `
+                <div class="comparison-card">
+                    <div class="comparison-card-header">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                ${comp.image ? 
+                                    `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-cover">` : 
+                                    `<svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>`
+                                }
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900">${comp.name}</h3>
+                                <p class="text-sm text-gray-500">${comp.brand}</p>
+                                ${comp.sku ? `<p class="text-xs text-gray-400">Model#: ${comp.sku}</p>` : ''}
+                            </div>
+                            <div class="flex space-x-2">
+                                <a href="/components/${comp.id}/" class="text-blue-600 hover:text-blue-800 text-sm">View</a>
+                                <button onclick="removeFromComparison('${comp.id}')" class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="comparison-card-body">
+                        ${buildMobileComparisonContent(comp, data)}
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    table.innerHTML = tableHTML;
+    content.appendChild(table);
+    
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+function buildComparisonRow(label, values, type = 'text') {
+    // Check if all values are the same
+    const allSame = values.every(val => val === values[0]);
+    
+    return `
+        <tr class="hover:bg-gray-50">
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-200">${label}</td>
+            ${values.map((value, index) => {
+                const cellClass = allSame ? 'text-gray-900' : 'text-gray-900 highlight-difference';
+                const valueClass = type === 'price' ? 'price-value' : 
+                                 type === 'spec' ? 'spec-value' : 'text-sm';
+                return `
+                    <td class="px-4 py-3 ${cellClass}">
+                        <span class="${valueClass}">${value}</span>
+                    </td>
+                `;
+            }).join('')}
+        </tr>
+    `;
+}
+
+function buildMobileComparisonContent(component, data) {
+    let content = '';
+    
+    // Basic Information
+    content += '<div class="mb-4">';
+    content += '<h4 class="text-sm font-semibold text-gray-900 mb-2">Basic Information</h4>';
+    content += buildMobileSpecRow('Brand', component.brand || 'N/A');
+    content += buildMobileSpecRow('SKU', component.sku || 'N/A');
+    content += buildMobileSpecRow('Product Line', component.product_lines.join(', ') || 'N/A');
+    content += buildMobileSpecRow('Voltage', component.voltage.join(', ') + 'V' || 'N/A');
+    content += buildMobileSpecRow('Platform', component.platform.join(', ') || 'N/A');
+    content += buildMobileSpecRow('Categories', component.categories.join(', ') || 'N/A');
+    content += '</div>';
+    
+    // Key Specifications
+    const importantAttrs = data.common_attributes.filter(attr => attr.type === 'important');
+    if (importantAttrs.length > 0) {
+        content += '<div class="mb-4">';
+        content += '<h4 class="text-sm font-semibold text-gray-900 mb-2">Key Specifications</h4>';
+        importantAttrs.forEach(attr => {
+            const attrData = component.important_attributes[attr.name];
+            const value = attrData ? `${attrData.value}${attrData.unit ? ' ' + attrData.unit : ''}` : 'N/A';
+            content += buildMobileSpecRow(attr.name, value);
+        });
+        content += '</div>';
+    }
+    
+    // Additional Specifications
+    const additionalAttrs = data.common_attributes.filter(attr => attr.type === 'additional');
+    if (additionalAttrs.length > 0) {
+        content += '<div class="mb-4">';
+        content += '<h4 class="text-sm font-semibold text-gray-900 mb-2">Additional Specifications</h4>';
+        additionalAttrs.forEach(attr => {
+            const attrData = component.additional_attributes[attr.name];
+            const value = attrData ? `${attrData.value}${attrData.unit ? ' ' + attrData.unit : ''}` : 'N/A';
+            content += buildMobileSpecRow(attr.name, value);
+        });
+        content += '</div>';
+    }
+    
+    // Fair Price (if enabled and available)
+    if (data.show_fair_price && component.fair_price !== null) {
+        content += '<div class="mb-4">';
+        content += '<h4 class="text-sm font-semibold text-gray-900 mb-2">Fair Price Analysis</h4>';
+        
+        if (component.fair_price && component.fair_price.price) {
+            content += buildMobileSpecRow('Fair Price', `$${Math.round(component.fair_price.price)}`, 'price');
+        } else {
+            content += buildMobileSpecRow('Fair Price', '<span class="text-gray-400 italic">Value Guide Available</span>', 'price');
+        }
+        
+        if (component.fair_price && component.fair_price.reasoning) {
+            content += buildMobileSpecRow('Reasoning', component.fair_price.reasoning || 'N/A');
+        } else {
+            content += buildMobileSpecRow('Reasoning', '<span class="text-gray-400 italic">Value Guide Available</span>');
+        }
+        
+        content += '</div>';
+    }
+    
+    return content;
+}
+
+function buildMobileSpecRow(label, value, type = 'text') {
+    const valueClass = type === 'price' ? 'price-value' : 'text-sm';
+    return `
+        <div class="comparison-spec-row">
+            <span class="comparison-spec-label">${label}</span>
+            <span class="comparison-spec-value ${valueClass}">${value}</span>
+        </div>
+    `;
+}
+
+function removeFromComparison(componentId) {
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
+    const index = compareList.indexOf(componentId);
+    if (index > -1) {
+        compareList.splice(index, 1);
+        localStorage.setItem('componentCompareList', JSON.stringify(compareList));
+        
+        // Update UI
+        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
+        if (checkbox) {
+            checkbox.checked = false;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            if (checkboxContainer) {
+                const checkmark = checkboxContainer.querySelector('.checkmark');
+                const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+                
+                if (checkboxVisual) {
+                    checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+                }
+                if (checkmark) {
+                    checkmark.classList.add('hidden');
+                }
+                checkboxContainer.classList.add('opacity-0');
+                checkboxContainer.classList.remove('opacity-100');
+            }
+        }
+        
+        updateCompareButton();
+        
+        // If less than 2 components, close modal
+        if (compareList.length < 2) {
+            closeComparisonModal();
+            showToast('Need at least 2 components to compare', 'warning');
+        } else {
+            // Refresh comparison
+            openCompareModal();
+        }
+    }
+}
+
+function closeComparisonModal() {
+    const modal = document.getElementById('comparison-modal');
+    modal.classList.add('hidden');
 }
 
 // Initialize everything when DOM is loaded
@@ -1260,22 +1640,63 @@ document.addEventListener('DOMContentLoaded', function() {
     const savedViewType = localStorage.getItem('viewType') || 'grid';
     toggleView(savedViewType);
     
+    // Initialize compare button state from localStorage
+    updateCompareButton();
+    
     // Initialize compare state on page load
-    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
-    compareList.forEach(componentId => {
-        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
-        if (checkbox) {
-            checkbox.checked = true;
-            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+    const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
+    const validComponentIds = [];
+    
+    // Initialize all checkboxes to unchecked state first
+    document.querySelectorAll('.compare-checkbox').forEach(checkbox => {
+        const componentId = checkbox.dataset.componentId;
+        const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+        if (checkboxContainer) {
             const checkmark = checkboxContainer.querySelector('.checkmark');
             const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
             
-            checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
-            checkmark.classList.remove('hidden');
+            // Set to unchecked state
+            checkbox.checked = false;
+            if (checkboxVisual) {
+                checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+            }
+            if (checkmark) {
+                checkmark.classList.add('hidden');
+            }
             checkboxContainer.classList.remove('opacity-0');
             checkboxContainer.classList.add('opacity-100');
         }
     });
+    
+    // Then restore checked state for components in compare list
+    compareList.forEach(componentId => {
+        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
+        if (checkbox) {
+            // Component is visible in current view, restore its state
+            checkbox.checked = true;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            if (checkboxContainer) {
+                const checkmark = checkboxContainer.querySelector('.checkmark');
+                const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+                
+                if (checkboxVisual) {
+                    checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+                }
+                if (checkmark) {
+                    checkmark.classList.remove('hidden');
+                }
+                checkboxContainer.classList.remove('opacity-0');
+                checkboxContainer.classList.add('opacity-100');
+            }
+            validComponentIds.push(componentId);
+        }
+    });
+    
+    // Update localStorage to only include components that are currently visible
+    if (validComponentIds.length !== compareList.length) {
+        localStorage.setItem('componentCompareList', JSON.stringify(validComponentIds));
+    }
+    
     updateCompareButton();
     
     // Initialize global comparison button

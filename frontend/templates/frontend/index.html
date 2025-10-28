@@ -42,6 +42,18 @@
                         </button>
                     </div>
                     
+                    <!-- Sort Dropdown -->
+                    <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                        <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
+                        <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
+                        <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage (Low-High)</option>
+                        <option value="voltage_desc" {% if current_filters.sort == 'voltage_desc' %}selected{% endif %}>Voltage (High-Low)</option>
+                        <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date (Newest)</option>
+                        <option value="release_date_desc" {% if current_filters.sort == 'release_date_desc' %}selected{% endif %}>Release Date (Oldest)</option>
+                    </select>
+                    
                     <!-- Results per page -->
                     <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
                         <option value="12">12 per page</option>
@@ -89,6 +101,17 @@
                             </button>
                         </div>
                         <div class="flex flex-wrap gap-2" id="filter-chips">
+                            <!-- Search Chip -->
+                            {% if current_filters.search %}
+                                <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-full border border-gray-300 transition-all duration-300 hover:from-gray-200 hover:to-gray-300 hover:shadow-md transform hover:scale-105">
+                                    <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="font-medium">{{ current_filters.search }}</span>
+                                    <button type="button" onclick="clearSearch()" class="ml-2 text-gray-600 hover:text-gray-800 font-bold hover:bg-gray-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors" aria-label="Remove search filter">×</button>
+                                </span>
+                            {% endif %}
+                            
                             <!-- Brand Chips -->
                             {% for brand in brands %}
                                 {% if brand.id|stringformat:"s" in selected_brand_ids %}
@@ -195,9 +218,9 @@
                                 <div class="relative">
                                     <input type="text" name="search" id="searchInput" value="{{ current_filters.search }}" 
                                            class="w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                           placeholder="Search products...">
+                                           placeholder="Search products..." onblur="handleSearchSubmit()">
                                     {% if current_filters.search %}
-                                        <button type="button" id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                        <button type="button" id="clearSearch" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600" onclick="clearSearch()">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                             </svg>
@@ -212,7 +235,7 @@
                             <div class="space-y-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select name="category_level1" id="category_level1" class="w-full custom-select">
+                                    <select name="category_level1" id="category_level1" class="w-full custom-select" onchange="handleCategoryChange('level1', this.value)">
                                         <option value="">All Categories</option>
                                         {% for category in level1_categories %}
                                             <option value="{{ category.id }}" {% if current_filters.category_level1 == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
@@ -221,8 +244,7 @@
                                 </div>
 
                                 <div>
-                                    <!--<label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>-->
-                                    <select name="category_level2" id="category_level2" class="w-full custom-select">
+                                    <select name="category_level2" id="category_level2" class="w-full custom-select" onchange="handleCategoryChange('level2', this.value)">
                                         <option value="">All Subcategories</option>
                                         {% for category in level2_categories_with_parent %}
                                             <option value="{{ category.id }}" 
@@ -235,8 +257,7 @@
                                 </div>
 
                                 <div>
-                                    <!--<label class="block text-sm font-medium text-gray-700 mb-1">Product Type</label>-->
-                                    <select name="category_level3" id="category_level3" class="w-full custom-select">
+                                    <select name="category_level3" id="category_level3" class="w-full custom-select" onchange="handleCategoryChange('level3', this.value)">
                                         <option value="">All Product Types</option>
                                         {% for category in level3_categories_with_parent %}
                                             <option value="{{ category.id }}" 
@@ -251,7 +272,7 @@
                         </div>
 
                         <!-- Brand Filter -->
-                        <div class="filter-group mb-4">
+                        <div class="filter-group mb-4 overflow-hidden">
                             <button type="button" 
                                     class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-100"
                                     onclick="toggleFilterGroup('brand')">
@@ -276,7 +297,7 @@
                                 </svg>
                             </button>
                             
-                            <div id="brand-content" class="filter-group-content mt-3 hidden">
+                            <div id="brand-content" class="filter-group-content mt-3 hidden relative">
                                 <!-- Brand list with checkboxes -->
                                 <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2" id="brand-list">
                                     {% for brand in brands %}
@@ -284,7 +305,7 @@
                                             <input type="checkbox" name="brand" value="{{ brand.id }}" id="brand_{{ brand.id }}"
                                                    {% if brand.id|stringformat:"s" in selected_brand_ids %}checked{% endif %}
                                                    class="mr-3 text-blue-600 focus:ring-blue-500 rounded"
-                                                   onchange="setTimeout(() => this.form.submit(), 10)"
+                                                   onchange="handleFilterChange()"
                                                    aria-describedby="brand_{{ brand.id }}_desc">
                                             <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700" id="brand_{{ brand.id }}_desc">{{ brand.name }}</span>
                                         </label>
@@ -303,7 +324,7 @@
                         </div>
 
                         <!-- Voltage Filter -->
-                        <div class="filter-group mb-4">
+                        <div class="filter-group mb-4 overflow-hidden">
                             <button type="button" 
                                     class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-all duration-200 border border-green-100"
                                     onclick="toggleFilterGroup('voltage')">
@@ -328,23 +349,34 @@
                                 </svg>
                             </button>
                             
-                            <div id="voltage-content" class="filter-group-content mt-3">
-                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                            <div id="voltage-content" class="filter-group-content mt-3 hidden relative">
+                                <!-- Voltage list with checkboxes -->
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2" id="voltage-list">
                                     {% for voltage in voltages %}
-                                        <label class="flex items-center px-3 py-2 hover:bg-green-50 cursor-pointer rounded-lg transition-colors group">
-                                            <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
+                                        <label class="flex items-center px-3 py-2 hover:bg-green-50 cursor-pointer rounded-lg transition-colors group" for="voltage_{{ voltage.id }}">
+                                            <input type="checkbox" name="voltage" value="{{ voltage.id }}" id="voltage_{{ voltage.id }}"
                                                    {% if voltage.id|stringformat:"s" in selected_voltage_ids %}checked{% endif %}
                                                    class="mr-3 text-green-600 focus:ring-green-500 rounded"
-                                                   onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm font-medium text-gray-700 group-hover:text-green-700">{{ voltage.value }}V</span>
+                                                   onchange="handleFilterChange()"
+                                                   aria-describedby="voltage_{{ voltage.id }}_desc">
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-green-700" id="voltage_{{ voltage.id }}_desc">{{ voltage.value }}V</span>
                                         </label>
                                     {% endfor %}
                                 </div>
+                                
+                                <!-- Show more/less for long lists -->
+                                {% if voltages|length > 10 %}
+                                <button type="button" 
+                                        class="w-full mt-3 text-sm text-green-600 hover:text-green-800 font-medium py-2 px-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                                        onclick="toggleShowAll('voltage')">
+                                    <span id="voltage-show-text">Show All Voltages</span>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Platform Filter -->
-                        <div class="filter-group mb-4">
+                        <div class="filter-group mb-4 overflow-hidden">
                             <button type="button" 
                                     class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl hover:from-purple-100 hover:to-violet-100 transition-all duration-200 border border-purple-100"
                                     onclick="toggleFilterGroup('platform')">
@@ -369,23 +401,34 @@
                                 </svg>
                             </button>
                             
-                            <div id="platform-content" class="filter-group-content mt-3">
-                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                            <div id="platform-content" class="filter-group-content mt-3 hidden relative">
+                                <!-- Platform list with checkboxes -->
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2" id="platform-list">
                                     {% for platform in platforms %}
-                                        <label class="flex items-center px-3 py-2 hover:bg-purple-50 cursor-pointer rounded-lg transition-colors group">
-                                            <input type="checkbox" name="platform" value="{{ platform.id }}" 
+                                        <label class="flex items-center px-3 py-2 hover:bg-purple-50 cursor-pointer rounded-lg transition-colors group" for="platform_{{ platform.id }}">
+                                            <input type="checkbox" name="platform" value="{{ platform.id }}" id="platform_{{ platform.id }}"
                                                    {% if platform.id|stringformat:"s" in selected_platform_ids %}checked{% endif %}
                                                    class="mr-3 text-purple-600 focus:ring-purple-500 rounded"
-                                                   onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700">{{ platform.name }}</span>
+                                                   onchange="handleFilterChange()"
+                                                   aria-describedby="platform_{{ platform.id }}_desc">
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700" id="platform_{{ platform.id }}_desc">{{ platform.name }}</span>
                                         </label>
                                     {% endfor %}
                                 </div>
+                                
+                                <!-- Show more/less for long lists -->
+                                {% if platforms|length > 10 %}
+                                <button type="button" 
+                                        class="w-full mt-3 text-sm text-purple-600 hover:text-purple-800 font-medium py-2 px-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                                        onclick="toggleShowAll('platform')">
+                                    <span id="platform-show-text">Show All Platforms</span>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Status Filter -->
-                        <div class="filter-group mb-4">
+                        <div class="filter-group mb-4 overflow-hidden">
                             <button type="button" 
                                     class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:from-orange-100 hover:to-amber-100 transition-all duration-200 border border-orange-100"
                                     onclick="toggleFilterGroup('status')">
@@ -410,22 +453,31 @@
                                 </svg>
                             </button>
                             
-                            <div id="status-content" class="filter-group-content mt-3 hidden">
-                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
+                            <div id="status-content" class="filter-group-content mt-3 hidden relative">
+                                <!-- Status list with checkboxes -->
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2" id="status-list">
                                     {% for status in statuses %}
-                                        <label class="flex items-center px-3 py-2 hover:bg-orange-50 cursor-pointer rounded-lg transition-colors group">
-                                            <input type="checkbox" name="status" value="{{ status.id }}" 
+                                        <label class="flex items-center px-3 py-2 hover:bg-orange-50 cursor-pointer rounded-lg transition-colors group" for="status_{{ status.id }}">
+                                            <input type="checkbox" name="status" value="{{ status.id }}" id="status_{{ status.id }}"
                                                    {% if status.id|stringformat:"s" in selected_status_ids %}checked{% endif %}
                                                    class="mr-3 text-orange-600 focus:ring-orange-500 rounded"
-                                                   onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm font-medium text-gray-700 group-hover:text-orange-700">{{ status.name }}</span>
+                                                   onchange="handleFilterChange()"
+                                                   aria-describedby="status_{{ status.id }}_desc">
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-orange-700" id="status_{{ status.id }}_desc">{{ status.name }}</span>
                                         </label>
                                     {% endfor %}
                                 </div>
+                                
+                                <!-- Show more/less for long lists -->
+                                {% if statuses|length > 10 %}
+                                <button type="button" 
+                                        class="w-full mt-3 text-sm text-orange-600 hover:text-orange-800 font-medium py-2 px-3 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                        onclick="toggleShowAll('status')">
+                                    <span id="status-show-text">Show All Statuses</span>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
-
-
 
                         <!-- Hidden inputs to preserve page parameter -->
                         <input type="hidden" name="page" value="1">
@@ -444,33 +496,13 @@
                             No products found
                         {% endif %}
                     </h2>
-                    
-                    <!-- Sort Dropdown -->
-                    <div class="flex items-center space-x-2">
-                        <label for="sortSelect" class="text-sm font-medium text-gray-700">Sort by:</label>
-                        <select id="sortSelect" name="sort" class="custom-select" onchange="handleSortChange(this)">
-                            <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
-                            <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand</option>
-                            <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage</option>
-                            <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date</option>
-                        </select>
-                        <button type="button" id="sortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleSortDirection()" title="Toggle sort direction">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                {% if current_filters.sort_direction == 'desc' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                {% else %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                {% endif %}
-                            </svg>
-                        </button>
-                    </div>
                 </div>
 
                 {% if products %}
                     <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {% for product in products %}
                             <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover-lift animate-fade-in mobile-card mobile-touch-target gradient-border">
-                                <a href="{% url 'product_detail' product.id %}" class="relative">
+                                <div class="relative">
                                     <div class="aspect-square bg-white rounded-t-xl overflow-hidden relative">
                                         {% if product.image %}
                                             <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300">
@@ -493,7 +525,7 @@
                                         </div>
                                         
                                         <!-- Compare Checkbox -->
-                                        <div class="absolute top-2 right-2 transition-opacity duration-300" id="compare-checkbox-{{ product.id }}">
+                                        <div class="absolute top-2 right-2 transition-opacity duration-300 opacity-0 group-hover:opacity-100" id="compare-checkbox-{{ product.id }}">
                                             <label class="flex items-center justify-center w-6 h-6 bg-white rounded-full shadow-md cursor-pointer hover:bg-blue-50">
                                                 <input type="checkbox" class="compare-checkbox sr-only" data-product-id="{{ product.id }}" onchange="toggleCompare(this)">
                                                 <div class="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center checkbox-visual">
@@ -504,7 +536,7 @@
                                             </label>
                                         </div>
                                     </div>
-                                </a>
+                                </div>
                                 
                                 <div class="p-5 flex flex-col flex-grow">
                                     <div class="mb-3">
@@ -677,8 +709,8 @@
     </div>
 
     <!-- Quick View Modal -->
-    <div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" onclick="closeQuickView()">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" onclick="event.stopPropagation()">
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-4">
@@ -699,20 +731,15 @@
     </div>
 
     <script>
+    // Clean, simple JavaScript - no conflicting event handlers
+    
     // Function to calculate luminance and determine appropriate text color
     function calculateTextColor(hexColor) {
-        // Remove # if present
         hexColor = hexColor.replace('#', '');
-        
-        // Parse hex to RGB
         const r = parseInt(hexColor.substr(0, 2), 16);
         const g = parseInt(hexColor.substr(2, 2), 16);
         const b = parseInt(hexColor.substr(4, 2), 16);
-        
-        // Calculate relative luminance using WCAG formula
         const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        
-        // Return white for dark backgrounds, black for light backgrounds
         return luminance < 0.5 ? 'white' : 'black';
     }
     
@@ -729,98 +756,35 @@
         });
     }
     
+    // Function to restore filter group states from localStorage
+    function restoreFilterGroupStates() {
+        const filterGroups = ['brand', 'voltage', 'platform', 'status'];
+        
+        filterGroups.forEach(groupId => {
+            const content = document.getElementById(groupId + '-content');
+            const chevron = document.getElementById(groupId + '-chevron');
+            
+            if (content && chevron) {
+                const savedState = localStorage.getItem(`filterGroup_${groupId}`);
+                const hasSelectedItems = document.querySelectorAll(`input[name="${groupId}"]:checked`).length > 0;
+                
+                if (savedState === 'expanded' || hasSelectedItems) {
+                    content.classList.remove('hidden');
+                    chevron.style.transform = 'rotate(180deg)';
+                } else {
+                    content.classList.add('hidden');
+                    chevron.style.transform = 'rotate(0deg)';
+                }
+            }
+        });
+    }
+
+    // Clean, single DOMContentLoaded handler
     document.addEventListener('DOMContentLoaded', function() {
-        // Apply brand color styling
         applyBrandColorStyling();
-        
-        // Initialize collapsible sections
-        initializeCollapsibleSections();
-        
-        
-        // Initialize debounced search
-        initializeDebouncedSearch();
-        
-        const form = document.getElementById('filterForm');
-        const level1 = document.querySelector('[name="category_level1"]');
-        const level2 = document.querySelector('[name="category_level2"]');
-        const level3 = document.querySelector('[name="category_level3"]');
-        
-        // Auto-submit category dropdowns
-        level1.addEventListener('change', function() {
-            // Clear child selections when parent changes
-            level2.value = '';
-            level3.value = '';
-            // Add hidden inputs to preserve other filters
-            preserveOtherFilters();
-            form.submit();
-        });
-        
-        level2.addEventListener('change', function() {
-            // Clear child selection when parent changes
-            level3.value = '';
-            preserveOtherFilters();
-            form.submit();
-        });
-        
-        level3.addEventListener('change', function() {
-            preserveOtherFilters();
-            form.submit();
-        });
-        
-        // Function to preserve other filter values during category changes
-        function preserveOtherFilters() {
-            // Get all current filter values from URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const search = urlParams.get('search') || '';
-            const sort = urlParams.get('sort') || 'name';
-            
-            // Update form inputs (only single-value inputs)
-            document.querySelector('[name="search"]').value = search;
-            document.querySelector('[name="sort"]').value = sort;
-            
-            // Note: Multi-select filters (brand, voltage, platform, status) 
-            // are handled by the server-side template rendering and don't need JavaScript updates
-        }
-        
-        // Multi-select filter functionality
-        const filterTypes = ['brand', 'voltage', 'platform', 'status'];
-        
-        filterTypes.forEach(filterType => {
-            const checkboxes = document.querySelectorAll(`input[name="${filterType}"]`);
-            
-            // Handle checkbox changes
-            checkboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    const autoSubmit = document.getElementById('autoSubmitToggle').checked;
-                    if (autoSubmit) {
-                        form.submit();
-                    } else {
-                        // Show apply button when auto-submit is disabled
-                        document.getElementById('applyFiltersButton').classList.remove('hidden');
-                    }
-                });
-            });
-        });
-        
-        function updateChips(filterType) {
-            const chipsContainer = document.getElementById(`${filterType}-chips`);
-            const checkboxes = document.querySelectorAll(`input[name="${filterType}"]:checked`);
-            
-            // Clear existing chips
-            chipsContainer.innerHTML = '';
-            
-            // Add chips for checked items
-            checkboxes.forEach(checkbox => {
-                const label = checkbox.parentElement.querySelector('span').textContent;
-                const chip = document.createElement('span');
-                chip.className = 'inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full';
-                chip.innerHTML = `${label} <button type="button" onclick="removeFilter('${filterType}', '${checkbox.value}')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>`;
-                chipsContainer.appendChild(chip);
-            });
-        }
-        
-        // Initialize chips on page load - chips are already rendered from backend
-        // Server-rendered chips are already visible, no JavaScript needed
+        restoreFilterGroupStates();
+        initializeCompareState();
+        console.log('Filter UI initialized cleanly');
     });
     
     // Global function to remove filter chips
@@ -828,7 +792,6 @@
         const checkbox = document.querySelector(`input[name="${filterType}"][value="${value}"]`);
         if (checkbox) {
             checkbox.checked = false;
-            // Submit form to update the page with new filter state
             document.getElementById('filterForm').submit();
         }
     }
@@ -850,71 +813,43 @@
     
     // Global function to handle sort change
     function handleSortChange(selectElement) {
-        // Get current URL parameters
         const urlParams = new URLSearchParams(window.location.search);
+        const sortValue = selectElement.value;
+        let sortField, sortDirection;
         
-        // Update the sort parameter
-        urlParams.set('sort', selectElement.value);
-        urlParams.set('page', '1'); // Reset to first page when sorting
+        if (sortValue.endsWith('_desc')) {
+            sortField = sortValue.replace('_desc', '');
+            sortDirection = 'desc';
+        } else {
+            sortField = sortValue;
+            sortDirection = 'asc';
+        }
         
-        // Preserve sort_direction parameter
-        const currentDirection = urlParams.get('sort_direction') || 'asc';
-        urlParams.set('sort_direction', currentDirection);
+        urlParams.set('sort', sortField);
+        urlParams.set('sort_direction', sortDirection);
+        urlParams.set('page', '1');
         
-        // Navigate to the new URL
         window.location.href = '?' + urlParams.toString();
     }
-    
-    // Global function to toggle sort direction
-    function toggleSortDirection() {
-        // Get current URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Toggle the sort direction
-        const currentDirection = urlParams.get('sort_direction') || 'asc';
-        const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-        
-        // Update the sort direction parameter
-        urlParams.set('sort_direction', newDirection);
-        urlParams.set('page', '1'); // Reset to first page when changing direction
-        
-        // Navigate to the new URL
-        window.location.href = '?' + urlParams.toString();
-    }
-    
-    // updateChips function removed - chips are server-rendered
     
     // Enhanced Filter Management
     function toggleFilterGroup(groupId) {
         const content = document.getElementById(groupId + '-content');
         const chevron = document.getElementById(groupId + '-chevron');
-        const header = document.querySelector(`[onclick="toggleFilterGroup('${groupId}')"]`);
         
-        if (content && chevron && header) {
+        if (content && chevron) {
             const isExpanded = !content.classList.contains('hidden');
             
             if (isExpanded) {
                 content.classList.add('hidden');
                 chevron.style.transform = 'rotate(0deg)';
+                localStorage.setItem(`filterGroup_${groupId}`, 'collapsed');
             } else {
                 content.classList.remove('hidden');
                 chevron.style.transform = 'rotate(180deg)';
+                localStorage.setItem(`filterGroup_${groupId}`, 'expanded');
             }
         }
-    }
-    
-    function filterBrands(query) {
-        const brandList = document.getElementById('brand-list');
-        const labels = brandList.querySelectorAll('label');
-        
-        labels.forEach(label => {
-            const text = label.textContent.toLowerCase();
-            if (text.includes(query.toLowerCase())) {
-                label.style.display = 'flex';
-            } else {
-                label.style.display = 'none';
-            }
-        });
     }
     
     function toggleShowAll(groupId) {
@@ -931,7 +866,13 @@
             } else {
                 list.classList.remove('max-h-96');
                 list.classList.add('max-h-64');
-                showText.textContent = 'Show All Brands';
+                const filterTypeMap = {
+                    'brand': 'Show All Brands',
+                    'voltage': 'Show All Voltages', 
+                    'platform': 'Show All Platforms',
+                    'status': 'Show All Statuses'
+                };
+                showText.textContent = filterTypeMap[groupId] || 'Show All';
             }
         }
     }
@@ -945,23 +886,16 @@
     }
     
     function clearAllFilters() {
-        // Clear all checkboxes
         document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
             checkbox.checked = false;
         });
-        
-        // Clear all selects
         document.querySelectorAll('select').forEach(select => {
             select.selectedIndex = 0;
         });
-        
-        // Clear search
         const searchInput = document.querySelector('input[name="search"]');
         if (searchInput) {
             searchInput.value = '';
         }
-        
-        // Submit form
         document.getElementById('filterForm').submit();
     }
     
@@ -1003,7 +937,6 @@
             }
         }
         
-        // Save preference
         localStorage.setItem('viewType', viewType);
     }
     
@@ -1011,21 +944,46 @@
         const url = new URL(window.location);
         url.searchParams.set('page_size', value);
         url.searchParams.set('page', '1');
-        
-        // Show skeleton loading
-        LoadingStates.showSkeletonGrid('product-grid', 12);
-        showLoading('Loading products...');
-        
         window.location.href = url.toString();
+    }
+    
+    // Search functionality
+    function handleSearchSubmit() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.form.submit();
+        }
+    }
+    
+    function clearSearch() {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.form.submit();
+        }
+    }
+    
+    // Category filtering
+    function handleCategoryChange(level, value) {
+        if (level === 'level1') {
+            document.querySelector('[name="category_level2"]').value = '';
+            document.querySelector('[name="category_level3"]').value = '';
+        } else if (level === 'level2') {
+            document.querySelector('[name="category_level3"]').value = '';
+        }
+        document.getElementById('filterForm').submit();
+    }
+    
+    // Filter change handler
+    function handleFilterChange() {
+        document.getElementById('filterForm').submit();
     }
     
     // Quick View and Compare Functions
     function openQuickView(productId) {
-        // Show loading state
         const modal = document.getElementById('quickViewModal');
         const content = document.getElementById('quickViewContent');
         
-        // Show modal with loading state
         modal.classList.remove('hidden');
         content.innerHTML = `
             <div class="flex items-center justify-center p-8">
@@ -1034,7 +992,6 @@
             </div>
         `;
         
-        // Fetch product data
         fetch(`/api/quick-info/${productId}/?type=product`)
             .then(response => response.json())
             .then(data => {
@@ -1047,28 +1004,63 @@
                     return;
                 }
                 
-                // Populate modal with product data
+                const description = data.description || '';
+                const truncatedDesc = description.length > 500 ? description.substring(0, 500) + '...' : description;
+                
+                const batteryPlatformsHtml = data.battery_platforms && data.battery_platforms.length > 0 
+                    ? `<div class="mb-3">
+                         <span class="text-sm font-medium text-gray-700">Battery Platform(s):</span>
+                         <div class="flex flex-wrap gap-1 mt-1">
+                           ${data.battery_platforms.map(platform => 
+                               `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${platform}</span>`
+                           ).join('')}
+                         </div>
+                       </div>`
+                    : '';
+                
+                const componentsHtml = data.components && data.components.length > 0
+                    ? `<div class="mb-4">
+                         <span class="text-sm font-medium text-gray-700">Components:</span>
+                         <div class="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                           ${data.components.map((comp, index) => 
+                               `<div class="flex items-center text-sm px-3 py-2 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100 last:border-b-0">
+                                  <span class="text-gray-600 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium mr-3 min-w-0 flex-shrink-0">${comp.quantity}</span>
+                                  <div class="flex-1 min-w-0">
+                                    ${comp.sku ? `<div class="text-xs text-gray-500 mb-1">${comp.sku}</div>` : ''}
+                                    <div class="font-medium text-gray-900 truncate">${comp.name}</div>
+                                  </div>
+                                </div>`
+                           ).join('')}
+                         </div>
+                       </div>`
+                    : '';
+                
                 content.innerHTML = `
                     <div class="flex flex-col md:flex-row gap-6">
                         <div class="md:w-1/2">
-                            <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                                ${data.image ? `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain p-4">` : 
+                            <div class="aspect-square bg-white rounded-lg overflow-hidden border">
+                                ${data.image ? 
+                                    `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-cover">` :
                                     `<div class="w-full h-full flex items-center justify-center text-gray-400">
-                                        <div class="text-center">
-                                            <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                            </svg>
-                                            <p class="text-sm">No Image</p>
-                                        </div>
-                                    </div>`}
+                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>`
+                                }
                             </div>
                         </div>
                         <div class="md:w-1/2">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    ${data.brand || 'Unknown Brand'}
+                                </span>
+                                ${data.sku ? `<span class="text-xs text-gray-500">Model#: ${data.sku}</span>` : ''}
+                            </div>
                             <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
-                            ${data.brand ? `<p class="text-sm text-gray-600 mb-2">Brand: ${data.brand}</p>` : ''}
-                            ${data.sku ? `<p class="text-sm text-gray-600 mb-2">SKU: ${data.sku}</p>` : ''}
-                            ${data.status ? `<p class="text-sm text-gray-600 mb-4">Status: ${data.status}</p>` : ''}
-                            ${data.description ? `<p class="text-gray-700 mb-4">${data.description}</p>` : ''}
+                            ${data.status && data.status !== 'Active' ? `<div class="mb-2"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${data.status === 'Discontinued' ? 'bg-red-100 text-red-800' : data.status === 'Pre-release' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${data.status}</span></div>` : ''}
+                            ${batteryPlatformsHtml}
+                            ${componentsHtml}
+                            ${truncatedDesc ? `<p class="text-gray-700 mb-4">${truncatedDesc}</p>` : ''}
                             <div class="flex gap-2">
                                 <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
                                     View Full Details
@@ -1112,7 +1104,6 @@
                 compareList.push(productId);
                 showToast('Product added to comparison', 'success');
             }
-            // Show checkbox as checked
             checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
             checkmark.classList.remove('hidden');
             checkboxContainer.classList.remove('opacity-0');
@@ -1123,7 +1114,6 @@
                 compareList.splice(index, 1);
                 showToast('Product removed from comparison', 'info');
             }
-            // Show checkbox as unchecked
             checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
             checkmark.classList.add('hidden');
             checkboxContainer.classList.add('opacity-0');
@@ -1137,7 +1127,6 @@
     function clearComparison() {
         const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
         
-        // Uncheck all checkboxes
         compareList.forEach(productId => {
             const checkbox = document.querySelector(`input[data-product-id="${productId}"]`);
             if (checkbox) {
@@ -1153,7 +1142,6 @@
             }
         });
         
-        // Clear localStorage
         localStorage.setItem('compareList', JSON.stringify([]));
         updateCompareButton();
         showToast('Comparison cleared', 'info');
@@ -1183,14 +1171,12 @@
             return;
         }
         
-        // For now, redirect to a compare page
-        // In a full implementation, this would open a modal
         const compareUrl = `/compare/?products=${compareList.join(',')}`;
         window.location.href = compareUrl;
     }
     
-    // Initialize compare state on page load
-    document.addEventListener('DOMContentLoaded', function() {
+    // Initialize compare state
+    function initializeCompareState() {
         const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
         compareList.forEach(productId => {
             const checkbox = document.querySelector(`input[data-product-id="${productId}"]`);
@@ -1207,250 +1193,23 @@
             }
         });
         updateCompareButton();
-    });
-    
-    // Enhanced form submission with loading states
-    function submitFilterForm() {
-        showLoading('Applying filters...');
-        LoadingStates.showSkeletonGrid('product-grid', 12);
-        document.getElementById('filterForm').submit();
     }
     
-    // Override form submission to show loading
-    document.addEventListener('DOMContentLoaded', function() {
-        const filterForm = document.getElementById('filterForm');
-        if (filterForm) {
-            filterForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                submitFilterForm();
-            });
-        }
-    });
-    
-    // Debounced search functionality
-    function initializeDebouncedSearch() {
-        const searchInput = document.getElementById('searchInput');
-        const clearButton = document.getElementById('clearSearch');
-        let searchTimeout;
+    // Toast notification function
+    function showToast(message, type = 'info') {
+        // Simple toast implementation
+        const toast = document.createElement('div');
+        toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+            type === 'success' ? 'bg-green-500' : 
+            type === 'warning' ? 'bg-yellow-500' : 
+            type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+        }`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
         
-        // Debounced search with 300ms delay
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                const autoSubmit = document.getElementById('autoSubmitToggle').checked;
-                if (autoSubmit) {
-                    this.form.submit();
-                } else {
-                    // Show apply button when auto-submit is disabled
-                    document.getElementById('applyFiltersButton').classList.remove('hidden');
-                }
-            }, 300);
-        });
-        
-        // Clear search functionality
-        if (clearButton) {
-            clearButton.addEventListener('click', function() {
-                searchInput.value = '';
-                searchInput.focus();
-                const autoSubmit = document.getElementById('autoSubmitToggle').checked;
-                if (autoSubmit) {
-                    searchInput.form.submit();
-                } else {
-                    document.getElementById('applyFiltersButton').classList.remove('hidden');
-                }
-            });
-        }
-        
-        // Show/hide clear button based on input value
-        searchInput.addEventListener('input', function() {
-            const clearBtn = document.getElementById('clearSearch');
-            if (this.value.trim()) {
-                if (!clearBtn) {
-                    const button = document.createElement('button');
-                    button.type = 'button';
-                    button.id = 'clearSearch';
-                    button.className = 'absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600';
-                    button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
-                    button.addEventListener('click', function() {
-                        searchInput.value = '';
-                        searchInput.focus();
-                        const autoSubmit = document.getElementById('autoSubmitToggle').checked;
-                        if (autoSubmit) {
-                            searchInput.form.submit();
-                        } else {
-                            document.getElementById('applyFiltersButton').classList.remove('hidden');
-                        }
-                    });
-                    searchInput.parentElement.appendChild(button);
-                }
-            } else if (clearBtn) {
-                clearBtn.remove();
-            }
-        });
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
     }
-    
-    // Keyboard navigation functionality
-    function handleFilterKeydown(event, sectionId) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            toggleSection(sectionId);
-        }
-    }
-    
-    // Collapsible sections functionality
-    function initializeCollapsibleSections() {
-        // Initialize all sections as expanded by default
-        document.querySelectorAll('.filter-section').forEach(section => {
-            const header = section.querySelector('.filter-header');
-            const content = section.querySelector('.filter-content');
-            const chevron = section.querySelector('svg');
-            
-            if (header && content && chevron) {
-                const sectionId = header.getAttribute('onclick').match(/toggleSection\('([^']+)'\)/)[1];
-                
-                // Set sections based on their initial state
-                if (content.classList.contains('hidden')) {
-                    // Section is collapsed by default
-                    chevron.style.transform = 'rotate(-90deg)';
-                    header.setAttribute('aria-expanded', 'false');
-                } else {
-                    // Section is expanded by default
-                    content.classList.remove('hidden');
-                    chevron.style.transform = 'rotate(0deg)';
-                    header.setAttribute('aria-expanded', 'true');
-                }
-                
-                header.addEventListener('click', function() {
-                    toggleSection(sectionId);
-                });
-            }
-        });
-    }
-    
-    function toggleSection(sectionId) {
-        const content = document.getElementById(sectionId + '-content');
-        const chevron = document.getElementById(sectionId + '-chevron');
-        const button = document.querySelector(`[aria-controls="${sectionId}-content"]`);
-        
-        if (content && chevron && button) {
-            const isExpanded = !content.classList.contains('hidden');
-            
-            if (isExpanded) {
-                // Collapse the section
-                content.classList.add('hidden');
-                chevron.style.transform = 'rotate(-90deg)';
-                button.setAttribute('aria-expanded', 'false');
-            } else {
-                // Expand the section
-                content.classList.remove('hidden');
-                chevron.style.transform = 'rotate(0deg)';
-                button.setAttribute('aria-expanded', 'true');
-            }
-        }
-    }
-    
-    // Category hierarchy filtering
-    function initializeCategoryFiltering() {
-        const categoryLevel1 = document.getElementById('category_level1');
-        const categoryLevel2 = document.getElementById('category_level2');
-        const categoryLevel3 = document.getElementById('category_level3');
-        
-        if (categoryLevel1 && categoryLevel2 && categoryLevel3) {
-            // Filter level 2 options based on level 1 selection
-            categoryLevel1.addEventListener('change', function() {
-                const selectedLevel1 = this.value;
-                const level2Options = categoryLevel2.querySelectorAll('option[data-parent]');
-                
-                level2Options.forEach(option => {
-                    if (selectedLevel1 === '' || option.dataset.parent === selectedLevel1) {
-                        option.style.display = 'block';
-                    } else {
-                        option.style.display = 'none';
-                    }
-                });
-                
-                // Reset level 2 and 3 selections if parent changed
-                if (categoryLevel2.value && categoryLevel2.querySelector(`option[value="${categoryLevel2.value}"][data-parent="${selectedLevel1}"]`)) {
-                    // Keep current selection if it's still valid
-                } else {
-                    categoryLevel2.value = '';
-                    categoryLevel3.value = '';
-                }
-                
-                // Filter level 3 options
-                filterLevel3Options();
-                
-                // Auto-submit form when category changes
-                setTimeout(() => this.form.submit(), 10);
-            });
-            
-            // Filter level 3 options based on level 2 selection
-            categoryLevel2.addEventListener('change', function() {
-                filterLevel3Options();
-                
-                // Auto-submit form when subcategory changes
-                setTimeout(() => this.form.submit(), 10);
-            });
-            
-            // Auto-submit form when product type changes
-            categoryLevel3.addEventListener('change', function() {
-                setTimeout(() => this.form.submit(), 10);
-            });
-            
-            function filterLevel3Options() {
-                const selectedLevel2 = categoryLevel2.value;
-                const level3Options = categoryLevel3.querySelectorAll('option[data-parent]');
-                
-                level3Options.forEach(option => {
-                    if (selectedLevel2 === '' || option.dataset.parent === selectedLevel2) {
-                        option.style.display = 'block';
-                    } else {
-                        option.style.display = 'none';
-                    }
-                });
-                
-                // Reset level 3 selection if parent changed
-                if (categoryLevel3.value && categoryLevel3.querySelector(`option[value="${categoryLevel3.value}"][data-parent="${selectedLevel2}"]`)) {
-                    // Keep current selection if it's still valid
-                } else {
-                    categoryLevel3.value = '';
-                }
-            }
-            
-            // Initialize filtering on page load without triggering events
-            const selectedLevel1 = categoryLevel1.value;
-            const level2Options = categoryLevel2.querySelectorAll('option[data-parent]');
-            
-            level2Options.forEach(option => {
-                if (selectedLevel1 === '' || option.dataset.parent === selectedLevel1) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-            
-            // Filter level 3 options
-            const selectedLevel2 = categoryLevel2.value;
-            const level3Options = categoryLevel3.querySelectorAll('option[data-parent]');
-            
-            level3Options.forEach(option => {
-                if (selectedLevel2 === '' || option.dataset.parent === selectedLevel2) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-        }
-    }
-    
-    // Initialize everything when DOM is loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeDebouncedSearch();
-        initializeCollapsibleSections();
-        initializeCategoryFiltering();
-        
-        // Debug: Log that initialization is complete
-        console.log('Filter UI initialized');
-    });
     </script>
 {% endblock %}

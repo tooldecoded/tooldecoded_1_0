@@ -1,0 +1,389 @@
+{% extends 'frontend/base.html' %}
+
+{% block title %}Browse Flagship Tools - ToolDecoded{% endblock %}
+
+{% block content %}
+<div class="bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Browse Flagship Tools by Category</h1>
+            <p class="text-lg text-gray-600">Explore the latest flagship offerings from major brands, organized by category</p>
+        </div>
+
+        <!-- Quick Filters Bar -->
+        <div class="sticky top-16 z-40 bg-white border-b border-gray-200 mb-6 -mx-4 px-4 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <!-- Category Shortcuts -->
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-sm font-medium text-gray-700">Quick Filters:</span>
+                    {% if brands %}
+                    <button onclick="quickFilter('brand', '{{ brands.0.id }}')" class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors">
+                        {{ brands.0.name }}
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <!-- View Controls -->
+                <div class="flex items-center gap-4">
+                    <!-- Sort Dropdown -->
+                    <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                        <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                        <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
+                        <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
+                        <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage (Low-High)</option>
+                        <option value="voltage_desc" {% if current_filters.sort == 'voltage_desc' %}selected{% endif %}>Voltage (High-Low)</option>
+                        <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date (Newest)</option>
+                        <option value="release_date_desc" {% if current_filters.sort == 'release_date_desc' %}selected{% endif %}>Release Date (Oldest)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        {% if not has_products %}
+        <!-- No SKUs configured message -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">Configure Flagship Products</h3>
+            <p class="text-gray-600 mb-4">
+                To display flagship products, add SKUs to the FLAGSHIP_PRODUCT_SKUS list in views.py
+            </p>
+            <div class="bg-gray-100 rounded-lg p-4 text-left max-w-2xl mx-auto">
+                <p class="text-sm text-gray-700 mb-2">Example configuration:</p>
+                <pre class="text-xs text-gray-600 overflow-x-auto"><code>FLAGSHIP_PRODUCT_SKUS = [
+    '2804-20',  # Milwaukee M18 FUEL Hammer Drill
+    'DCD771C2',  # DEWALT 20V MAX Drill
+    # Add more SKUs here...
+]</code></pre>
+            </div>
+        </div>
+        {% else %}
+        
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Category Navigation Sidebar (Left 25%) -->
+            <div class="lg:w-1/4">
+                <div class="bg-gray-50 rounded-lg p-6 sticky top-24">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
+                    <nav class="space-y-2">
+                        <a href="{% url 'browse_flagship' %}" 
+                           class="block px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                                  {% if not current_category %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100{% endif %}">
+                            All Categories
+                            <span class="ml-2 text-xs text-gray-500">
+                                ({{ organized_products|length }})
+                            </span>
+                        </a>
+                        {% for category in level1_categories %}
+                        <a href="{% url 'browse_flagship' %}?category={{ category.id }}" 
+                           class="block px-3 py-2 text-sm font-medium rounded-lg transition-colors
+                                  {% if current_category == category.id|stringformat:"s" %}bg-blue-100 text-blue-700{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-100{% endif %}">
+                            {{ category.name }}
+                            <span class="ml-2 text-xs text-gray-500">
+                                ({{ organized_products|length }})
+                            </span>
+                        </a>
+                        {% endfor %}
+                    </nav>
+                    
+                    {% if brands %}
+                    <div class="mt-8">
+                        <h4 class="text-sm font-semibold text-gray-900 mb-3">Filter by Brand</h4>
+                        <nav class="space-y-1">
+                            <a href="{% url 'browse_flagship' %}{% if current_category %}?category={{ current_category }}{% endif %}" 
+                               class="block px-3 py-1 text-sm rounded transition-colors
+                                      {% if not current_brand %}text-blue-600 font-medium{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                                All Brands
+                            </a>
+                            {% for brand in brands %}
+                            <a href="{% url 'browse_flagship' %}?{% if current_category %}category={{ current_category }}&{% endif %}brand={{ brand.id }}" 
+                               class="block px-3 py-1 text-sm rounded transition-colors
+                                      {% if current_brand == brand.id|stringformat:"s" %}text-blue-600 font-medium{% else %}text-gray-600 hover:text-gray-900{% endif %}">
+                                {{ brand.name }}
+                            </a>
+                            {% endfor %}
+                        </nav>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Main Content (Right 75%) -->
+            <div class="lg:w-3/4">
+                {% if organized_products %}
+                    {% for category_name, category_data in organized_products.items %}
+                    <div class="mb-12">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">{{ category_name }}</h2>
+                        
+                        {% for brand_name, products in category_data.brands.items %}
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                                <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium mr-3">
+                                    {{ brand_name }}
+                                </span>
+                                <span class="text-sm text-gray-500">{{ products|length }} product{{ products|length|pluralize }}</span>
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {% for product in products %}
+                                <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="aspect-square bg-white rounded-t-lg overflow-hidden">
+                                        {% if product.image %}
+                                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                                        {% elif product.productimages_set.exists %}
+                                            <img src="{{ product.productimages_set.first.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                                        {% else %}
+                                            <div class="w-full h-full flex items-center justify-center text-gray-400">
+                                                <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="p-4">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                                {{ brand_name }}
+                                            </span>
+                                            {% if product.sku %}
+                                            <span class="text-xs text-gray-500">Model#: {{ product.sku }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <h4 class="font-semibold text-gray-900 mb-2 line-clamp-2">{{ product.name }}</h4>
+                                        <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ product.description|truncatewords:15 }}</p>
+                                        <button onclick="openQuickView('{{ product.id }}', event)" 
+                                                class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                                            Quick View
+                                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- No products found -->
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Products Found</h3>
+                        <p class="text-gray-600 mb-4">
+                            {% if current_category or current_brand %}
+                                No flagship products match your current filters.
+                            {% else %}
+                                No flagship products are currently configured.
+                            {% endif %}
+                        </p>
+                        {% if current_category or current_brand %}
+                        <a href="{% url 'browse_flagship' %}" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            Clear Filters
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Quick View Modal -->
+<div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50" onclick="closeQuickView()">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" onclick="event.stopPropagation()">
+        <div class="mt-3">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Quick View</h3>
+                <button onclick="closeQuickView()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div id="quickViewContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+
+<script>
+// Quick View Functions
+function openQuickView(productId, event) {
+    // Prevent any default behavior
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    // Show loading state
+    const modal = document.getElementById('quickViewModal');
+    const content = document.getElementById('quickViewContent');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    content.innerHTML = `
+        <div class="flex items-center justify-center p-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="ml-2 text-gray-600">Loading...</span>
+        </div>
+    `;
+    
+    // Fetch product data
+    fetch(`/api/quick-info/${productId}/?type=product`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                content.innerHTML = `
+                    <div class="text-center p-8">
+                        <p class="text-red-600">Error loading product details</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Truncate description
+            const description = data.description || '';
+            const truncatedDesc = description.length > 500 ? description.substring(0, 500) + '...' : description;
+            
+            // Build battery platforms display
+            const batteryPlatformsHtml = data.battery_platforms && data.battery_platforms.length > 0 
+                ? `<div class="mb-3">
+                     <span class="text-sm font-medium text-gray-700">Battery Platform(s):</span>
+                     <div class="flex flex-wrap gap-1 mt-1">
+                       ${data.battery_platforms.map(platform => 
+                           `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">${platform}</span>`
+                       ).join('')}
+                     </div>
+                   </div>`
+                : '';
+            
+            // Build components list
+            const componentsHtml = data.components && data.components.length > 0
+                ? `<div class="mb-4">
+                     <span class="text-sm font-medium text-gray-700">Components:</span>
+                     <div class="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                       ${data.components.map((comp, index) => 
+                           `<div class="flex items-center text-sm px-3 py-2 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100 last:border-b-0">
+                              <span class="text-gray-600 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium mr-3 min-w-0 flex-shrink-0">${comp.quantity}</span>
+                              <div class="flex-1 min-w-0">
+                                ${comp.sku ? `<div class="text-xs text-gray-500 mb-1">${comp.sku}</div>` : ''}
+                                <div class="font-medium text-gray-900 truncate">${comp.name}</div>
+                              </div>
+                            </div>`
+                       ).join('')}
+                     </div>
+                   </div>`
+                : '';
+            
+            // Populate modal with product data
+            content.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/2">
+                        <div class="aspect-square bg-white rounded-lg overflow-hidden border">
+                            ${data.image ? 
+                                `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-cover">` :
+                                `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>`
+                            }
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                ${data.brand || 'Unknown Brand'}
+                            </span>
+                                ${data.sku ? `<span class="text-xs text-gray-500">Model#: ${data.sku}</span>` : ''}
+                        </div>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
+                            ${data.status && data.status !== 'Active' ? `<div class="mb-2"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${data.status === 'Discontinued' ? 'bg-red-100 text-red-800' : data.status === 'Pre-release' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${data.status}</span></div>` : ''}
+                        ${batteryPlatformsHtml}
+                        ${componentsHtml}
+                        ${truncatedDesc ? `<p class="text-gray-700 mb-4">${truncatedDesc}</p>` : ''}
+                        <div class="flex gap-2">
+                            <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
+                                View Full Details
+                            </a>
+                            <button onclick="closeQuickView()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="text-center p-8">
+                    <p class="text-red-600">Error loading product details</p>
+                </div>
+            `;
+        });
+}
+
+function closeQuickView() {
+    const modal = document.getElementById('quickViewModal');
+    modal.classList.add('hidden');
+}
+
+// Sort functionality
+function handleSortChange(selectElement) {
+    // Get current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Parse the sort value to extract field and direction
+    const sortValue = selectElement.value;
+    let sortField, sortDirection;
+    
+    if (sortValue.endsWith('_desc')) {
+        sortField = sortValue.replace('_desc', '');
+        sortDirection = 'desc';
+    } else {
+        sortField = sortValue;
+        sortDirection = 'asc';
+    }
+    
+    // Update the sort parameters
+    urlParams.set('sort', sortField);
+    urlParams.set('sort_direction', sortDirection);
+    
+    // Navigate to the new URL
+    window.location.href = '?' + urlParams.toString();
+}
+
+// Quick filter functionality
+function quickFilter(type, value) {
+    const url = new URL(window.location);
+    url.searchParams.set(type, value);
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

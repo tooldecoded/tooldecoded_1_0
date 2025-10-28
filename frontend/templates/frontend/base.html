@@ -423,11 +423,14 @@
                     <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Home
                     </a>
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
+                        Browse
+                    </a>
                     <a href="{% url 'index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
-                        Products
+                        All Products
                     </a>
                     <a href="{% url 'components_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
-                        Components
+                        All Components
                     </a>
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Learn
@@ -456,11 +459,14 @@
                     <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors py-2">
                         Home
                     </a>
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors py-2">
+                        Browse
+                    </a>
                     <a href="{% url 'index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors py-2">
-                        Products
+                        All Products
                     </a>
                     <a href="{% url 'components_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' %}text-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors py-2">
-                        Components
+                        All Components
                     </a>
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors py-2">
                         Learn
@@ -499,14 +505,15 @@
                 <!-- Quick Links -->
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
-                    <ul class="space-y-2">
-                        <li><a href="{% url 'home' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Home</a></li>
-                        <li><a href="{% url 'index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Products</a></li>
-                        <li><a href="{% url 'components_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Components</a></li>
-                        <li><a href="{% url 'learning_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Learn</a></li>
-                        <li><a href="{% url 'about' %}" class="text-gray-300 hover:text-white transition-colors text-sm">About</a></li>
-                        <li><a href="{% url 'contact' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Contact</a></li>
-                    </ul>
+                    <div class="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
+                        <div><a href="{% url 'home' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Home</a></div>
+                        <div><a href="{% url 'browse_flagship' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Browse</a></div>
+                        <div><a href="{% url 'index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">All Products</a></div>
+                        <div><a href="{% url 'components_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">All Components</a></div>
+                        <div><a href="{% url 'learning_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Learn</a></div>
+                        <div><a href="{% url 'about' %}" class="text-gray-300 hover:text-white transition-colors text-sm">About</a></div>
+                        <div><a href="{% url 'contact' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Contact</a></div>
+                    </div>
                 </div>
                 
                 <!-- Contact Info -->
@@ -523,7 +530,7 @@
             </div>
             
             <!-- Bottom Bar -->
-            <div class="border-t border-gray-800 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
                 <p class="text-gray-400 text-sm">
                     © 2025 ToolDecoded. All rights reserved.
                 </p>
@@ -784,6 +791,99 @@
             height: 2.5rem;
             border-radius: 0.5rem;
             width: 100%;
+        }
+
+        /* Comparison table enhancements */
+        .comparison-table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #f9fafb;
+        }
+        
+        .comparison-table .highlight-difference {
+            background-color: #fef3c7 !important;
+            color: #92400e !important;
+        }
+        
+        .comparison-table .section-header {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .comparison-table .spec-value {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+        }
+        
+        .comparison-table .price-value {
+            font-weight: 600;
+            color: #059669;
+        }
+        
+        /* Mobile comparison table */
+        @media (max-width: 1024px) {
+            .comparison-table-mobile {
+                display: block;
+            }
+            
+            .comparison-table-desktop {
+                display: none;
+            }
+            
+            .comparison-card {
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                margin-bottom: 1rem;
+                overflow: hidden;
+            }
+            
+            .comparison-card-header {
+                background: #f9fafb;
+                padding: 1rem;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .comparison-card-body {
+                padding: 1rem;
+            }
+            
+            .comparison-spec-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 0.5rem 0;
+                border-bottom: 1px solid #f3f4f6;
+            }
+            
+            .comparison-spec-label {
+                font-weight: 500;
+                color: #374151;
+                flex: 1;
+            }
+            
+            .comparison-spec-value {
+                color: #6b7280;
+                text-align: right;
+                flex: 1;
+            }
+            
+            .comparison-spec-value.different {
+                background-color: #fef3c7;
+                color: #92400e;
+                padding: 0.25rem 0.5rem;
+                border-radius: 0.25rem;
+            }
+        }
+        
+        @media (min-width: 1025px) {
+            .comparison-table-mobile {
+                display: none;
+            }
+            
+            .comparison-table-desktop {
+                display: block;
+            }
         }
 
         /* Mobile-specific styles */
@@ -1190,7 +1290,7 @@
                                 html += `<div class="text-xs text-gray-500 group-hover:text-blue-600">${item.brand}</div>`;
                             }
                             if (item.sku) {
-                                html += `<div class="text-xs text-gray-400 group-hover:text-blue-500">SKU: ${item.sku}</div>`;
+                                html += `<div class="text-xs text-gray-400 group-hover:text-blue-500">Model#: ${item.sku}</div>`;
                             }
                             html += `</div>`;
                             html += `<span class="text-xs text-gray-400 group-hover:text-blue-500 ml-2 px-2 py-1 bg-gray-100 group-hover:bg-blue-100 rounded-full">${type}</span>`;

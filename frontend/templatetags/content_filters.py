@@ -35,3 +35,12 @@ def markdownify(text):
     clean_html = bleach.clean(html, tags=allowed_tags, attributes=allowed_attributes)
     
     return mark_safe(clean_html)
+
+@register.filter
+def split(value, delimiter):
+    """
+    Split a string by delimiter and return a list.
+    """
+    if not value:
+        return []
+    return value.split(delimiter)

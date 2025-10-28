@@ -19,7 +19,7 @@
                     <!-- Active Filters -->
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-medium text-gray-700">Active Filters</span>
-                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
+                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category or current_filters.subcategory or current_filters.itemtype or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
                             <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                                 Clear All
                             </a>
@@ -33,7 +33,7 @@
                     <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
                         <span>Compare</span>
                         <span id="compare-count" class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">(0)</span>
-                        <button onclick="clearComparison(); event.stopPropagation();" class="ml-1 text-white hover:text-red-200 transition-colors" title="Clear comparison">
+                        <button onclick="clearComparison(); event.stopPropagation()" class="ml-1 text-white hover:text-red-200 transition-colors" title="Clear comparison">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -104,7 +104,7 @@
                         </svg>
                         Filters
                     </h2>
-                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
+                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category or current_filters.subcategory or current_filters.itemtype or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
                             <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
                                 Clear All
                             </a>
@@ -112,7 +112,7 @@
                     </div>
                     
                     <!-- Active Filters -->
-                    {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
+                    {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category or current_filters.subcategory or current_filters.itemtype or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
                     <div class="mb-4">
                         <h3 class="text-sm font-medium text-gray-700 mb-2">Active Filters</h3>
                         <div class="flex flex-wrap gap-2" id="activeFilters">
@@ -197,41 +197,110 @@
                             </div>
                         </div>
 
-                        <!-- Category Filters -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <div class="space-y-2">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select name="category_level1" id="category_level1" class="w-full custom-select">
-                                        <option value="">All Categories</option>
-                                        {% for category in level1_categories %}
-                                            <option value="{{ category.id }}" {% if current_filters.category_level1 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ category.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                        <!-- Category Filter -->
+                        <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                            <button type="button" class="flex items-center justify-between w-full text-left" 
+                                    onclick="toggleSection('category')" 
+                                    aria-expanded="true" 
+                                    aria-controls="category-content"
+                                    aria-labelledby="category-header"
+                                    onkeydown="handleFilterKeydown(event, 'category')" tabindex="0">
+                                <span id="category-header" class="text-sm font-medium text-gray-700">
+                                    Category
+                                    {% if selected_category_ids|length > 0 %}
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ selected_category_ids|length }}/{{ categories|length }}
+                                        </span>
+                                    {% endif %}
+                                </span>
+                                <svg class="w-4 h-4 transform transition-transform" id="category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="category-content" class="mt-2" role="region" aria-labelledby="category-header">
+                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2" role="group" aria-label="Category filter options">
+                                    {% for category in categories %}
+                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer" for="category_{{ category.id }}">
+                                            <input type="checkbox" name="category[]" value="{{ category.id }}" 
+                                                       {% if category.id in selected_category_ids %}checked{% endif %}
+                                                   onchange="setTimeout(() => this.form.submit(), 10)"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                   id="category_{{ category.id }}">
+                                            <span class="ml-2 text-sm text-gray-700">{{ category.name }}</span>
+                                        </label>
+                                    {% endfor %}
                                 </div>
-                                <div>
-                                    <!--<label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>-->
-                                    <select name="category_level2" id="category_level2" class="w-full custom-select">
-                                        <option value="">All Subcategories</option>
-                                        {% for category in level2_categories_with_parent %}
-                                            <option value="{{ category.id }}" data-parent="{{ category.parent }}" {% if current_filters.category_level2 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ category.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                            </div>
+                        </div>
+
+                        <!-- Subcategory Filter -->
+                        <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                            <button type="button" class="flex items-center justify-between w-full text-left" 
+                                    onclick="toggleSection('subcategory')" 
+                                    aria-expanded="true" 
+                                    aria-controls="subcategory-content"
+                                    aria-labelledby="subcategory-header"
+                                    onkeydown="handleFilterKeydown(event, 'subcategory')" tabindex="0">
+                                <span id="subcategory-header" class="text-sm font-medium text-gray-700">
+                                    Subcategory
+                                    {% if selected_subcategory_ids|length > 0 %}
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ selected_subcategory_ids|length }}/{{ subcategories|length }}
+                                        </span>
+                                    {% endif %}
+                                </span>
+                                <svg class="w-4 h-4 transform transition-transform" id="subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="subcategory-content" class="mt-2" role="region" aria-labelledby="subcategory-header">
+                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2" role="group" aria-label="Subcategory filter options">
+                                    {% for subcategory in subcategories %}
+                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer" for="subcategory_{{ subcategory.id }}">
+                                            <input type="checkbox" name="subcategory[]" value="{{ subcategory.id }}" 
+                                                       {% if subcategory.id in selected_subcategory_ids %}checked{% endif %}
+                                                   onchange="setTimeout(() => this.form.submit(), 10)"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                   id="subcategory_{{ subcategory.id }}">
+                                            <span class="ml-2 text-sm text-gray-700">{{ subcategory.name }}</span>
+                                        </label>
+                                    {% endfor %}
                                 </div>
-                                <div>
-                                    <!--<label class="block text-sm font-medium text-gray-700 mb-1">Product Type</label>-->
-                                    <select name="category_level3" id="category_level3" class="w-full custom-select">
-                                        <option value="">All Product Types</option>
-                                        {% for category in level3_categories_with_parent %}
-                                            <option value="{{ category.id }}" data-parent="{{ category.parent }}" {% if current_filters.category_level3 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ category.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                            </div>
+                        </div>
+
+                        <!-- Item Type Filter -->
+                        <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                            <button type="button" class="flex items-center justify-between w-full text-left" 
+                                    onclick="toggleSection('itemtype')" 
+                                    aria-expanded="true" 
+                                    aria-controls="itemtype-content"
+                                    aria-labelledby="itemtype-header"
+                                    onkeydown="handleFilterKeydown(event, 'itemtype')" tabindex="0">
+                                <span id="itemtype-header" class="text-sm font-medium text-gray-700">
+                                    Item Type
+                                    {% if selected_itemtype_ids|length > 0 %}
+                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ selected_itemtype_ids|length }}/{{ itemtypes|length }}
+                                        </span>
+                                    {% endif %}
+                                </span>
+                                <svg class="w-4 h-4 transform transition-transform" id="itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="itemtype-content" class="mt-2" role="region" aria-labelledby="itemtype-header">
+                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2" role="group" aria-label="Item type filter options">
+                                    {% for itemtype in itemtypes %}
+                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer" for="itemtype_{{ itemtype.id }}">
+                                            <input type="checkbox" name="itemtype[]" value="{{ itemtype.id }}" 
+                                                       {% if itemtype.id in selected_itemtype_ids %}checked{% endif %}
+                                                   onchange="setTimeout(() => this.form.submit(), 10)"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                   id="itemtype_{{ itemtype.id }}">
+                                            <span class="ml-2 text-sm text-gray-700">{{ itemtype.name }}</span>
+                                        </label>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
@@ -456,7 +525,7 @@
                 {% if components %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {% for component in components %}
-                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover-lift animate-fade-in mobile-card mobile-touch-target gradient-border">
+                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover-lift mobile-card mobile-touch-target">
                                 <div class="relative">
                                     <div class="aspect-square bg-white rounded-t-xl overflow-hidden relative">
                                         {% if component.image %}
@@ -500,8 +569,8 @@
                                         {% if component.brand %}
                                             <div class="text-sm">
                                                 <span id="brand-{{ component.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold" 
-                                                      style="background-color: {{ component.brand.color|default:'#6b7280' }}; color: white;"
-                                                      data-brand-color="{{ component.brand.color|default:'#6b7280' }}">
+                                                      data-brand-color="{{ component.brand.color|default:'#6b7280' }}"
+                                                      style="background-color: #6b7280; color: white;">
                                                     {{ component.brand.name }}
                                                 </span>
                                             </div>
@@ -767,103 +836,10 @@ function applyBrandColorStyling() {
     });
 }
 
-// Category hierarchy filtering
-function initializeCategoryFiltering() {
-    const categoryLevel1 = document.getElementById('category_level1');
-    const categoryLevel2 = document.getElementById('category_level2');
-    const categoryLevel3 = document.getElementById('category_level3');
-    
-    if (categoryLevel1 && categoryLevel2 && categoryLevel3) {
-        // Filter level 2 options based on level 1 selection
-        categoryLevel1.addEventListener('change', function() {
-            const selectedLevel1 = this.value;
-            const level2Options = categoryLevel2.querySelectorAll('option[data-parent]');
-            
-            level2Options.forEach(option => {
-                if (selectedLevel1 === '' || option.dataset.parent === selectedLevel1) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-            
-            // Reset level 2 and 3 selections if parent changed
-            if (categoryLevel2.value && categoryLevel2.querySelector(`option[value="${categoryLevel2.value}"][data-parent="${selectedLevel1}"]`)) {
-                // Keep current selection if it's still valid
-            } else {
-                categoryLevel2.value = '';
-                categoryLevel3.value = '';
-            }
-            
-            // Filter level 3 options
-            filterLevel3Options();
-            
-            // Auto-submit form when category changes
-            setTimeout(() => this.form.submit(), 10);
-        });
-        
-        // Filter level 3 options based on level 2 selection
-        categoryLevel2.addEventListener('change', function() {
-            filterLevel3Options();
-            
-            // Auto-submit form when subcategory changes
-            setTimeout(() => this.form.submit(), 10);
-        });
-        
-        // Auto-submit form when product type changes
-        categoryLevel3.addEventListener('change', function() {
-            setTimeout(() => this.form.submit(), 10);
-        });
-        
-        function filterLevel3Options() {
-            const selectedLevel2 = categoryLevel2.value;
-            const level3Options = categoryLevel3.querySelectorAll('option[data-parent]');
-            
-            level3Options.forEach(option => {
-                if (selectedLevel2 === '' || option.dataset.parent === selectedLevel2) {
-                    option.style.display = 'block';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-            
-            // Reset level 3 selection if parent changed
-            if (categoryLevel3.value && categoryLevel3.querySelector(`option[value="${categoryLevel3.value}"][data-parent="${selectedLevel2}"]`)) {
-                // Keep current selection if it's still valid
-            } else {
-                categoryLevel3.value = '';
-            }
-        }
-        
-        // Initialize filtering on page load without triggering events
-        const selectedLevel1 = categoryLevel1.value;
-        const level2Options = categoryLevel2.querySelectorAll('option[data-parent]');
-        
-        level2Options.forEach(option => {
-            if (selectedLevel1 === '' || option.dataset.parent === selectedLevel1) {
-                option.style.display = 'block';
-            } else {
-                option.style.display = 'none';
-            }
-        });
-        
-        // Filter level 3 options
-        const selectedLevel2 = categoryLevel2.value;
-        const level3Options = categoryLevel3.querySelectorAll('option[data-parent]');
-        
-        level3Options.forEach(option => {
-            if (selectedLevel2 === '' || option.dataset.parent === selectedLevel2) {
-                option.style.display = 'block';
-            } else {
-                option.style.display = 'none';
-            }
-        });
-    }
-}
 
 // Collapsible sections
 function initializeCollapsibleSections() {
-    const sections = ['brand', 'voltage', 'platform', 'product_line', 'features', 'attributes'];
+    const sections = ['category', 'subcategory', 'itemtype', 'brand', 'voltage', 'platform', 'product_line', 'features', 'attributes'];
     
     sections.forEach(sectionId => {
         const header = document.getElementById(`${sectionId}-header`).parentElement;
@@ -1130,12 +1106,11 @@ function openQuickView(componentId) {
     
     // Show modal with loading state
     modal.classList.remove('hidden');
-    content.innerHTML = `
-        <div class="flex items-center justify-center p-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span class="ml-2 text-gray-600">Loading...</span>
-        </div>
-    `;
+        content.innerHTML = `
+            <div class="flex items-center justify-center p-8">
+                <span class="text-gray-600">Loading...</span>
+            </div>
+        `;
     
     // Fetch component data
     fetch(`/api/quick-info/${componentId}/?type=component`)
@@ -1175,7 +1150,7 @@ function openQuickView(componentId) {
                     <div class="md:w-1/2">
                         <div class="aspect-square bg-white rounded-lg overflow-hidden border">
                             ${data.image ? 
-                                `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-cover">` :
+                                `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain">` :
                                 `<div class="w-full h-full flex items-center justify-center text-gray-400">
                                     <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
@@ -1227,7 +1202,6 @@ function toggleCompare(checkbox) {
     const checkmark = checkboxContainer.querySelector('.checkmark');
     const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
     
-    console.log('toggleCompare called for component:', componentId, 'checked:', checkbox.checked);
     
     if (checkbox.checked) {
         if (compareList.length >= 6) {
@@ -1237,7 +1211,6 @@ function toggleCompare(checkbox) {
         }
         if (!compareList.includes(componentId)) {
             compareList.push(componentId);
-            console.log('Added component to compare list, new length:', compareList.length);
         }
         // Show checkbox as checked
         if (checkboxVisual) {
@@ -1252,7 +1225,6 @@ function toggleCompare(checkbox) {
         const index = compareList.indexOf(componentId);
         if (index > -1) {
             compareList.splice(index, 1);
-            console.log('Removed component from compare list, new length:', compareList.length);
         }
         // Show checkbox as unchecked
         if (checkboxVisual) {
@@ -1306,16 +1278,12 @@ function updateCompareButton() {
     const compareButton = document.getElementById('compare-button');
     const compareCount = document.getElementById('compare-count');
     
-    console.log('updateCompareButton called, compareList length:', compareList.length);
-    console.log('compareButton found:', !!compareButton);
-    console.log('compareCount found:', !!compareCount);
     
     if (compareButton) {
         if (compareList.length > 0) {
             compareButton.classList.remove('hidden');
             if (compareCount) {
                 compareCount.textContent = `(${compareList.length})`;
-                console.log('Updated count to:', compareCount.textContent);
             }
             // Enable/disable button based on minimum items
             compareButton.disabled = compareList.length < 2;
@@ -1323,7 +1291,6 @@ function updateCompareButton() {
             compareButton.classList.add('hidden');
         }
     } else {
-        console.error('Compare button not found!');
     }
 }
 
@@ -1334,14 +1301,11 @@ function openCompareModal() {
         return;
     }
     
-    // Show loading indicator
-    showLoading('Loading comparison...');
     
     // Make AJAX call to get comparison data
     fetch(`/api/compare-components/?component_ids=${compareList.join(',')}`)
         .then(response => response.json())
         .then(data => {
-            hideLoading();
             if (data.error) {
                 showToast(data.error, 'error');
                 return;
@@ -1349,7 +1313,6 @@ function openCompareModal() {
             buildComparisonModal(data);
         })
         .catch(error => {
-            hideLoading();
             console.error('Error loading comparison:', error);
             showToast('Error loading comparison data', 'error');
         });
@@ -1384,7 +1347,7 @@ function buildComparisonModal(data) {
                                 <div class="flex flex-col items-center space-y-2">
                                     <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                         ${comp.image ? 
-                                            `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-cover">` : 
+                                            `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-contain">` : 
                                             `<svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                             </svg>`
@@ -1508,7 +1471,7 @@ function buildComparisonModal(data) {
                         <div class="flex items-center space-x-3">
                             <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                 ${comp.image ? 
-                                    `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-cover">` : 
+                                    `<img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-contain">` : 
                                     `<svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>`
@@ -1684,13 +1647,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply brand color styling
     applyBrandColorStyling();
     
-    initializeCategoryFiltering();
     initializeCollapsibleSections();
     initializeDebouncedSearch();
     
     // Initialize view type from localStorage
     const savedViewType = localStorage.getItem('viewType') || 'grid';
     toggleView(savedViewType);
+    
+    // Initialize results per page dropdown with current URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentPageSize = urlParams.get('page_size') || '12';
+    const resultsPerPageSelect = document.getElementById('results-per-page');
+    if (resultsPerPageSelect) {
+        resultsPerPageSelect.value = currentPageSize;
+    }
     
     // Initialize compare button state from localStorage
     updateCompareButton();
@@ -1753,32 +1723,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Loading indicator functions
-function showLoading(message = 'Loading...') {
-    // Create or update loading indicator
-    let loadingDiv = document.getElementById('loading-indicator');
-    if (!loadingDiv) {
-        loadingDiv = document.createElement('div');
-        loadingDiv.id = 'loading-indicator';
-        loadingDiv.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
-        loadingDiv.innerHTML = `
-            <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span class="text-gray-700">${message}</span>
-            </div>
-        `;
-        document.body.appendChild(loadingDiv);
-    } else {
-        loadingDiv.querySelector('span').textContent = message;
-        loadingDiv.classList.remove('hidden');
-    }
-}
-
-function hideLoading() {
-    const loadingDiv = document.getElementById('loading-indicator');
-    if (loadingDiv) {
-        loadingDiv.classList.add('hidden');
-    }
-}
 
 // Toast notification function
 function showToast(message, type = 'info') {

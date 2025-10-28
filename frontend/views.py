@@ -6,30 +6,19 @@ from django.http import JsonResponse
 import uuid
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
-    ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
+    ItemCategories, Categories, Subcategories, ItemTypes, Statuses, ListingTypes, ComponentAttributes, Attributes,
     ProductLines, ProductComponents
 )
 from .models import LearningArticle, Tag, SiteSettings
-from .utils import get_category_hierarchy_filters, build_category_hierarchy_data
+from .utils import get_category_hierarchy_filters
 
 # ============================================================================
-# FLAGSHIP PRODUCTS CONFIGURATION
+# FLAGSHIP COMPONENTS CONFIGURATION
 # ============================================================================
-# Add SKUs of products to showcase in the Browse Flagship section
-# These should represent each brand's current flagship offering per category
-# 
-# To add products:
-# 1. Find the product SKU from your database
-# 2. Add it to the list below with a comment for reference
-# 3. Products will be automatically organized by category and brand
-#
-# Example:
-#   '2804-20',  # Milwaukee M18 FUEL Hammer Drill
-#
-FLAGSHIP_PRODUCT_SKUS = [
-    2904-20,
-     # User will populate this list
-]
+# Featured components are now managed through the is_featured field in the Components model
+# To add components to the Browse Flagship section:
+# 1. Set is_featured=True on the component in the admin or database
+# 2. Components will be automatically organized by category and brand
 
 def index(request):
     """Product catalog with comprehensive filtering and pagination"""
@@ -38,15 +27,21 @@ def index(request):
     brand = request.GET.get('brand', '')
     voltage = request.GET.get('voltage', '')
     platform = request.GET.get('platform', '')
-    category_level1 = request.GET.get('category_level1', '')
-    category_level2 = request.GET.get('category_level2', '')
-    category_level3 = request.GET.get('category_level3', '')
+    category = request.GET.get('category', '')
+    subcategory = request.GET.get('subcategory', '')
+    itemtype = request.GET.get('itemtype', '')
     status = request.GET.get('status', '')
     release_date_from = request.GET.get('release_date_from', '')
     release_date_to = request.GET.get('release_date_to', '')
     sort = request.GET.get('sort', 'name')
     sort_direction = request.GET.get('sort_direction', 'asc')
     page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 12))
+    
+    # Parse multi-select values for categories
+    category_ids = request.GET.getlist('category[]')
+    subcategory_ids = request.GET.getlist('subcategory[]')
+    itemtype_ids = request.GET.getlist('itemtype[]')
     
     
     # Parse multi-select values
@@ -101,8 +96,13 @@ def index(request):
     if platform_ids:
         products = products.filter(batteryplatforms__id__in=platform_ids)
     
-    # Category filtering with hierarchy support
-    products = get_category_hierarchy_filters(products, category_level1, category_level2, category_level3, 'products')
+    # Category filtering with array parameters
+    if category_ids:
+        products = products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        products = products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        products = products.filter(itemtypes__id__in=itemtype_ids)
     
     if status_ids:
         products = products.filter(status__id__in=status_ids)
@@ -133,12 +133,12 @@ def index(request):
     else:
         # Default: use category sortorder to deprioritize ProPEX, draw studs, etc.
         if sort_direction == 'desc':
-            products = products.order_by('-itemcategories__parent__parent__sortorder', '-itemcategories__parent__sortorder', '-itemcategories__sortorder', '-name').distinct()
+            products = products.order_by('-categories__sortorder', '-subcategories__sortorder', '-itemtypes__sortorder', '-name').distinct()
         else:
-            products = products.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
+            products = products.order_by('categories__sortorder', 'subcategories__sortorder', 'itemtypes__sortorder', 'name').distinct()
     
     # Paginate
-    paginator = Paginator(products, 24)
+    paginator = Paginator(products, page_size)
     try:
         page_obj = paginator.page(page)
     except:
@@ -175,7 +175,12 @@ def index(request):
         brand_base_products = brand_base_products.filter(releasedate__lte=release_date_to)
     
     # Apply category filters to brand base
-    brand_base_products = get_category_hierarchy_filters(brand_base_products, category_level1, category_level2, category_level3, 'products')
+    if category_ids:
+        brand_base_products = brand_base_products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        brand_base_products = brand_base_products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        brand_base_products = brand_base_products.filter(itemtypes__id__in=itemtype_ids)
     
     # For voltages: apply all filters except voltage
     voltage_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
@@ -205,7 +210,12 @@ def index(request):
         voltage_base_products = voltage_base_products.filter(releasedate__lte=release_date_to)
     
     # Apply category filters to voltage base
-    voltage_base_products = get_category_hierarchy_filters(voltage_base_products, category_level1, category_level2, category_level3, 'products')
+    if category_ids:
+        voltage_base_products = voltage_base_products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        voltage_base_products = voltage_base_products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        voltage_base_products = voltage_base_products.filter(itemtypes__id__in=itemtype_ids)
     
     # For platforms: apply all filters except platform
     platform_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
@@ -235,7 +245,12 @@ def index(request):
         platform_base_products = platform_base_products.filter(releasedate__lte=release_date_to)
     
     # Apply category filters to platform base
-    platform_base_products = get_category_hierarchy_filters(platform_base_products, category_level1, category_level2, category_level3, 'products')
+    if category_ids:
+        platform_base_products = platform_base_products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        platform_base_products = platform_base_products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        platform_base_products = platform_base_products.filter(itemtypes__id__in=itemtype_ids)
     
     # For statuses: apply all filters except status
     status_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
@@ -265,7 +280,12 @@ def index(request):
         status_base_products = status_base_products.filter(releasedate__lte=release_date_to)
     
     # Apply category filters to status base
-    status_base_products = get_category_hierarchy_filters(status_base_products, category_level1, category_level2, category_level3, 'products')
+    if category_ids:
+        status_base_products = status_base_products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        status_base_products = status_base_products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        status_base_products = status_base_products.filter(itemtypes__id__in=itemtype_ids)
     
     # Get filter options based on their respective base products
     brands = Brands.objects.filter(products__in=brand_base_products).distinct().order_by('name')
@@ -273,13 +293,118 @@ def index(request):
     platforms = BatteryPlatforms.objects.filter(products__in=platform_base_products).distinct().order_by('name')
     statuses = Statuses.objects.filter(products__in=status_base_products).distinct().order_by('name')
     
-    # Get categories using utility function - use brand_base_products as it has all non-category filters applied
-    category_data = build_category_hierarchy_data(brand_base_products, category_level1, category_level2, category_level3, 'products')
-    level1_categories = category_data['level1_categories']
-    level2_categories = category_data['level2_categories']
-    level3_categories = category_data['level3_categories']
-    level2_categories_with_parent = category_data['level2_categories_with_parent']
-    level3_categories_with_parent = category_data['level3_categories_with_parent']
+    # For categories: apply all filters except category
+    category_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    if search:
+        category_base_products = category_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        category_base_products = category_base_products.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        category_base_products = category_base_products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        category_base_products = category_base_products.filter(batteryplatforms__id__in=platform_ids)
+    
+    if status_ids:
+        category_base_products = category_base_products.filter(status__id__in=status_ids)
+    
+    if release_date_from:
+        category_base_products = category_base_products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        category_base_products = category_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply subcategory and itemtype filters to category base
+    if subcategory_ids:
+        category_base_products = category_base_products.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        category_base_products = category_base_products.filter(itemtypes__id__in=itemtype_ids)
+    
+    # For subcategories: apply all filters except subcategory
+    subcategory_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    if search:
+        subcategory_base_products = subcategory_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        subcategory_base_products = subcategory_base_products.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        subcategory_base_products = subcategory_base_products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        subcategory_base_products = subcategory_base_products.filter(batteryplatforms__id__in=platform_ids)
+    
+    if status_ids:
+        subcategory_base_products = subcategory_base_products.filter(status__id__in=status_ids)
+    
+    if release_date_from:
+        subcategory_base_products = subcategory_base_products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        subcategory_base_products = subcategory_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply category and itemtype filters to subcategory base
+    if category_ids:
+        subcategory_base_products = subcategory_base_products.filter(categories__id__in=category_ids)
+    if itemtype_ids:
+        subcategory_base_products = subcategory_base_products.filter(itemtypes__id__in=itemtype_ids)
+    
+    # For itemtypes: apply all filters except itemtype
+    itemtype_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    if search:
+        itemtype_base_products = itemtype_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        itemtype_base_products = itemtype_base_products.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        itemtype_base_products = itemtype_base_products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        itemtype_base_products = itemtype_base_products.filter(batteryplatforms__id__in=platform_ids)
+    
+    if status_ids:
+        itemtype_base_products = itemtype_base_products.filter(status__id__in=status_ids)
+    
+    if release_date_from:
+        itemtype_base_products = itemtype_base_products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        itemtype_base_products = itemtype_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply category and subcategory filters to itemtype base
+    if category_ids:
+        itemtype_base_products = itemtype_base_products.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        itemtype_base_products = itemtype_base_products.filter(subcategories__id__in=subcategory_ids)
+    
+    # Get filter options based on their respective base products
+    categories = Categories.objects.filter(products__in=category_base_products).distinct().order_by('sortorder', 'name')
+    subcategories = Subcategories.objects.filter(products__in=subcategory_base_products).distinct().order_by('sortorder', 'name')
+    itemtypes = ItemTypes.objects.filter(products__in=itemtype_base_products).distinct().order_by('sortorder', 'name')
     
     # Calculate filter counts
     filter_counts = {
@@ -307,20 +432,18 @@ def index(request):
         'voltages': voltages,
         'platforms': platforms,
         'statuses': statuses,
-        'level1_categories': level1_categories,
-        'level2_categories': level2_categories,
-        'level3_categories': level3_categories,
-        'level2_categories_with_parent': level2_categories_with_parent,
-        'level3_categories_with_parent': level3_categories_with_parent,
+        'categories': categories,
+        'subcategories': subcategories,
+        'itemtypes': itemtypes,
         'filter_counts': filter_counts,
         'current_filters': {
             'search': search,
             'brand': brand,
             'voltage': voltage,
             'platform': platform,
-            'category_level1': category_level1,
-            'category_level2': category_level2,
-            'category_level3': category_level3,
+            'category': category,
+            'subcategory': subcategory,
+            'itemtype': itemtype,
             'status': status,
             'release_date_from': release_date_from,
             'release_date_to': release_date_to,
@@ -331,6 +454,9 @@ def index(request):
         'selected_voltage_ids': voltage_ids,
         'selected_platform_ids': platform_ids,
         'selected_status_ids': status_ids,
+        'selected_category_ids': category_ids,
+        'selected_subcategory_ids': subcategory_ids,
+        'selected_itemtype_ids': itemtype_ids,
     }
     
     return render(request, 'frontend/index.html', context)
@@ -401,9 +527,9 @@ def product_detail(request, product_id):
     for product_component in product_components:
         component = product_component.component
         
-        # Determine component category based on item categories
+        # Determine component category based on new category structure
         component_category = 'other'  # default
-        for category in component.itemcategories.all():
+        for category in component.categories.all():
             category_name = category.name.lower()
             if category_name == 'batteries':
                 component_category = 'batteries'
@@ -427,18 +553,23 @@ def product_detail(request, product_id):
     # Get dynamic columns for each group based on item category attributes
     for group_name, group_data in component_groups.items():
         if group_data['components']:
-            # Get all unique item categories for this group
+            # Get all unique categories for this group
             group_categories = set()
             for component_data in group_data['components']:
                 component = component_data['product_component'].component
-                for category in component.itemcategories.all():
+                for category in component.categories.all():
                     group_categories.add(category)
             
             # Get all attributes for these categories
             group_attributes = set()
-            for category in group_categories:
-                for attribute in category.attributes.all():
-                    group_attributes.add(attribute)
+            for component_data in group_data['components']:
+                component = component_data['product_component'].component
+                # Get attributes from ItemTypes that belong to the component's categories
+                for itemtype in component.itemtypes.all():
+                    for category in group_categories:
+                        if category in itemtype.categories.all():
+                            for attribute in itemtype.attributes.all():
+                                group_attributes.add(attribute)
             
             # Convert to list and sort by name
             group_data['columns'] = sorted(list(group_attributes), key=lambda x: x.name)
@@ -465,14 +596,19 @@ def components_index(request):
     brand = request.GET.get('brand', '')
     voltage = request.GET.get('voltage', '')
     platform = request.GET.get('platform', '')
-    category_level1 = request.GET.get('category_level1', '')
-    category_level2 = request.GET.get('category_level2', '')
-    category_level3 = request.GET.get('category_level3', '')
+    category = request.GET.get('category', '')
+    subcategory = request.GET.get('subcategory', '')
+    itemtype = request.GET.get('itemtype', '')
     product_line = request.GET.get('product_line', '')
     listing_type = request.GET.get('listing_type', '')
     sort = request.GET.get('sort', 'name')
     sort_direction = request.GET.get('sort_direction', 'asc')
     page = int(request.GET.get('page', 1))
+    
+    # Parse multi-select values for categories
+    category_ids = request.GET.getlist('category[]')
+    subcategory_ids = request.GET.getlist('subcategory[]')
+    itemtype_ids = request.GET.getlist('itemtype[]')
     
     # Parse multi-select values
     brand_ids = request.GET.getlist('brand')
@@ -545,8 +681,13 @@ def components_index(request):
     if platform_ids:
         components = components.filter(batteryplatforms__id__in=platform_ids)
     
-    # Category filtering with hierarchy support
-    components = get_category_hierarchy_filters(components, category_level1, category_level2, category_level3, 'components')
+    # Category filtering with array parameters
+    if category_ids:
+        components = components.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        components = components.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        components = components.filter(itemtypes__id__in=itemtype_ids)
     
     if product_line_ids:
         components = components.filter(productlines__id__in=product_line_ids)
@@ -600,9 +741,9 @@ def components_index(request):
     else:
         # Default: use category sortorder to deprioritize ProPEX, draw studs, etc.
         if sort_direction == 'desc':
-            components = components.order_by('-itemcategories__parent__parent__sortorder', '-itemcategories__parent__sortorder', '-itemcategories__sortorder', '-name').distinct()
+            components = components.order_by('-categories__sortorder', '-subcategories__sortorder', '-itemtypes__sortorder', '-name').distinct()
         else:
-            components = components.order_by('itemcategories__parent__parent__sortorder', 'itemcategories__parent__sortorder', 'itemcategories__sortorder', 'name').distinct()
+            components = components.order_by('categories__sortorder', 'subcategories__sortorder', 'itemtypes__sortorder', 'name').distinct()
     
     # Paginate
     paginator = Paginator(components, 24)
@@ -665,13 +806,160 @@ def components_index(request):
         platforms = BatteryPlatforms.objects.all().order_by('name')
     product_lines = ProductLines.objects.filter(components__in=non_category_components).distinct().order_by('name')
     
-    # Get categories using utility function
-    category_data = build_category_hierarchy_data(non_category_components, category_level1, category_level2, category_level3, 'components')
-    level1_categories = category_data['level1_categories']
-    level2_categories = category_data['level2_categories']
-    level3_categories = category_data['level3_categories']
-    level2_categories_with_parent = category_data['level2_categories_with_parent']
-    level3_categories_with_parent = category_data['level3_categories_with_parent']
+    # For categories: apply all filters except category
+    category_base_components = Components.objects.select_related('brand', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories', 'productlines'
+    ).all()
+    
+    # Apply non-category filters
+    if search:
+        category_base_components = category_base_components.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        category_base_components = category_base_components.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        category_base_components = category_base_components.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        category_base_components = category_base_components.filter(batteryplatforms__id__in=platform_ids)
+    
+    if product_line_ids:
+        category_base_components = category_base_components.filter(productlines__id__in=product_line_ids)
+    
+    if listing_type_ids:
+        category_base_components = category_base_components.filter(listingtype__in=listing_type_ids)
+    
+    # Apply attribute filters to category base components
+    if attribute_filters:
+        for attr_id, attr_values in attribute_filters.items():
+            category_base_components = category_base_components.filter(
+                componentattributes__attribute_id=attr_id,
+                componentattributes__value__in=attr_values
+            ).distinct()
+    
+    # Apply feature filters to category base components
+    if feature_filters:
+        for feature_id, feature_values in feature_filters.items():
+            category_base_components = category_base_components.filter(
+                componentattributes__attribute_id=feature_id,
+                componentattributes__value__in=feature_values
+            ).distinct()
+    
+    # Apply subcategory and itemtype filters to category base
+    if subcategory_ids:
+        category_base_components = category_base_components.filter(subcategories__id__in=subcategory_ids)
+    if itemtype_ids:
+        category_base_components = category_base_components.filter(itemtypes__id__in=itemtype_ids)
+    
+    # For subcategories: apply all filters except subcategory
+    subcategory_base_components = Components.objects.select_related('brand', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories', 'productlines'
+    ).all()
+    
+    # Apply non-category filters
+    if search:
+        subcategory_base_components = subcategory_base_components.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        subcategory_base_components = subcategory_base_components.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        subcategory_base_components = subcategory_base_components.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        subcategory_base_components = subcategory_base_components.filter(batteryplatforms__id__in=platform_ids)
+    
+    if product_line_ids:
+        subcategory_base_components = subcategory_base_components.filter(productlines__id__in=product_line_ids)
+    
+    if listing_type_ids:
+        subcategory_base_components = subcategory_base_components.filter(listingtype__in=listing_type_ids)
+    
+    # Apply attribute filters to subcategory base components
+    if attribute_filters:
+        for attr_id, attr_values in attribute_filters.items():
+            subcategory_base_components = subcategory_base_components.filter(
+                componentattributes__attribute_id=attr_id,
+                componentattributes__value__in=attr_values
+            ).distinct()
+    
+    # Apply feature filters to subcategory base components
+    if feature_filters:
+        for feature_id, feature_values in feature_filters.items():
+            subcategory_base_components = subcategory_base_components.filter(
+                componentattributes__attribute_id=feature_id,
+                componentattributes__value__in=feature_values
+            ).distinct()
+    
+    # Apply category and itemtype filters to subcategory base
+    if category_ids:
+        subcategory_base_components = subcategory_base_components.filter(categories__id__in=category_ids)
+    if itemtype_ids:
+        subcategory_base_components = subcategory_base_components.filter(itemtypes__id__in=itemtype_ids)
+    
+    # For itemtypes: apply all filters except itemtype
+    itemtype_base_components = Components.objects.select_related('brand', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories', 'productlines'
+    ).all()
+    
+    # Apply non-category filters
+    if search:
+        itemtype_base_components = itemtype_base_components.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        itemtype_base_components = itemtype_base_components.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        itemtype_base_components = itemtype_base_components.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        itemtype_base_components = itemtype_base_components.filter(batteryplatforms__id__in=platform_ids)
+    
+    if product_line_ids:
+        itemtype_base_components = itemtype_base_components.filter(productlines__id__in=product_line_ids)
+    
+    if listing_type_ids:
+        itemtype_base_components = itemtype_base_components.filter(listingtype__in=listing_type_ids)
+    
+    # Apply attribute filters to itemtype base components
+    if attribute_filters:
+        for attr_id, attr_values in attribute_filters.items():
+            itemtype_base_components = itemtype_base_components.filter(
+                componentattributes__attribute_id=attr_id,
+                componentattributes__value__in=attr_values
+            ).distinct()
+    
+    # Apply feature filters to itemtype base components
+    if feature_filters:
+        for feature_id, feature_values in feature_filters.items():
+            itemtype_base_components = itemtype_base_components.filter(
+                componentattributes__attribute_id=feature_id,
+                componentattributes__value__in=feature_values
+            ).distinct()
+    
+    # Apply category and subcategory filters to itemtype base
+    if category_ids:
+        itemtype_base_components = itemtype_base_components.filter(categories__id__in=category_ids)
+    if subcategory_ids:
+        itemtype_base_components = itemtype_base_components.filter(subcategories__id__in=subcategory_ids)
+    
+    # Get filter options based on their respective base components
+    categories = Categories.objects.filter(components__in=category_base_components).distinct().order_by('sortorder', 'name')
+    subcategories = Subcategories.objects.filter(components__in=subcategory_base_components).distinct().order_by('sortorder', 'name')
+    itemtypes = ItemTypes.objects.filter(components__in=itemtype_base_components).distinct().order_by('sortorder', 'name')
     
     # Get attributes with their values for filtering - only from filtered components
     attributes_with_values = ComponentAttributes.objects.filter(
@@ -744,11 +1032,9 @@ def components_index(request):
         'voltages': voltages,
         'platforms': platforms,
         'product_lines': product_lines,
-        'level1_categories': level1_categories,
-        'level2_categories': level2_categories,
-        'level3_categories': level3_categories,
-        'level2_categories_with_parent': level2_categories_with_parent,
-        'level3_categories_with_parent': level3_categories_with_parent,
+        'categories': categories,
+        'subcategories': subcategories,
+        'itemtypes': itemtypes,
         'features': features,
         'attributes': regular_attributes,
         'filter_counts': filter_counts,
@@ -757,9 +1043,9 @@ def components_index(request):
             'brand': brand,
             'voltage': voltage,
             'platform': platform,
-            'category_level1': category_level1,
-            'category_level2': category_level2,
-            'category_level3': category_level3,
+            'category': category,
+            'subcategory': subcategory,
+            'itemtype': itemtype,
             'product_line': product_line,
             'listing_type': listing_type,
             'sort': sort,
@@ -769,6 +1055,9 @@ def components_index(request):
         'selected_voltage_ids': voltage_ids,
         'selected_platform_ids': platform_ids,
         'selected_product_line_ids': product_line_ids,
+        'selected_category_ids': category_ids,
+        'selected_subcategory_ids': subcategory_ids,
+        'selected_itemtype_ids': itemtype_ids,
         'selected_attribute_filters': attribute_filters,
         'selected_feature_filters': feature_filters,
         'show_fair_price': site_settings.show_fair_price_feature,
@@ -783,9 +1072,9 @@ def component_detail(request, component_id):
     # Get all component attributes
     component_attributes = ComponentAttributes.objects.filter(component=component).select_related('attribute')
     
-    # Get category-designated attributes from component's ItemCategories
+    # Get category-designated attributes from component's ItemTypes
     category_attributes = Attributes.objects.filter(
-        itemcategories__in=component.itemcategories.all()
+        itemtypes__in=component.itemtypes.all()
     ).distinct()
     
     # Separate important vs additional attributes
@@ -811,99 +1100,51 @@ def component_detail(request, component_id):
     return render(request, 'frontend/component_detail.html', context)
 
 def browse_flagship(request):
-    """Browse flagship products organized by category and brand"""
-    # Get filter parameters
-    category_filter = request.GET.get('category', '')
-    brand_filter = request.GET.get('brand', '')
-    sort = request.GET.get('sort', 'name')
-    sort_direction = request.GET.get('sort_direction', 'asc')
+    """Browse flagship components organized by item type - curated showcase view"""
+    # Query featured components ordered by showcase priority, then name
+    flagship_components = Components.objects.filter(
+        is_featured=True
+    ).select_related('brand').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemtypes', 'componentattributes_set__attribute'
+    ).order_by('-showcase_priority', 'name')
     
-    # Query flagship products by SKU list
-    if FLAGSHIP_PRODUCT_SKUS:
-        flagship_products = Products.objects.filter(
-            sku__in=FLAGSHIP_PRODUCT_SKUS
-        ).select_related('brand').prefetch_related('itemcategories', 'productimages_set')
-    else:
-        flagship_products = Products.objects.none()
-    
-    # Apply category filter if specified
-    if category_filter:
-        flagship_products = flagship_products.filter(itemcategories__id=category_filter)
-    
-    # Apply brand filter if specified
-    if brand_filter:
-        flagship_products = flagship_products.filter(brand__id=brand_filter)
-    
-    # Apply sorting
-    if sort == 'brand':
-        if sort_direction == 'desc':
-            flagship_products = flagship_products.order_by('-brand__name', 'name')
-        else:
-            flagship_products = flagship_products.order_by('brand__name', 'name')
-    elif sort == 'voltage':
-        if sort_direction == 'desc':
-            flagship_products = flagship_products.order_by('-batteryvoltages__value', 'name')
-        else:
-            flagship_products = flagship_products.order_by('batteryvoltages__value', 'name')
-    elif sort == 'release_date':
-        if sort_direction == 'desc':
-            flagship_products = flagship_products.order_by('-releasedate', 'name')
-        else:
-            flagship_products = flagship_products.order_by('releasedate', 'name')
-    else:
-        # Default: sort by name
-        if sort_direction == 'desc':
-            flagship_products = flagship_products.order_by('-name')
-        else:
-            flagship_products = flagship_products.order_by('name')
-    
-    # Organize products by Level 1 category
+    # Organize components by primary item type
     organized_products = {}
-    for product in flagship_products:
-        # Get the primary Level 1 category for this product
-        level1_category = None
-        for category in product.itemcategories.all():
-            if category.level == 1:
-                level1_category = category
-                break
-            elif category.level == 2 and category.parent and category.parent.level == 1:
-                level1_category = category.parent
-                break
-            elif category.level == 3 and category.parent and category.parent.parent and category.parent.parent.level == 1:
-                level1_category = category.parent.parent
-                break
+    itemtype_metadata = []  # For sidebar navigation
+    
+    for component in flagship_components:
+        # Get the primary item type for this component
+        primary_itemtype = component.itemtypes.first()
         
-        if level1_category:
-            category_name = level1_category.name
-            if category_name not in organized_products:
-                organized_products[category_name] = {
-                    'category': level1_category,
-                    'brands': {}
+        if primary_itemtype:
+            itemtype_name = primary_itemtype.name
+            itemtype_slug = itemtype_name.lower().replace(' ', '-').replace('&', 'and')
+            
+            if itemtype_name not in organized_products:
+                organized_products[itemtype_name] = {
+                    'itemtype': primary_itemtype,
+                    'itemtype_slug': itemtype_slug,
+                    'components': []
                 }
             
-            brand_name = product.brand.name if product.brand else 'Unknown Brand'
-            if brand_name not in organized_products[category_name]['brands']:
-                organized_products[category_name]['brands'][brand_name] = []
-            
-            organized_products[category_name]['brands'][brand_name].append(product)
+            organized_products[itemtype_name]['components'].append(component)
     
-    # Get all Level 1 categories for navigation
-    level1_categories = ItemCategories.objects.filter(level=1).order_by('sortorder', 'name')
+    # Create item type metadata for sidebar navigation
+    for itemtype_name, itemtype_data in organized_products.items():
+        itemtype_metadata.append({
+            'name': itemtype_name,
+            'slug': itemtype_data['itemtype_slug'],
+            'count': len(itemtype_data['components']),
+            'sortorder': itemtype_data['itemtype'].sortorder or 0
+        })
     
-    # Get all brands for navigation
-    brands = Brands.objects.filter(products__in=flagship_products).distinct().order_by('name')
+    # Sort item types by sortorder, then by name
+    itemtype_metadata.sort(key=lambda x: (x['sortorder'], x['name']))
     
     context = {
         'organized_products': organized_products,
-        'level1_categories': level1_categories,
-        'brands': brands,
-        'current_category': category_filter,
-        'current_brand': brand_filter,
-        'has_products': len(FLAGSHIP_PRODUCT_SKUS) > 0,
-        'current_filters': {
-            'sort': sort,
-            'sort_direction': sort_direction,
-        },
+        'itemtype_metadata': itemtype_metadata,
+        'has_products': flagship_components.exists(),
     }
     
     return render(request, 'frontend/browse.html', context)
@@ -914,14 +1155,12 @@ def home(request):
     total_products = Products.objects.count()
     total_components = Components.objects.count()
     total_brands = Brands.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
-    total_categories = ItemCategories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
+    total_categories = Categories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     
-    # Get flagship products preview (first 4 from FLAGSHIP_PRODUCT_SKUS)
-    flagship_preview = []
-    if FLAGSHIP_PRODUCT_SKUS:
-        flagship_preview = Products.objects.filter(
-            sku__in=FLAGSHIP_PRODUCT_SKUS[:4]
-        ).select_related('brand').prefetch_related('itemcategories', 'productimages_set')
+    # Get flagship components preview (first 4 featured components)
+    flagship_preview = Components.objects.filter(
+        is_featured=True
+    ).select_related('brand').prefetch_related('itemcategories')[:4]
     
     # Get recent products (latest 3 by release date)
     recent_products = Products.objects.select_related('brand').prefetch_related('productimages_set').order_by('-releasedate')[:3]
@@ -937,7 +1176,7 @@ def home(request):
         'flagship_preview': flagship_preview,
         'recent_products': recent_products,
         'recent_components': recent_components,
-        'has_flagship_products': len(FLAGSHIP_PRODUCT_SKUS) > 0,
+        'has_flagship_products': Components.objects.filter(is_featured=True).exists(),
     }
     
     return render(request, 'frontend/home.html', context)
@@ -1077,9 +1316,9 @@ def api_filter_options(request):
     brand_ids = request.GET.getlist('brand')
     voltage_ids = request.GET.getlist('voltage')
     platform_ids = request.GET.getlist('platform')
-    category_level1 = request.GET.get('category_level1', '')
-    category_level2 = request.GET.get('category_level2', '')
-    category_level3 = request.GET.get('category_level3', '')
+    category = request.GET.get('category', '')
+    subcategory = request.GET.get('subcategory', '')
+    itemtype = request.GET.get('itemtype', '')
     
     # Convert string IDs to UUIDs for database filtering
     def convert_to_uuids(id_list):
@@ -1122,36 +1361,30 @@ def api_filter_options(request):
     platforms = BatteryPlatforms.objects.filter(products__in=products).distinct().order_by('name')
     
     # Get categories based on current selection
-    if category_level1:
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
-            parent=category_level1,
+    if category:
+        subcategories = Subcategories.objects.filter(
+            categories__id=category,
             products__in=products
         ).distinct().order_by('sortorder', 'name')
         
-        if category_level2:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent=category_level2,
+        if subcategory:
+            itemtypes = ItemTypes.objects.filter(
+                subcategories__id=subcategory,
                 products__in=products
             ).distinct().order_by('sortorder', 'name')
         else:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent__parent=category_level1,
+            itemtypes = ItemTypes.objects.filter(
+                categories__id=category,
                 products__in=products
             ).distinct().order_by('sortorder', 'name')
     else:
-        level1_categories = ItemCategories.objects.filter(
-            level=1, 
+        categories = Categories.objects.filter(
             products__in=products
         ).distinct().order_by('sortorder', 'name')
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
+        subcategories = Subcategories.objects.filter(
             products__in=products
         ).distinct().order_by('sortorder', 'name')
-        level3_categories = ItemCategories.objects.filter(
-            level=3, 
+        itemtypes = ItemTypes.objects.filter(
             products__in=products
         ).distinct().order_by('sortorder', 'name')
     
@@ -1159,9 +1392,9 @@ def api_filter_options(request):
         'brands': [{'id': b.id, 'name': b.name} for b in brands],
         'voltages': [{'id': v.id, 'value': v.value} for v in voltages],
         'platforms': [{'id': p.id, 'name': p.name} for p in platforms],
-        'level1_categories': [{'id': c.id, 'name': c.name} for c in level1_categories] if 'level1_categories' in locals() else [],
-        'level2_categories': [{'id': c.id, 'name': c.name, 'parent': c.parent} for c in level2_categories],
-        'level3_categories': [{'id': c.id, 'name': c.name, 'parent': c.parent} for c in level3_categories],
+        'categories': [{'id': c.id, 'name': c.name} for c in categories] if 'categories' in locals() else [],
+        'subcategories': [{'id': c.id, 'name': c.name} for c in subcategories],
+        'itemtypes': [{'id': c.id, 'name': c.name} for c in itemtypes],
     })
 
 def api_quick_info(request, item_id):
@@ -1205,12 +1438,12 @@ def api_quick_info(request, item_id):
     elif item_type == 'component':
         try:
             component = Components.objects.select_related('brand').prefetch_related(
-                'itemcategories__attributes', 'componentattributes_set__attribute'
+                'itemtypes__attributes', 'componentattributes_set__attribute'
             ).get(id=item_id)
             
             # Get category-designated attributes (key attributes)
             category_attributes = Attributes.objects.filter(
-                itemcategories__in=component.itemcategories.all()
+                itemtypes__in=component.itemtypes.all()
             ).distinct()
             
             # Get component attributes that are designated by categories
@@ -1257,7 +1490,7 @@ def api_compare_components(request):
         components = Components.objects.filter(
             id__in=component_id_list
         ).select_related('brand', 'listingtype').prefetch_related(
-            'batteryvoltages', 'batteryplatforms', 'itemcategories', 'productlines',
+            'batteryvoltages', 'batteryplatforms', 'categories', 'subcategories', 'itemtypes', 'productlines',
             'componentattributes_set__attribute'
         ).order_by('name')
         
@@ -1278,7 +1511,7 @@ def api_compare_components(request):
         for component in components:
             # Get category-designated attributes (important attributes)
             category_attributes = Attributes.objects.filter(
-                itemcategories__in=component.itemcategories.all()
+                itemtypes__in=component.itemtypes.all()
             ).distinct()
             
             # Get component attributes
@@ -1299,7 +1532,7 @@ def api_compare_components(request):
                 'voltage': [str(v.value) for v in component.batteryvoltages.all()],
                 'platform': [p.name for p in component.batteryplatforms.all()],
                 'product_lines': [pl.name for pl in component.productlines.all()],
-                'categories': [c.name for c in component.itemcategories.all()],
+                'categories': [c.name for c in component.categories.all()],
                 'important_attributes': {},
                 'additional_attributes': {},
                 'fair_price': None

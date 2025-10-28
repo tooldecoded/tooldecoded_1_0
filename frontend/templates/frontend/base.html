@@ -21,35 +21,6 @@
                             'brand-purple': '#7c3aed',
                             'brand-orange': '#ea580c',
                         },
-                        animation: {
-                            'fade-in': 'fadeIn 0.5s ease-in-out',
-                            'slide-up': 'slideUp 0.3s ease-out',
-                            'slide-down': 'slideDown 0.3s ease-out',
-                            'bounce-gentle': 'bounceGentle 0.6s ease-in-out',
-                            'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
-                        },
-                        keyframes: {
-                            fadeIn: {
-                                '0%': { opacity: '0' },
-                                '100%': { opacity: '1' },
-                            },
-                            slideUp: {
-                                '0%': { transform: 'translateY(10px)', opacity: '0' },
-                                '100%': { transform: 'translateY(0)', opacity: '1' },
-                            },
-                            slideDown: {
-                                '0%': { transform: 'translateY(-10px)', opacity: '0' },
-                                '100%': { transform: 'translateY(0)', opacity: '1' },
-                            },
-                            bounceGentle: {
-                                '0%, 100%': { transform: 'translateY(0)' },
-                                '50%': { transform: 'translateY(-5px)' },
-                            },
-                            pulseSoft: {
-                                '0%, 100%': { opacity: '1' },
-                                '50%': { opacity: '0.8' },
-                            },
-                        },
                         backdropBlur: {
                             xs: '2px',
                         }
@@ -300,6 +271,7 @@
             }
         }
         
+        
         /* Custom Dropdown Styles - Clean & Modern */
         .custom-select {
             appearance: none;
@@ -382,21 +354,21 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <!-- Logo/Brand - HTML/CSS Version v3 -->
-                <div class="flex items-center">
+                <div class="flex items-center flex-shrink-0 min-w-0">
                     <a href="{% url 'home' %}" class="flex items-center group">
                         <!-- Desktop Logo -->
                         <div class="hidden md:block">
-                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-12 w-auto">
+                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-12 w-auto min-w-[200px]">
                         </div>
                         <!-- Mobile Logo -->
                         <div class="md:hidden">
-                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-8 w-auto">
+                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-8 w-auto min-w-[150px]">
                         </div>
                     </a>
                 </div>
                 
-                <!-- Enhanced Global Search Bar -->
-                <div class="hidden md:flex flex-1 max-w-lg mx-8">
+                <!-- Enhanced Global Search Bar - Desktop Full Width -->
+                <div class="hidden xl:flex flex-1 max-w-lg mx-8">
                     <div class="relative w-full">
                         <div class="relative">
                             <input type="text" 
@@ -418,8 +390,17 @@
                     </div>
                 </div>
 
+                <!-- Search Icon Button - Shows when space is limited -->
+                <div class="hidden md:flex xl:hidden">
+                    <button id="search-icon-button" onclick="toggleSearchModal()" class="p-2 text-gray-600 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+
                 <!-- Main Navigation -->
-                <nav class="hidden md:flex space-x-8">
+                <nav class="hidden md:flex space-x-4 xl:space-x-8">
                     <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Home
                     </a>
@@ -427,10 +408,10 @@
                         Browse
                     </a>
                     <a href="{% url 'index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
-                        All Products
+                        Products
                     </a>
                     <a href="{% url 'components_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
-                        All Components
+                        Components
                     </a>
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Learn
@@ -707,17 +688,63 @@
             modal.classList.add('hidden');
         }
 
+        // Search Modal Functions
+        function toggleSearchModal() {
+            const modal = document.getElementById('search-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                // Focus the search input when modal opens
+                setTimeout(() => {
+                    const searchInput = document.getElementById('modal-search');
+                    if (searchInput) {
+                        searchInput.focus();
+                    }
+                }, 100);
+            }
+        }
+
+        function closeSearchModal() {
+            const modal = document.getElementById('search-modal');
+            modal.classList.add('hidden');
+        }
+
         // Initialize comparison button on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateComparisonButton();
         });
     </script>
 
-    <!-- Subtle Loading Indicator -->
-    <div id="loading-indicator" class="fixed top-4 right-4 z-50 hidden">
-        <div class="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2">
-            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-sm">Updating...</span>
+    
+    <!-- Search Modal -->
+    <div id="search-modal" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-black bg-opacity-50" onclick="closeSearchModal()"></div>
+        <div class="relative max-w-4xl mx-auto p-4 h-full flex items-start pt-20">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-h-[80vh] overflow-hidden">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-900">Search</h2>
+                    <button onclick="closeSearchModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <div class="relative">
+                        <input type="text" 
+                               id="modal-search" 
+                               class="w-full px-4 py-3 pl-12 pr-4 text-lg border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+                               placeholder="Search products, components, brands...">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div id="modal-search-suggestions" class="mt-4 max-h-96 overflow-y-auto">
+                        <!-- Search suggestions will be populated here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -746,53 +773,7 @@
     <!-- Toast Notifications -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
     
-    <!-- Skeleton Loader Styles -->
     <style>
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-        }
-        
-        @keyframes loading {
-            0% {
-                background-position: 200% 0;
-            }
-            100% {
-                background-position: -200% 0;
-            }
-        }
-        
-        .skeleton-text {
-            height: 1rem;
-            border-radius: 0.25rem;
-            margin-bottom: 0.5rem;
-        }
-        
-        .skeleton-text.short {
-            width: 60%;
-        }
-        
-        .skeleton-text.medium {
-            width: 80%;
-        }
-        
-        .skeleton-text.long {
-            width: 100%;
-        }
-        
-        .skeleton-image {
-            width: 100%;
-            height: 200px;
-            border-radius: 0.5rem;
-        }
-        
-        .skeleton-button {
-            height: 2.5rem;
-            border-radius: 0.5rem;
-            width: 100%;
-        }
-
         /* Comparison table enhancements */
         .comparison-table th {
             position: sticky;
@@ -982,70 +963,6 @@
             height: 300px;
         }
 
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .slide-in-left {
-            animation: slideInLeft 0.3s ease-out;
-        }
-
-        @keyframes slideInLeft {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .slide-in-right {
-            animation: slideInRight 0.3s ease-out;
-        }
-
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .scale-in {
-            animation: scaleIn 0.2s ease-out;
-        }
-
-        @keyframes scaleIn {
-            from { transform: scale(0.9); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        .bounce-in {
-            animation: bounceIn 0.6s ease-out;
-        }
-
-        @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .floating {
-            animation: floating 3s ease-in-out infinite;
-        }
-
-        @keyframes floating {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
 
         .gradient-text {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -1054,28 +971,6 @@
             background-clip: text;
         }
 
-        .gradient-border {
-            position: relative;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 2px;
-            border-radius: 8px;
-        }
-
-        .gradient-border::before {
-            content: '';
-            position: absolute;
-            inset: 2px;
-            background: white;
-            border-radius: 6px;
-            z-index: -1;
-        }
-        
-        .gradient-border {
-            position: relative;
-            background: linear-gradient(white, white) padding-box,
-                        linear-gradient(45deg, #3b82f6, #8b5cf6, #06b6d4) border-box;
-            border: 2px solid transparent;
-        }
         
         .hover-lift {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1093,33 +988,7 @@
             background-clip: text;
         }
         
-        .shimmer {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 2s infinite;
-        }
         
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-            100% {
-                background-position: 200% 0;
-            }
-        }
-        
-        .floating {
-            animation: floating 3s ease-in-out infinite;
-        }
-        
-        @keyframes floating {
-            0%, 100% {
-                transform: translateY(0px);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
-        }
         
         .ripple {
             position: relative;
@@ -1173,12 +1042,16 @@
         class SmartSearch {
             constructor() {
                 this.searchInput = document.getElementById('global-search');
+                this.modalSearchInput = document.getElementById('modal-search');
                 this.suggestionsContainer = document.getElementById('search-suggestions');
+                this.modalSuggestionsContainer = document.getElementById('modal-search-suggestions');
                 this.debounceTimer = null;
+                this.modalDebounceTimer = null;
                 this.init();
             }
             
             init() {
+                // Main search input
                 if (this.searchInput) {
                     this.searchInput.addEventListener('input', (e) => {
                         this.debounceSearch(e.target.value);
@@ -1193,27 +1066,49 @@
                     this.searchInput.addEventListener('keydown', (e) => {
                         this.handleKeydown(e);
                     });
-                    
-                    document.addEventListener('click', (e) => {
-                        if (!this.searchInput.contains(e.target) && !this.suggestionsContainer.contains(e.target)) {
-                            this.hideSuggestions();
-                        }
+                }
+
+                // Modal search input
+                if (this.modalSearchInput) {
+                    this.modalSearchInput.addEventListener('input', (e) => {
+                        this.debounceModalSearch(e.target.value);
                     });
                     
-                    // Add keyboard shortcut support (Cmd/Ctrl + K)
-                    document.addEventListener('keydown', (e) => {
-                        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-                            e.preventDefault();
-                            this.searchInput.focus();
-                        }
+                    this.modalSearchInput.addEventListener('keydown', (e) => {
+                        this.handleModalKeydown(e);
                     });
                 }
+                
+                document.addEventListener('click', (e) => {
+                    if (this.searchInput && !this.searchInput.contains(e.target) && !this.suggestionsContainer.contains(e.target)) {
+                        this.hideSuggestions();
+                    }
+                });
+                
+                // Add keyboard shortcut support (Cmd/Ctrl + K)
+                document.addEventListener('keydown', (e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                        e.preventDefault();
+                        if (this.searchInput) {
+                            this.searchInput.focus();
+                        } else {
+                            toggleSearchModal();
+                        }
+                    }
+                });
             }
             
             debounceSearch(query) {
                 clearTimeout(this.debounceTimer);
                 this.debounceTimer = setTimeout(() => {
                     this.performSearch(query);
+                }, 300);
+            }
+
+            debounceModalSearch(query) {
+                clearTimeout(this.modalDebounceTimer);
+                this.modalDebounceTimer = setTimeout(() => {
+                    this.performModalSearch(query);
                 }, 300);
             }
             
@@ -1230,6 +1125,22 @@
                 } catch (error) {
                     console.error('Search error:', error);
                     this.hideSuggestions();
+                }
+            }
+
+            async performModalSearch(query) {
+                if (query.length < 2) {
+                    this.hideModalSuggestions();
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`/api/search-suggestions/?q=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    this.displayModalSuggestions(data.suggestions);
+                } catch (error) {
+                    console.error('Search error:', error);
+                    this.hideModalSuggestions();
                 }
             }
             
@@ -1359,6 +1270,112 @@
             hideSuggestions() {
                 this.suggestionsContainer.classList.add('hidden');
             }
+
+            displayModalSuggestions(suggestions) {
+                if (suggestions.length === 0) {
+                    this.hideModalSuggestions();
+                    return;
+                }
+                
+                // Group suggestions by type
+                const grouped = {
+                    'Product': [],
+                    'Component': [],
+                    'Brand': []
+                };
+                
+                suggestions.forEach(item => {
+                    if (grouped[item.type]) {
+                        grouped[item.type].push(item);
+                    }
+                });
+                
+                let html = '';
+                
+                // Add suggestions by type
+                Object.keys(grouped).forEach(type => {
+                    if (grouped[type].length > 0) {
+                        html += '<div class="p-3">';
+                        html += `<div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center">`;
+                        if (type === 'Product') {
+                            html += '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>';
+                        } else if (type === 'Component') {
+                            html += '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>';
+                        } else {
+                            html += '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>';
+                        }
+                        html += `${type}s</div>`;
+                        grouped[type].forEach(item => {
+                            html += `<div class="px-3 py-2.5 hover:bg-blue-50 cursor-pointer rounded-lg flex items-center group transition-colors" onclick="smartSearch.selectModalSuggestion('${item.text}', '${item.url}')">`;
+                            html += `<div class="flex-1">`;
+                            html += `<div class="text-sm font-medium text-gray-900 group-hover:text-blue-700">${item.text}</div>`;
+                            if (item.brand) {
+                                html += `<div class="text-xs text-gray-500 group-hover:text-blue-600">${item.brand}</div>`;
+                            }
+                            if (item.sku) {
+                                html += `<div class="text-xs text-gray-400 group-hover:text-blue-500">Model#: ${item.sku}</div>`;
+                            }
+                            html += `</div>`;
+                            html += `<span class="text-xs text-gray-400 group-hover:text-blue-500 ml-2 px-2 py-1 bg-gray-100 group-hover:bg-blue-100 rounded-full">${type}</span>`;
+                            html += `</div>`;
+                        });
+                        html += '</div>';
+                    }
+                });
+                
+                this.modalSuggestionsContainer.innerHTML = html;
+                this.showModalSuggestions();
+            }
+
+            selectModalSuggestion(text, url = null) {
+                if (url) {
+                    this.addToRecentSearches(text);
+                    window.location.href = url;
+                } else {
+                    // Search for this text
+                    this.modalSearchInput.value = text;
+                    this.addToRecentSearches(text);
+                    this.performModalSearch(text);
+                }
+            }
+
+            showModalSuggestions() {
+                this.modalSuggestionsContainer.classList.remove('hidden');
+            }
+
+            hideModalSuggestions() {
+                this.modalSuggestionsContainer.classList.add('hidden');
+            }
+
+            handleModalKeydown(e) {
+                const suggestions = this.modalSuggestionsContainer.querySelectorAll('[onclick]');
+                const current = this.modalSuggestionsContainer.querySelector('.bg-blue-50');
+                let index = -1;
+                
+                if (current) {
+                    index = Array.from(suggestions).indexOf(current);
+                }
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    index = Math.min(index + 1, suggestions.length - 1);
+                    this.highlightSuggestion(suggestions, index);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    index = Math.max(index - 1, -1);
+                    this.highlightSuggestion(suggestions, index);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (current) {
+                        current.click();
+                    } else if (this.modalSearchInput.value.trim()) {
+                        // Perform search
+                        this.performModalSearch(this.modalSearchInput.value);
+                    }
+                } else if (e.key === 'Escape') {
+                    closeSearchModal();
+                }
+            }
             
             getRecentSearches() {
                 try {
@@ -1388,108 +1405,7 @@
         });
     </script>
 
-    <!-- Improved Loading States JavaScript -->
     <script>
-        class LoadingStates {
-            static showLoading(message = 'Updating...') {
-                const indicator = document.getElementById('loading-indicator');
-                const messageElement = indicator.querySelector('span');
-                messageElement.textContent = message;
-                indicator.classList.remove('hidden');
-            }
-            
-            static hideLoading() {
-                const indicator = document.getElementById('loading-indicator');
-                indicator.classList.add('hidden');
-            }
-            
-            static showToast(message, type = 'info', duration = 3000) {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                
-                const colors = {
-                    success: 'bg-green-500',
-                    error: 'bg-red-500',
-                    warning: 'bg-yellow-500',
-                    info: 'bg-blue-500'
-                };
-                
-                const icons = {
-                    success: '✓',
-                    error: '✕',
-                    warning: '⚠',
-                    info: 'ℹ'
-                };
-                
-                toast.className = `${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 transform translate-x-full transition-transform duration-300`;
-                toast.innerHTML = `
-                    <span class="font-bold">${icons[type]}</span>
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">×</button>
-                `;
-                
-                container.appendChild(toast);
-                
-                // Animate in
-                setTimeout(() => {
-                    toast.classList.remove('translate-x-full');
-                }, 100);
-                
-                // Auto remove
-                setTimeout(() => {
-                    toast.classList.add('translate-x-full');
-                    setTimeout(() => {
-                        if (toast.parentElement) {
-                            toast.remove();
-                        }
-                    }, 300);
-                }, duration);
-            }
-            
-            static createSkeletonCard() {
-                return `
-                    <div class="bg-white rounded-xl shadow-sm border p-5">
-                        <div class="skeleton skeleton-image mb-4"></div>
-                        <div class="skeleton skeleton-text short mb-2"></div>
-                        <div class="skeleton skeleton-text medium mb-4"></div>
-                        <div class="skeleton skeleton-button"></div>
-                    </div>
-                `;
-            }
-            
-            static showSkeletonGrid(containerId, count = 8) {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    const skeletonHtml = Array(count).fill().map(() => this.createSkeletonCard()).join('');
-                    container.innerHTML = skeletonHtml;
-                }
-            }
-        }
-        
-        // Global functions for easy access
-        function showLoading(message) {
-            LoadingStates.showLoading(message);
-        }
-        
-        function hideLoading() {
-            LoadingStates.hideLoading();
-        }
-        
-        function showToast(message, type, duration) {
-            LoadingStates.showToast(message, type, duration);
-        }
-        
-        // Only show loading for filter form submissions
-        document.addEventListener('submit', function(e) {
-            if (e.target.id === 'filterForm' || e.target.id === 'filter-form') {
-                LoadingStates.showLoading('Applying filters...');
-            }
-        });
-        
-        // Hide loading when page is fully loaded
-        window.addEventListener('load', function() {
-            LoadingStates.hideLoading();
-        });
     </script>
 </body>
 </html>

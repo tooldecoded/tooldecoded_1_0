@@ -49,6 +49,7 @@ class ItemTypes(models.Model):
     categories = models.ManyToManyField('Categories')
     subcategories = models.ManyToManyField('Subcategories')
     sortorder = models.IntegerField(blank=True, null=True)
+    attributes = models.ManyToManyField('Attributes')
     class Meta:
         db_table = 'ItemTypes'
         ordering = ['sortorder', 'name']
@@ -136,6 +137,8 @@ class Components(models.Model):
     productlines = models.ManyToManyField('ProductLines')
     image = models.TextField(blank=True, null=True)
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
+    is_featured = models.BooleanField(default=False)
+    showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
     fair_price_narrative = models.JSONField(blank=True, null=True)
     class Meta:
         db_table = 'Components'

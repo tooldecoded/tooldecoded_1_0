@@ -1,5 +1,6 @@
 {% extends 'frontend/base.html' %}
 {% load product_filters %}
+{% load content_filters %}
 
 {% block title %}{{ product.name }} - ToolDecoded{% endblock %}
 
@@ -20,28 +21,27 @@
                 <li>
                     <a href="{% url 'index' %}" class="text-gray-500 hover:text-gray-700 transition-colors">Products</a>
                 </li>
-                {% if product.itemcategories.all %}
-                    {% for category in product.itemcategories.all %}
-                        {% if category.level == 1 %}
+                {% if product.itemtypes.all %}
+                    {% for itemtype in product.itemtypes.all %}
+                        {% if itemtype.fullname %}
+                            {% for breadcrumb_part in itemtype.fullname|split:"/" %}
+                                <li>
+                                    <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </li>
+                                <li>
+                                    <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ breadcrumb_part }}</a>
+                                </li>
+                            {% endfor %}
+                        {% else %}
                             <li>
                                 <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                 </svg>
                             </li>
                             <li>
-                                <a href="{% url 'index' %}?category_level1={{ category.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ category.name }}</a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                    {% for category in product.itemcategories.all %}
-                        {% if category.level == 2 %}
-                            <li>
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                </svg>
-                            </li>
-                            <li>
-                                <a href="{% url 'index' %}?category_level1={{ category.parent.id }}&category_level2={{ category.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ category.name }}</a>
+                                <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ itemtype.name }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}

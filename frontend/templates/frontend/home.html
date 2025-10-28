@@ -36,11 +36,9 @@
                 {% if has_flagship_products and flagship_preview %}
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     {% for product in flagship_preview %}
-                    <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <div class="aspect-square bg-white rounded-lg overflow-hidden">
                         {% if product.image %}
-                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
-                        {% elif product.productimages_set.exists %}
-                            <img src="{{ product.productimages_set.first.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                         {% else %}
                             <div class="w-full h-full flex items-center justify-center text-gray-400">
                                 <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
@@ -52,26 +50,26 @@
                     {% endfor %}
                 </div>
                 <p class="text-gray-600 text-sm mb-4">
-                    Explore the latest flagship offerings from major brands, organized by category
+                    Explore the latest flagship components from major brands, organized by category
                 </p>
                 {% else %}
                 <div class="bg-gray-50 rounded-lg p-4 mb-4">
                     <p class="text-sm text-gray-500 text-center">
                         {% if has_flagship_products %}
-                            No flagship products available
+                            No flagship components available
                         {% else %}
-                            Configure flagship products to display here
+                            Configure flagship components to display here
                         {% endif %}
                     </p>
                 </div>
                 <p class="text-gray-600 text-sm mb-4">
-                    Explore the latest flagship offerings from major brands, organized by category
+                    Explore the latest flagship components from major brands, organized by category
                 </p>
                 {% endif %}
                 
                 <a href="{% url 'browse_flagship' %}" 
                    class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm">
-                    Browse Flagship Tools →
+                    Browse Flagship Components →
                 </a>
             </div>
 
@@ -89,11 +87,11 @@
                 {% if recent_products %}
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     {% for product in recent_products %}
-                    <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <div class="aspect-square bg-white rounded-lg overflow-hidden">
                         {% if product.image %}
-                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                            <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                         {% elif product.productimages_set.exists %}
-                            <img src="{{ product.productimages_set.first.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                            <img src="{{ product.productimages_set.first.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                         {% else %}
                             <div class="w-full h-full flex items-center justify-center text-gray-400">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -136,11 +134,9 @@
                 {% if recent_components %}
                 <div class="grid grid-cols-3 gap-2 mb-4">
                     {% for component in recent_components %}
-                    <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <div class="aspect-square bg-white rounded-lg overflow-hidden">
                         {% if component.image %}
-                            <img src="{{ component.image.url }}" alt="{{ component.name }}" class="w-full h-full object-cover">
-                        {% elif component.productimages_set.exists %}
-                            <img src="{{ component.productimages_set.first.image.url }}" alt="{{ component.name }}" class="w-full h-full object-cover">
+                            <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain">
                         {% else %}
                             <div class="w-full h-full flex items-center justify-center text-gray-400">
                                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
@@ -173,7 +169,7 @@
 </div>
 
 <!-- Small Stats Section -->
-<div class="bg-gray-100 border-t border-gray-200">
+<div class="bg-white border-t border-gray-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="text-center">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">

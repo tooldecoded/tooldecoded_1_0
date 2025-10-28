@@ -31,59 +31,132 @@
 </style>
 <div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Filter Bar -->
-        <div class="sticky top-16 z-40 bg-white border-b border-gray-200 mb-6 -mx-4 px-4 py-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <!-- Filter Toggle Button (Mobile) -->
-                <button id="filter-toggle" onclick="toggleFilterSidebar()" class="lg:hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                    </svg>
-                    Filters
-                </button>
-                
-                <!-- View Controls -->
-                <div class="flex items-center gap-4">
-                    <!-- View Toggle -->
-                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                            </svg>
-                        </button>
-                        <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-gray-500 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
+        <!-- Quick Filter Bar -->
+        <div class="sticky top-16 z-40 bg-white rounded-xl shadow-sm border border-gray-200 mb-6 py-3">
+            <div class="px-6">
+                <!-- 4-Cell Grid Layout -->
+                <div class="grid grid-cols-2 gap-2">
+                    <!-- Top Left: Active Filters Heading -->
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                        </svg>
+                        <h2 class="text-sm font-semibold text-gray-900">Active Filters</h2>
+                        <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium" id="clear-all-link" style="display: none;">
+                            Clear All
+                        </a>
                     </div>
                     
-                    <!-- Sort Dropdown -->
-                    <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
-                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
-                        <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
-                        <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
-                        <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
-                        <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage (Low-High)</option>
-                        <option value="voltage_desc" {% if current_filters.sort == 'voltage_desc' %}selected{% endif %}>Voltage (High-Low)</option>
-                        <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date (Newest)</option>
-                        <option value="release_date_desc" {% if current_filters.sort == 'release_date_desc' %}selected{% endif %}>Release Date (Oldest)</option>
-                    </select>
+                    <!-- Top Right: Sort/Page View Controls -->
+                    <div class="flex items-center justify-end gap-2">
+                        <!-- Compare Button -->
+                        <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
+                            <span>Compare</span>
+                            <span id="compare-count" class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">(0)</span>
+                            <button onclick="clearComparison(); event.stopPropagation()" class="ml-1 text-white hover:text-red-200 transition-colors" title="Clear comparison">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </button>
+                        
+                        <!-- Filter Toggle Button (Mobile) -->
+                        <button id="filter-toggle" onclick="toggleFilterSidebar()" class="lg:hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                            </svg>
+                            Filters
+                        </button>
+                        
+                        <!-- View Toggle -->
+                        <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                            <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                                </svg>
+                            </button>
+                            <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-gray-500 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z" clip-rule="evenodd"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <!-- Sort Dropdown -->
+                        <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
+                            <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                            <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                            <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
+                            <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
+                            <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage (Low-High)</option>
+                            <option value="voltage_desc" {% if current_filters.sort == 'voltage_desc' %}selected{% endif %}>Voltage (High-Low)</option>
+                            <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date (Newest)</option>
+                            <option value="release_date_desc" {% if current_filters.sort == 'release_date_desc' %}selected{% endif %}>Release Date (Oldest)</option>
+                        </select>
+                        
+                        <!-- Results per page -->
+                        <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
+                            <option value="12" {% if request.GET.page_size == '12' or not request.GET.page_size %}selected{% endif %}>12 per page</option>
+                            <option value="24" {% if request.GET.page_size == '24' %}selected{% endif %}>24 per page</option>
+                            <option value="48" {% if request.GET.page_size == '48' %}selected{% endif %}>48 per page</option>
+                        </select>
+                    </div>
                     
-                    <!-- Results per page -->
-                    <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
-                        <option value="12">12 per page</option>
-                        <option value="24">24 per page</option>
-                        <option value="48">48 per page</option>
-                    </select>
+                    <!-- Bottom Left: Filter Chips -->
+                    <div id="active-filter-tags" class="flex flex-wrap items-center gap-1">
+                        <!-- Active filter tags will be populated by JavaScript -->
+                    </div>
                     
-                    <!-- Compare Button -->
-                    <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
-                        Compare (0)
-                    </button>
-                    <button id="clear-compare-button" onclick="clearComparison()" class="hidden bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors">
-                        Clear
-                    </button>
+                    <!-- Bottom Right: Pagination Controls -->
+                    <div class="flex justify-end">
+                        {% if products.has_other_pages %}
+                            <nav class="flex items-center gap-2">
+                                <!-- Previous arrow -->
+                                {% if products.has_previous %}
+                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ products.previous_page_number }}" 
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        <
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
+                                {% endif %}
+
+                                <!-- Page numbers -->
+                                {% for num in products.paginator.page_range %}
+                                    {% if products.number == num %}
+                                        <span class="font-semibold text-gray-900 border-b-2 border-orange-500 text-md">{{ num }}</span>
+                                    {% elif num >= products.number|add:'-2' and num <= products.number|add:'2' or products.number <= 3 and num <= 5 %}
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                    {% elif num == 1 and products.number > 4 %}
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                        <span class="text-gray-400 text-sm">...</span>
+                                    {% elif num == products.paginator.num_pages and products.number < products.paginator.num_pages|add:'-3' %}
+                                        <span class="text-gray-400 text-sm">...</span>
+                                        <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                                           class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                            {{ num }}
+                                        </a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                <!-- Next arrow -->
+                                {% if products.has_next %}
+                                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ products.next_page_number }}" 
+                                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                                        >
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-300 text-xl"></span>
+                                {% endif %}
+                            </nav>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -92,78 +165,125 @@
         <div class="flex flex-col lg:flex-row gap-6">
             <!-- Filter Sidebar -->
             <div id="filter-sidebar" class="lg:w-1/4 hidden lg:block">
-                <div class="bg-white rounded-lg border border-gray-200 p-6 sticky top-32">
-                    <!-- Active Filters -->
-                    <div id="active-filters" class="mb-6">
-                        <div class="flex items-center justify-between mb-3">
-                            <h3 class="text-sm font-semibold text-gray-900">Active Filters</h3>
-                            <button onclick="clearAllFilters()" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Clear All</button>
+                <div class="bg-white rounded-lg border border-gray-200 sticky top-32">
+                    <!-- Filter Header -->
+                    <div class="px-6 py-4">
+                        <div class="flex items-center justify-between pb-2 mb-3 border-b border-blue-500">
+                            <div class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7h16M4 12h10m-6 5h6" />
+                                </svg>
+                                <h3 class="text-sm font-semibold tracking-wider text-gray-900 uppercase">Filter</h3>
+                            </div>
                         </div>
-                        <div id="active-filter-tags" class="space-y-2">
-                            <!-- Active filter tags will be populated by JavaScript -->
-                        </div>
-                    </div>
-
+                    
+                                        
                     <!-- Filter Form -->
+                    <div class="py-6 px-1">
                     <form id="filter-form" method="get" action="{% url 'index' %}" class="space-y-6">
                         <!-- Search -->
-                        <div>
-                            <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                            <input type="text" id="search" name="search" value="{{ current_filters.search }}" 
-                                   placeholder="Search products..." 
-                                   oninput="debounceSearch()"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="search" name="search" value="{{ current_filters.search }}" 
+                               placeholder="Search products..." 
+                               oninput="debounceSearch()"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+                        <!-- Category Filter -->
+                        <div class="filter-section">
+                            <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('category')">
+                                <h4 class="text-sm font-semibold text-gray-900">Category</h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500" id="category-count">{{ selected_category_ids|length }}/{{ categories|length }}</span>
+                                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="filter-content space-y-2" id="category-content">
+                                <div class="max-h-48 overflow-y-auto space-y-2" id="category-list">
+                                    {% for category in categories %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="category[]" value="{{ category.id }}" 
+                                                   {% if category.id in selected_category_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ category.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if categories|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('category')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="category-toggle">
+                                        Show more ({{ categories|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
+                            </div>
                         </div>
 
-                        <!-- Category Filters -->
-                        <div>
-                            <h4 class="text-sm font-semibold text-gray-900 mb-3">Category</h4>
-                            <div class="space-y-3">
-                                <!-- Level 1 Category -->
-                                <div>
-                                    <label for="category_level1" class="block text-xs font-medium text-gray-600 mb-1">Level 1</label>
-                                    <select id="category_level1" name="category_level1" onchange="updateCategoryFilters(); applyFilters()" 
-                                            class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                        <option value="">All Categories</option>
-                                        {% for category in level1_categories %}
-                                            <option value="{{ category.id }}" {% if current_filters.category_level1 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                {{ category.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                        <!-- Subcategory Filter -->
+                        <div class="filter-section">
+                            <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('subcategory')">
+                                <h4 class="text-sm font-semibold text-gray-900">Subcategory</h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500" id="subcategory-count">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
+                                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
                                 </div>
+                            </div>
+                            <div class="filter-content space-y-2" id="subcategory-content">
+                                <div class="max-h-48 overflow-y-auto space-y-2" id="subcategory-list">
+                                    {% for subcategory in subcategories %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="subcategory[]" value="{{ subcategory.id }}" 
+                                                   {% if subcategory.id in selected_subcategory_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ subcategory.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if subcategories|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('subcategory')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="subcategory-toggle">
+                                        Show more ({{ subcategories|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
 
-                                <!-- Level 2 Category -->
-                                <div id="level2-container" {% if not current_filters.category_level1 %}style="display: none;"{% endif %}>
-                                    <label for="category_level2" class="block text-xs font-medium text-gray-600 mb-1">Level 2</label>
-                                    <select id="category_level2" name="category_level2" onchange="updateCategoryFilters(); applyFilters()" 
-                                            class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                        <option value="">All Subcategories</option>
-                                        {% for category in level2_categories_with_parent %}
-                                            {% if category.parent == current_filters.category_level1 %}
-                                                <option value="{{ category.id }}" {% if current_filters.category_level2 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                    {{ category.name }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
+                        <!-- Item Type Filter -->
+                        <div class="filter-section">
+                            <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('itemtype')">
+                                <h4 class="text-sm font-semibold text-gray-900">Item Type</h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500" id="itemtype-count">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
+                                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
                                 </div>
-
-                                <!-- Level 3 Category -->
-                                <div id="level3-container" {% if not current_filters.category_level2 %}style="display: none;"{% endif %}>
-                                    <label for="category_level3" class="block text-xs font-medium text-gray-600 mb-1">Level 3</label>
-                                    <select id="category_level3" name="category_level3" onchange="updateCategoryFilters(); applyFilters()" 
-                                            class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                        <option value="">All Sub-subcategories</option>
-                                        {% for category in level3_categories_with_parent %}
-                                            {% if category.parent == current_filters.category_level2 %}
-                                                <option value="{{ category.id }}" {% if current_filters.category_level3 == category.id|stringformat:"s" %}selected{% endif %}>
-                                                    {{ category.name }}
-                                                </option>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </select>
+                            </div>
+                            <div class="filter-content space-y-2" id="itemtype-content">
+                                <div class="max-h-48 overflow-y-auto space-y-2" id="itemtype-list">
+                                    {% for itemtype in itemtypes %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="itemtype[]" value="{{ itemtype.id }}" 
+                                                   {% if itemtype.id in selected_itemtype_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ itemtype.name }}</span>
+                                        </label>
+                                    {% endfor %}
                                 </div>
+                                {% if itemtypes|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('itemtype')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="itemtype-toggle">
+                                        Show more ({{ itemtypes|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -178,16 +298,25 @@
                                     </svg>
                                 </div>
                             </div>
-                            <div class="filter-content max-h-48 overflow-y-auto space-y-2" id="brand-content">
-                                {% for brand in brands %}
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="brand" value="{{ brand.id }}" 
-                                               {% if brand.id in selected_brand_ids %}checked{% endif %}
-                                               onchange="applyFilters()"
-                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
-                                        <span class="text-gray-700">{{ brand.name }}</span>
-                                    </label>
-                                {% endfor %}
+                            <div class="filter-content space-y-2" id="brand-content">
+                                <div class="max-h-48 overflow-y-auto space-y-2" id="brand-list">
+                                    {% for brand in brands %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="brand" value="{{ brand.id }}" 
+                                                   {% if brand.id in selected_brand_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ brand.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if brands|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('brand')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="brand-toggle">
+                                        Show more ({{ brands|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -202,16 +331,25 @@
                                     </svg>
                                 </div>
                             </div>
-                            <div class="filter-content max-h-48 overflow-y-auto space-y-2" id="voltage-content">
-                                {% for voltage in voltages %}
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
-                                               {% if voltage.id in selected_voltage_ids %}checked{% endif %}
-                                               onchange="applyFilters()"
-                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
-                                        <span class="text-gray-700">{{ voltage.value }}V</span>
-                                    </label>
-                                {% endfor %}
+                            <div class="filter-content space-y-2" id="voltage-content">
+                                <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="voltage-list">
+                                    {% for voltage in voltages %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
+                                                   {% if voltage.id in selected_voltage_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ voltage.value }}V</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if voltages|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('voltage')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="voltage-toggle">
+                                        Show more ({{ voltages|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -226,16 +364,25 @@
                                     </svg>
                                 </div>
                             </div>
-                            <div class="filter-content max-h-48 overflow-y-auto space-y-2" id="platform-content">
-                                {% for platform in platforms %}
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="platform" value="{{ platform.id }}" 
-                                               {% if platform.id in selected_platform_ids %}checked{% endif %}
-                                               onchange="applyFilters()"
-                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
-                                        <span class="text-gray-700">{{ platform.name }}</span>
-                                    </label>
-                                {% endfor %}
+                            <div class="filter-content space-y-2" id="platform-content">
+                                <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="platform-list">
+                                    {% for platform in platforms %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="platform" value="{{ platform.id }}" 
+                                                   {% if platform.id in selected_platform_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ platform.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if platforms|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('platform')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="platform-toggle">
+                                        Show more ({{ platforms|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -250,16 +397,25 @@
                                     </svg>
                                 </div>
                             </div>
-                            <div class="filter-content max-h-48 overflow-y-auto space-y-2" id="status-content">
-                                {% for status in statuses %}
-                                    <label class="flex items-center text-sm">
-                                        <input type="checkbox" name="status" value="{{ status.id }}" 
-                                               {% if status.id in selected_status_ids %}checked{% endif %}
-                                               onchange="applyFilters()"
-                                               class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
-                                        <span class="text-gray-700">{{ status.name }}</span>
-                                    </label>
-                                {% endfor %}
+                            <div class="filter-content space-y-2" id="status-content">
+                                <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="status-list">
+                                    {% for status in statuses %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="status" value="{{ status.id }}" 
+                                                   {% if status.id in selected_status_ids %}checked{% endif %}
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ status.name }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                                {% if statuses|length > 6 %}
+                                    <button type="button" onclick="toggleFilterExpansion('status')" 
+                                            class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                            id="status-toggle">
+                                        Show more ({{ statuses|length|add:"-6" }} more)
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -287,9 +443,10 @@
                                            class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
                                 </div>
                             </div>
-                        </div>
-
+                        </div>  
+                    </div>
                     </form>
+                    </div>
                 </div>
             </div>
 
@@ -298,7 +455,7 @@
                 <div class="mb-6 flex justify-between items-center">
                     <h2 class="text-xl font-semibold text-gray-900" role="status" aria-live="polite">
                         {% if products %}
-                            Showing {{ products.start_index }}-{{ products.end_index }} of {{ products.paginator.count }} products
+                            Viewing {{ products.start_index }}-{{ products.end_index }} of {{ products.paginator.count }}
                         {% else %}
                             No products found
                         {% endif %}
@@ -308,7 +465,7 @@
                 {% if products %}
                     <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {% for product in products %}
-                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 mobile-card mobile-touch-target gradient-border">
+                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 mobile-card mobile-touch-target">
                                 <div class="relative">
                                     <div class="aspect-square bg-white rounded-t-xl overflow-hidden relative">
                                         {% if product.image %}
@@ -615,7 +772,7 @@
     function changeResultsPerPage(value) {
         const url = new URL(window.location);
         url.searchParams.set('page_size', value);
-        url.searchParams.set('page', '1');
+        url.searchParams.set('page', '1'); // Reset to first page when changing page size
         window.location.href = url.toString();
     }
     
@@ -628,8 +785,7 @@
         modal.classList.remove('hidden');
         content.innerHTML = `
             <div class="flex items-center justify-center p-8">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <span class="ml-2 text-gray-600">Loading...</span>
+                <span class="text-gray-600">Loading...</span>
             </div>
         `;
         
@@ -683,7 +839,7 @@
                         <div class="md:w-1/2">
                             <div class="aspect-square bg-white rounded-lg overflow-hidden border">
                                 ${data.image ? 
-                                    `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-cover">` :
+                                    `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain">` :
                                     `<div class="w-full h-full flex items-center justify-center text-gray-400">
                                         <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
@@ -843,16 +999,14 @@
     function updateCompareButton() {
         const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
         const compareButton = document.getElementById('compare-button');
-        const clearButton = document.getElementById('clear-compare-button');
+        const compareCount = document.getElementById('compare-count');
         
-        if (compareButton) {
+        if (compareButton && compareCount) {
             if (compareList.length > 0) {
-                compareButton.textContent = `Compare (${compareList.length})`;
+                compareCount.textContent = `(${compareList.length})`;
                 compareButton.classList.remove('hidden');
-                if (clearButton) clearButton.classList.remove('hidden');
             } else {
                 compareButton.classList.add('hidden');
-                if (clearButton) clearButton.classList.add('hidden');
             }
         }
     }
@@ -924,15 +1078,32 @@
         updateActiveFilters();
         
         // Clear existing filter parameters
-        const filterParams = ['search', 'brand', 'voltage', 'platform', 'status', 'category_level1', 'category_level2', 'category_level3', 'release_date_from', 'release_date_to'];
+        const filterParams = ['search', 'brand', 'voltage', 'platform', 'status', 'category', 'subcategory', 'itemtype', 'release_date_from', 'release_date_to'];
         filterParams.forEach(param => url.searchParams.delete(param));
         
-        // Add current form values
+        // Add current form values (only checked checkboxes will be included)
         for (let [key, value] of formData.entries()) {
             if (value) {
                 url.searchParams.append(key, value);
             }
         }
+        
+        // Handle unchecked checkboxes by explicitly removing their values from URL
+        const allCheckboxes = form.querySelectorAll('input[type="checkbox"]');
+        allCheckboxes.forEach(checkbox => {
+            if (!checkbox.checked) {
+                const paramName = checkbox.name;
+                const paramValue = checkbox.value;
+                // Remove all instances of this parameter value
+                const existingValues = url.searchParams.getAll(paramName);
+                url.searchParams.delete(paramName);
+                existingValues.forEach(val => {
+                    if (val !== paramValue) {
+                        url.searchParams.append(paramName, val);
+                    }
+                });
+            }
+        });
         
         // Reset to page 1 when filtering
         url.searchParams.set('page', '1');
@@ -984,80 +1155,24 @@
         sidebar.classList.toggle('hidden');
     }
 
-    function updateCategoryFilters() {
-        const level1 = document.getElementById('category_level1');
-        const level2 = document.getElementById('category_level2');
-        const level3 = document.getElementById('category_level3');
-        const level2Container = document.getElementById('level2-container');
-        const level3Container = document.getElementById('level3-container');
-
-        // Reset lower levels when higher level changes
-        if (level1.value !== '{{ current_filters.category_level1 }}') {
-            level2.value = '';
-            level3.value = '';
-            level2Container.style.display = 'none';
-            level3Container.style.display = 'none';
-        }
-        if (level2.value !== '{{ current_filters.category_level2 }}') {
-            level3.value = '';
-            level3Container.style.display = 'none';
-        }
-
-        // Show/hide containers based on selection
-        if (level1.value) {
-            level2Container.style.display = 'block';
-            // Load level 2 options dynamically
-            loadCategoryOptions('level2', level1.value);
-        } else {
-            level2Container.style.display = 'none';
-            level3Container.style.display = 'none';
-        }
-
-        if (level2.value) {
-            level3Container.style.display = 'block';
-            // Load level 3 options dynamically
-            loadCategoryOptions('level3', level2.value);
-        } else {
-            level3Container.style.display = 'none';
-        }
-    }
-
-    function loadCategoryOptions(level, parentId) {
-        const container = document.getElementById(`${level}-container`);
-        const select = document.getElementById(`category_${level}`);
-        
-        // Show loading state
-        select.innerHTML = '<option value="">Loading...</option>';
-        
-        // Fetch options from server
-        const url = new URL(window.location);
-        url.searchParams.set('parent_id', parentId);
-        url.searchParams.set('level', level);
-        
-        fetch(`/api/filter-options/?${url.searchParams.toString()}`)
-            .then(response => response.json())
-            .then(data => {
-                const options = data[`${level}_categories`] || [];
-                select.innerHTML = `<option value="">All ${level === 'level2' ? 'Subcategories' : 'Sub-subcategories'}</option>`;
-                
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option.id;
-                    optionElement.textContent = option.name;
-                    select.appendChild(optionElement);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading category options:', error);
-                select.innerHTML = `<option value="">Error loading options</option>`;
-            });
-    }
 
     function updateActiveFilters() {
         const container = document.getElementById('active-filter-tags');
+        if (!container) {
+            console.log('Active filter tags container not found');
+            return;
+        }
+        
         const filters = getActiveFilters();
+        console.log('Active filters:', filters);
         
         container.innerHTML = '';
+        
+        // Show/hide Clear All link
+        const clearAllLink = document.getElementById('clear-all-link');
+        if (clearAllLink) {
+            clearAllLink.style.display = filters.length > 0 ? 'inline' : 'none';
+        }
         
         if (filters.length === 0) {
             container.innerHTML = '<p class="text-sm text-gray-500 italic">No filters applied</p>';
@@ -1066,14 +1181,13 @@
         
         filters.forEach(filter => {
             const tag = document.createElement('div');
-            tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full';
+            tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors';
+            tag.onclick = () => removeFilter(filter.type, filter.value);
             tag.innerHTML = `
-                <span>${filter.label}</span>
-                <button onclick="removeFilter('${filter.type}', '${filter.value}')" class="ml-1 hover:text-blue-900">
-                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                    </svg>
-                </button>
+                <span class="truncate">${filter.label}</span>
+                <svg class="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
             `;
             container.appendChild(tag);
         });
@@ -1117,17 +1231,45 @@
             const totalStatuses = statusCountElement.textContent.split('/')[1];
             statusCountElement.textContent = `${statusCount}/${totalStatuses}`;
         }
+        
+        // Update category count
+        const categoryCount = formData.getAll('category[]').length;
+        const categoryCountElement = document.getElementById('category-count');
+        if (categoryCountElement) {
+            const totalCategories = categoryCountElement.textContent.split('/')[1];
+            categoryCountElement.textContent = `${categoryCount}/${totalCategories}`;
+        }
+        
+        // Update subcategory count
+        const subcategoryCount = formData.getAll('subcategory[]').length;
+        const subcategoryCountElement = document.getElementById('subcategory-count');
+        if (subcategoryCountElement) {
+            const totalSubcategories = subcategoryCountElement.textContent.split('/')[1];
+            subcategoryCountElement.textContent = `${subcategoryCount}/${totalSubcategories}`;
+        }
+        
+        // Update itemtype count
+        const itemtypeCount = formData.getAll('itemtype[]').length;
+        const itemtypeCountElement = document.getElementById('itemtype-count');
+        if (itemtypeCountElement) {
+            const totalItemtypes = itemtypeCountElement.textContent.split('/')[1];
+            itemtypeCountElement.textContent = `${itemtypeCount}/${totalItemtypes}`;
+        }
     }
 
     function getActiveFilters() {
         const filters = [];
         const form = document.getElementById('filter-form');
+        if (!form) {
+            console.log('Filter form not found');
+            return filters;
+        }
         const formData = new FormData(form);
         
         // Search filter
         const search = formData.get('search');
         if (search) {
-            filters.push({ type: 'search', value: search, label: `Search: "${search}"` });
+            filters.push({ type: 'search', value: search, label: `"${search}"` });
         }
         
         // Brand filters
@@ -1135,7 +1277,7 @@
         brands.forEach(brandId => {
             const brandName = getBrandName(brandId);
             if (brandName) {
-                filters.push({ type: 'brand', value: brandId, label: `Brand: ${brandName}` });
+                filters.push({ type: 'brand', value: brandId, label: brandName });
             }
         });
         
@@ -1144,7 +1286,7 @@
         voltages.forEach(voltageId => {
             const voltageValue = getVoltageValue(voltageId);
             if (voltageValue) {
-                filters.push({ type: 'voltage', value: voltageId, label: `Voltage: ${voltageValue}V` });
+                filters.push({ type: 'voltage', value: voltageId, label: `${voltageValue}V` });
             }
         });
         
@@ -1153,7 +1295,7 @@
         platforms.forEach(platformId => {
             const platformName = getPlatformName(platformId);
             if (platformName) {
-                filters.push({ type: 'platform', value: platformId, label: `Platform: ${platformName}` });
+                filters.push({ type: 'platform', value: platformId, label: platformName });
             }
         });
         
@@ -1162,34 +1304,34 @@
         statuses.forEach(statusId => {
             const statusName = getStatusName(statusId);
             if (statusName) {
-                filters.push({ type: 'status', value: statusId, label: `Status: ${statusName}` });
+                filters.push({ type: 'status', value: statusId, label: statusName });
+            }
+        });
+
+        // Category filters
+        const categories = formData.getAll('category[]');
+        categories.forEach(categoryId => {
+            const categoryName = getCategoryName(categoryId);
+            if (categoryName) {
+                filters.push({ type: 'category[]', value: categoryId, label: categoryName });
             }
         });
         
-        // Category filters
-        const category1 = formData.get('category_level1');
-        if (category1) {
-            const categoryName = getCategoryName(category1);
+        const subcategories = formData.getAll('subcategory[]');
+        subcategories.forEach(subcategoryId => {
+            const categoryName = getCategoryName(subcategoryId);
             if (categoryName) {
-                filters.push({ type: 'category_level1', value: category1, label: `Category: ${categoryName}` });
+                filters.push({ type: 'subcategory[]', value: subcategoryId, label: categoryName });
             }
-        }
+        });
         
-        const category2 = formData.get('category_level2');
-        if (category2) {
-            const categoryName = getCategoryName(category2);
+        const itemtypes = formData.getAll('itemtype[]');
+        itemtypes.forEach(itemtypeId => {
+            const categoryName = getCategoryName(itemtypeId);
             if (categoryName) {
-                filters.push({ type: 'category_level2', value: category2, label: `Subcategory: ${categoryName}` });
+                filters.push({ type: 'itemtype[]', value: itemtypeId, label: categoryName });
             }
-        }
-        
-        const category3 = formData.get('category_level3');
-        if (category3) {
-            const categoryName = getCategoryName(category3);
-            if (categoryName) {
-                filters.push({ type: 'category_level3', value: category3, label: `Sub-subcategory: ${categoryName}` });
-            }
-        }
+        });
         
         // Date filters
         const dateFrom = formData.get('release_date_from');
@@ -1206,30 +1348,35 @@
     }
 
     function getBrandName(brandId) {
-        const brandSelect = document.querySelector(`input[name="brand"][value="${brandId}"]`);
-        return brandSelect ? brandSelect.nextElementSibling.textContent : null;
+        const brandInput = document.querySelector(`input[name="brand"][value="${brandId}"]`);
+        return brandInput ? brandInput.nextElementSibling.textContent.trim() : null;
     }
 
     function getVoltageValue(voltageId) {
-        const voltageSelect = document.querySelector(`input[name="voltage"][value="${voltageId}"]`);
-        return voltageSelect ? voltageSelect.nextElementSibling.textContent.replace('V', '') : null;
+        const voltageInput = document.querySelector(`input[name="voltage"][value="${voltageId}"]`);
+        return voltageInput ? voltageInput.nextElementSibling.textContent.replace('V', '').trim() : null;
     }
 
     function getPlatformName(platformId) {
-        const platformSelect = document.querySelector(`input[name="platform"][value="${platformId}"]`);
-        return platformSelect ? platformSelect.nextElementSibling.textContent : null;
+        const platformInput = document.querySelector(`input[name="platform"][value="${platformId}"]`);
+        return platformInput ? platformInput.nextElementSibling.textContent.trim() : null;
     }
 
     function getStatusName(statusId) {
-        const statusSelect = document.querySelector(`input[name="status"][value="${statusId}"]`);
-        return statusSelect ? statusSelect.nextElementSibling.textContent : null;
+        const statusInput = document.querySelector(`input[name="status"][value="${statusId}"]`);
+        return statusInput ? statusInput.nextElementSibling.textContent.trim() : null;
     }
 
     function getCategoryName(categoryId) {
-        const categorySelect = document.querySelector(`select[name="category_level1"], select[name="category_level2"], select[name="category_level3"]`);
-        if (categorySelect) {
-            const option = categorySelect.querySelector(`option[value="${categoryId}"]`);
-            return option ? option.textContent : null;
+        // Look for checkbox inputs with the category ID
+        const categoryInput = document.querySelector(`input[name="category[]"][value="${categoryId}"], input[name="subcategory[]"][value="${categoryId}"], input[name="itemtype[]"][value="${categoryId}"]`);
+        if (categoryInput) {
+            // Get the text from the label that contains this input
+            const label = categoryInput.closest('label');
+            if (label) {
+                const textSpan = label.querySelector('span');
+                return textSpan ? textSpan.textContent.trim() : null;
+            }
         }
         return null;
     }
@@ -1242,19 +1389,9 @@
         } else if (['brand', 'voltage', 'platform', 'status'].includes(type)) {
             const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
             if (checkbox) checkbox.checked = false;
-        } else if (['category_level1', 'category_level2', 'category_level3'].includes(type)) {
-            const select = document.querySelector(`select[name="${type}"]`);
-            if (select) select.value = '';
-            // Also clear lower level categories
-            if (type === 'category_level1') {
-                const level2Select = document.querySelector('select[name="category_level2"]');
-                const level3Select = document.querySelector('select[name="category_level3"]');
-                if (level2Select) level2Select.value = '';
-                if (level3Select) level3Select.value = '';
-            } else if (type === 'category_level2') {
-                const level3Select = document.querySelector('select[name="category_level3"]');
-                if (level3Select) level3Select.value = '';
-            }
+        } else if (['category[]', 'subcategory[]', 'itemtype[]'].includes(type)) {
+            const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
+            if (checkbox) checkbox.checked = false;
         } else if (['release_date_from', 'release_date_to'].includes(type)) {
             const input = document.querySelector(`input[name="${type}"]`);
             if (input) input.value = '';
@@ -1273,15 +1410,11 @@
             const newValues = values.filter(v => v !== value);
             url.searchParams.delete(type);
             newValues.forEach(v => url.searchParams.append(type, v));
-        } else if (['category_level1', 'category_level2', 'category_level3'].includes(type)) {
+        } else if (['category[]', 'subcategory[]', 'itemtype[]'].includes(type)) {
+            const values = url.searchParams.getAll(type);
+            const newValues = values.filter(v => v !== value);
             url.searchParams.delete(type);
-            // Also clear lower level categories
-            if (type === 'category_level1') {
-                url.searchParams.delete('category_level2');
-                url.searchParams.delete('category_level3');
-            } else if (type === 'category_level2') {
-                url.searchParams.delete('category_level3');
-            }
+            newValues.forEach(v => url.searchParams.append(type, v));
         } else if (['release_date_from', 'release_date_to'].includes(type)) {
             url.searchParams.delete(type);
         }
@@ -1328,25 +1461,80 @@
     }
 
     function initializeFilterState() {
-        // Initialize category dropdowns based on current state
-        const level1 = document.getElementById('category_level1');
-        const level2 = document.getElementById('category_level2');
-        const level3 = document.getElementById('category_level3');
+        // Check URL parameters and expand sections that have active filters
+        const urlParams = new URLSearchParams(window.location.search);
+        const filterSections = ['category', 'subcategory', 'itemtype', 'brand', 'voltage', 'platform', 'status', 'release_date'];
         
-        if (level1 && level1.value) {
-            updateCategoryFilters();
-        }
-        
-        // Initialize filter sections - all collapsed by default
-        const filterSections = ['brand', 'voltage', 'platform', 'status', 'release_date'];
         filterSections.forEach(section => {
             const content = document.getElementById(`${section}-content`);
             const chevron = document.getElementById(`${section}-chevron`);
+            
             if (content && chevron) {
-                content.style.display = 'none';
-                chevron.style.transform = 'rotate(-90deg)';
+                // Check if this section has active filters
+                let hasActiveFilters = false;
+                
+                if (section === 'category' || section === 'subcategory' || section === 'itemtype') {
+                    hasActiveFilters = urlParams.getAll(`${section}[]`).length > 0;
+                } else if (section === 'release_date') {
+                    hasActiveFilters = urlParams.get('release_date_from') || urlParams.get('release_date_to');
+                } else {
+                    hasActiveFilters = urlParams.getAll(section).length > 0;
+                }
+                
+                if (hasActiveFilters) {
+                    // Expand this section
+                    content.style.display = 'block';
+                    chevron.style.transform = 'rotate(0deg)';
+                } else {
+                    // Collapse this section
+                    content.style.display = 'none';
+                    chevron.style.transform = 'rotate(-90deg)';
+                }
             }
         });
+        
+        // Sync form checkboxes with URL parameters
+        syncFormWithUrlParams();
+        
+        // Update filter counts
+        updateFilterCounts();
+        
+        // Update active filters display
+        updateActiveFilters();
+    }
+    
+    function syncFormWithUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        // Sync search input
+        const searchInput = document.getElementById('search');
+        if (searchInput) {
+            searchInput.value = urlParams.get('search') || '';
+        }
+        
+        // Sync checkboxes for categories, subcategories, itemtypes
+        ['category[]', 'subcategory[]', 'itemtype[]'].forEach(paramName => {
+            const values = urlParams.getAll(paramName);
+            const checkboxes = document.querySelectorAll(`input[name="${paramName}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = values.includes(checkbox.value);
+            });
+        });
+        
+        // Sync checkboxes for brand, voltage, platform, status
+        ['brand', 'voltage', 'platform', 'status'].forEach(paramName => {
+            const values = urlParams.getAll(paramName);
+            const checkboxes = document.querySelectorAll(`input[name="${paramName}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = values.includes(checkbox.value);
+            });
+        });
+        
+        // Sync date inputs
+        const dateFromInput = document.getElementById('release_date_from');
+        const dateToInput = document.getElementById('release_date_to');
+        if (dateFromInput) dateFromInput.value = urlParams.get('release_date_from') || '';
+        if (dateToInput) dateToInput.value = urlParams.get('release_date_to') || '';
     }
     
     function toggleFilterSection(sectionName) {
@@ -1362,6 +1550,27 @@
             } else {
                 content.style.display = 'none';
                 chevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+    }
+    
+    function toggleFilterExpansion(sectionName) {
+        const list = document.getElementById(`${sectionName}-list`);
+        const toggle = document.getElementById(`${sectionName}-toggle`);
+        
+        if (list && toggle) {
+            const isExpanded = list.style.maxHeight && list.style.maxHeight !== '12rem';
+            
+            if (isExpanded) {
+                // Collapse
+                list.style.maxHeight = '12rem';
+                list.style.overflowY = 'auto';
+                toggle.textContent = toggle.textContent.replace('Show less', 'Show more');
+            } else {
+                // Expand
+                list.style.maxHeight = 'none';
+                list.style.overflowY = 'visible';
+                toggle.textContent = toggle.textContent.replace('Show more', 'Show less');
             }
         }
     }

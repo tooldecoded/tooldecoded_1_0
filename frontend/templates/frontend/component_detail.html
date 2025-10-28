@@ -1,5 +1,6 @@
 {% extends 'frontend/base.html' %}
 {% load static %}
+{% load content_filters %}
 
 {% block title %}{{ component.name }} - ToolDecoded{% endblock %}
 
@@ -79,48 +80,30 @@
             <li>
                 <a href="{% url 'components_index' %}" class="hover:text-blue-600 transition-colors">Components</a>
             </li>
-            {% if component.itemcategories.first %}
-                {% if component.itemcategories.first.parent %}
-                    {% if component.itemcategories.first.parent.parent %}
-                        <!-- Level 1 Category -->
+            {% if component.itemtypes.all %}
+                {% for itemtype in component.itemtypes.all %}
+                    {% if itemtype.fullname %}
+                        {% for breadcrumb_part in itemtype.fullname|split:"/" %}
+                            <li>
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            </li>
+                            <li>
+                                <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-blue-600 transition-colors">{{ breadcrumb_part }}</a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
                         <li>
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                             </svg>
                         </li>
                         <li>
-                            <a href="{% url 'components_index' %}?category_level1={{ component.itemcategories.first.parent.parent.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.parent.parent.name }}</a>
-                        </li>
-                        <!-- Level 2 Category -->
-                        <li>
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                        </li>
-                        <li>
-                            <a href="{% url 'components_index' %}?category_level2={{ component.itemcategories.first.parent.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.parent.name }}</a>
+                            <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-blue-600 transition-colors">{{ itemtype.name }}</a>
                         </li>
                     {% endif %}
-                    <!-- Level 3 Category -->
-                    <li>
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </li>
-                    <li>
-                        <a href="{% url 'components_index' %}?category_level3={{ component.itemcategories.first.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.name }}</a>
-                    </li>
-                {% else %}
-                    <!-- Single level category -->
-                    <li>
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                    </li>
-                    <li>
-                        <a href="{% url 'components_index' %}?category_level1={{ component.itemcategories.first.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.name }}</a>
-                    </li>
-                {% endif %}
+                {% endfor %}
             {% endif %}
             <li>
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -423,11 +406,11 @@
                                     <!-- Product Image -->
                                     <div class="mb-4">
                                         {% if product_component.product.image %}
-                                            <img src="{{ product_component.product.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-cover rounded-lg mb-3">
+                                            <img src="{{ product_component.product.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-lg mb-3 bg-white">
                                         {% elif product_component.product.productimages_set.first %}
-                                            <img src="{{ product_component.product.productimages_set.first.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-cover rounded-lg mb-3">
+                                            <img src="{{ product_component.product.productimages_set.first.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-lg mb-3 bg-white">
                                         {% else %}
-                                            <div class="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                                            <div class="w-full h-32 bg-white rounded-lg mb-3 flex items-center justify-center">
                                                 <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                                 </svg>

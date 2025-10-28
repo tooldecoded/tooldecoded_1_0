@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Case, When, Value, F, FloatField
 from django.db.models.functions import Cast
+from django.http import JsonResponse
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
     ItemCategories, Statuses, ListingTypes, ComponentAttributes, Attributes,
@@ -982,3 +983,171 @@ def learning_detail(request, slug):
     }
     
     return render(request, 'frontend/learning_detail.html', context)
+
+# API Endpoints for Dynamic Features
+
+def api_search_suggestions(request):
+    """API endpoint for search suggestions with autocomplete"""
+    query = request.GET.get('q', '')
+    if len(query) < 2:
+        return JsonResponse({'suggestions': []})
+    
+    suggestions = []
+    
+    # Search products
+    products = Products.objects.filter(
+        Q(name__icontains=query) | Q(sku__icontains=query)
+    ).select_related('brand')[:5]
+    
+    for product in products:
+        suggestions.append({
+            'text': product.name,
+            'type': 'Product',
+            'url': f'/product/{product.id}/',
+            'brand': product.brand.name if product.brand else '',
+            'sku': product.sku or ''
+        })
+    
+    # Search components
+    components = Components.objects.filter(
+        Q(name__icontains=query) | Q(sku__icontains=query)
+    ).select_related('brand')[:5]
+    
+    for component in components:
+        suggestions.append({
+            'text': component.name,
+            'type': 'Component',
+            'url': f'/components/{component.id}/',
+            'brand': component.brand.name if component.brand else '',
+            'sku': component.sku or ''
+        })
+    
+    # Search brands
+    brands = Brands.objects.filter(name__icontains=query)[:3]
+    
+    for brand in brands:
+        suggestions.append({
+            'text': brand.name,
+            'type': 'Brand',
+            'url': f'/products/?brand={brand.id}',
+            'brand': '',
+            'sku': ''
+        })
+    
+    return JsonResponse({'suggestions': suggestions})
+
+def api_filter_options(request):
+    """API endpoint for dynamic filter options based on current selections"""
+    # Get current filter parameters
+    search = request.GET.get('search', '')
+    brand_ids = request.GET.getlist('brand')
+    voltage_ids = request.GET.getlist('voltage')
+    platform_ids = request.GET.getlist('platform')
+    category_level1 = request.GET.get('category_level1', '')
+    category_level2 = request.GET.get('category_level2', '')
+    category_level3 = request.GET.get('category_level3', '')
+    
+    # Start with all products
+    products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    # Apply non-category filters
+    if search:
+        products = products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        products = products.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        products = products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        products = products.filter(batteryplatforms__id__in=platform_ids)
+    
+    # Get available filter options
+    brands = Brands.objects.filter(products__in=products).distinct().order_by('name')
+    voltages = BatteryVoltages.objects.filter(products__in=products).distinct().order_by('value')
+    platforms = BatteryPlatforms.objects.filter(products__in=products).distinct().order_by('name')
+    
+    # Get categories based on current selection
+    if category_level1:
+        level2_categories = ItemCategories.objects.filter(
+            level=2, 
+            parent=category_level1,
+            products__in=products
+        ).distinct().order_by('sortorder', 'name')
+        
+        if category_level2:
+            level3_categories = ItemCategories.objects.filter(
+                level=3, 
+                parent=category_level2,
+                products__in=products
+            ).distinct().order_by('sortorder', 'name')
+        else:
+            level3_categories = ItemCategories.objects.filter(
+                level=3, 
+                parent__parent=category_level1,
+                products__in=products
+            ).distinct().order_by('sortorder', 'name')
+    else:
+        level1_categories = ItemCategories.objects.filter(
+            level=1, 
+            products__in=products
+        ).distinct().order_by('sortorder', 'name')
+        level2_categories = ItemCategories.objects.filter(
+            level=2, 
+            products__in=products
+        ).distinct().order_by('sortorder', 'name')
+        level3_categories = ItemCategories.objects.filter(
+            level=3, 
+            products__in=products
+        ).distinct().order_by('sortorder', 'name')
+    
+    return JsonResponse({
+        'brands': [{'id': b.id, 'name': b.name} for b in brands],
+        'voltages': [{'id': v.id, 'value': v.value} for v in voltages],
+        'platforms': [{'id': p.id, 'name': p.name} for p in platforms],
+        'level1_categories': [{'id': c.id, 'name': c.name} for c in level1_categories] if 'level1_categories' in locals() else [],
+        'level2_categories': [{'id': c.id, 'name': c.name, 'parent': c.parent} for c in level2_categories],
+        'level3_categories': [{'id': c.id, 'name': c.name, 'parent': c.parent} for c in level3_categories],
+    })
+
+def api_quick_info(request, item_id):
+    """API endpoint for quick product/component info for tooltips"""
+    item_type = request.GET.get('type', 'product')
+    
+    if item_type == 'product':
+        try:
+            product = Products.objects.select_related('brand', 'status').get(id=item_id)
+            return JsonResponse({
+                'name': product.name,
+                'brand': product.brand.name if product.brand else '',
+                'sku': product.sku or '',
+                'status': product.status.name if product.status else '',
+                'image': product.image or '',
+                'description': product.description or '',
+                'url': f'/product/{product.id}/'
+            })
+        except Products.DoesNotExist:
+            return JsonResponse({'error': 'Product not found'}, status=404)
+    
+    elif item_type == 'component':
+        try:
+            component = Components.objects.select_related('brand').get(id=item_id)
+            return JsonResponse({
+                'name': component.name,
+                'brand': component.brand.name if component.brand else '',
+                'sku': component.sku or '',
+                'image': component.image or '',
+                'description': component.description or '',
+                'url': f'/components/{component.id}/'
+            })
+        except Components.DoesNotExist:
+            return JsonResponse({'error': 'Component not found'}, status=404)
+    
+    return JsonResponse({'error': 'Invalid item type'}, status=400)

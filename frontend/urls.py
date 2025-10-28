@@ -11,4 +11,9 @@ urlpatterns = [
     path('learn/<slug:slug>/', views.learning_detail, name='learning_detail'),
     path('about/', views.about, name='about'),
     path('contact/', views.contact, name='contact'),
+    
+    # API endpoints
+    path('api/search-suggestions/', views.api_search_suggestions, name='api_search_suggestions'),
+    path('api/filter-options/', views.api_filter_options, name='api_filter_options'),
+    path('api/quick-info/<uuid:item_id>/', views.api_quick_info, name='api_quick_info'),
 ]

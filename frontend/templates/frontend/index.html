@@ -3,6 +3,70 @@
 {% block content %}
 <div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Quick Navigation Bar -->
+        <div class="sticky top-16 z-40 bg-white border-b border-gray-200 mb-6 -mx-4 px-4 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- Category Shortcuts -->
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-sm font-medium text-gray-700">Quick Filters:</span>
+                    {% if brands %}
+                    <button onclick="quickFilter('brand', '{{ brands.0.id }}')" class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors">
+                        {{ brands.0.name }}
+                    </button>
+                    {% endif %}
+                    {% if voltages %}
+                    <button onclick="quickFilter('voltage', '{{ voltages.0.id }}')" class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors">
+                        {{ voltages.0.value }}V
+                    </button>
+                    {% endif %}
+                    {% if platforms %}
+                    <button onclick="quickFilter('platform', '{{ platforms.0.id }}')" class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors">
+                        {{ platforms.0.name }}
+                    </button>
+                    {% endif %}
+                </div>
+                
+                <!-- View Controls -->
+                <div class="flex items-center gap-4">
+                    <!-- View Toggle -->
+                    <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                        <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
+                        <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-gray-500 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <!-- Results per page -->
+                    <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
+                        <option value="12">12 per page</option>
+                        <option value="24">24 per page</option>
+                        <option value="48">48 per page</option>
+                    </select>
+                    
+                    <!-- Sort dropdown -->
+                    <select id="quick-sort" onchange="handleSortChange(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
+                        <option value="name">Sort by Name</option>
+                        <option value="-name">Sort by Name (Z-A)</option>
+                        <option value="brand__name">Sort by Brand</option>
+                        <option value="-brand__name">Sort by Brand (Z-A)</option>
+                        <option value="created_at">Sort by Date (Oldest)</option>
+                        <option value="-created_at">Sort by Date (Newest)</option>
+                    </select>
+                    
+                    <!-- Compare Button -->
+                    <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+                        Compare (0)
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Filters Sidebar -->
             <div class="lg:w-1/4">
@@ -21,15 +85,26 @@
                         {% endif %}
                     </div>
                     
-                    <!-- Active Filter Chips -->
+                    <!-- Enhanced Filter Chips -->
                     <div class="mb-4">
-                        <div class="flex flex-wrap gap-1">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-gray-700">Active Filters</h3>
+                            <button type="button" 
+                                    onclick="clearAllFilters()" 
+                                    class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                Clear All
+                            </button>
+                        </div>
+                        <div class="flex flex-wrap gap-2" id="filter-chips">
                             <!-- Brand Chips -->
                             {% for brand in brands %}
                                 {% if brand.id|stringformat:"s" in selected_brand_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                        {{ brand.name }}
-                                        <button type="button" onclick="removeFilter('brand', '{{ brand.id }}')" class="ml-1 text-blue-600 hover:text-blue-800" aria-label="Remove {{ brand.name }} filter">×</button>
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 rounded-full border border-blue-300 transition-all duration-300 hover:from-blue-200 hover:to-blue-300 hover:shadow-md transform hover:scale-105">
+                                        <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="font-medium">{{ brand.name }}</span>
+                                        <button type="button" onclick="removeFilter('brand', '{{ brand.id }}')" class="ml-2 text-blue-600 hover:text-blue-800 font-bold hover:bg-blue-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors" aria-label="Remove {{ brand.name }} filter">×</button>
                                     </span>
                                 {% endif %}
                             {% endfor %}
@@ -37,9 +112,12 @@
                             <!-- Voltage Chips -->
                             {% for voltage in voltages %}
                                 {% if voltage.id|stringformat:"s" in selected_voltage_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                        {{ voltage.value }}V
-                                        <button type="button" onclick="removeFilter('voltage', '{{ voltage.id }}')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-green-100 to-emerald-200 text-green-800 rounded-full border border-green-300 transition-all duration-300 hover:from-green-200 hover:to-emerald-300 hover:shadow-md transform hover:scale-105">
+                                        <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M13 10V3L4 14h7v7l9-11h-7z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="font-medium">{{ voltage.value }}V</span>
+                                        <button type="button" onclick="removeFilter('voltage', '{{ voltage.id }}')" class="ml-2 text-green-600 hover:text-green-800 font-bold hover:bg-green-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                     </span>
                                 {% endif %}
                             {% endfor %}
@@ -47,9 +125,12 @@
                             <!-- Platform Chips -->
                             {% for platform in platforms %}
                                 {% if platform.id|stringformat:"s" in selected_platform_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                        {{ platform.name }}
-                                        <button type="button" onclick="removeFilter('platform', '{{ platform.id }}')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-purple-100 to-violet-200 text-purple-800 rounded-full border border-purple-300 transition-all duration-300 hover:from-purple-200 hover:to-violet-300 hover:shadow-md transform hover:scale-105">
+                                        <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="font-medium">{{ platform.name }}</span>
+                                        <button type="button" onclick="removeFilter('platform', '{{ platform.id }}')" class="ml-2 text-purple-600 hover:text-purple-800 font-bold hover:bg-purple-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                     </span>
                                 {% endif %}
                             {% endfor %}
@@ -57,21 +138,26 @@
                             <!-- Status Chips -->
                             {% for status in statuses %}
                                 {% if status.id|stringformat:"s" in selected_status_ids %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                        {{ status.name }}
-                                        <button type="button" onclick="removeFilter('status', '{{ status.id }}')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                    <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-orange-100 to-amber-200 text-orange-800 rounded-full border border-orange-300 transition-all duration-300 hover:from-orange-200 hover:to-amber-300 hover:shadow-md transform hover:scale-105">
+                                        <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <span class="font-medium">{{ status.name }}</span>
+                                        <button type="button" onclick="removeFilter('status', '{{ status.id }}')" class="ml-2 text-orange-600 hover:text-orange-800 font-bold hover:bg-orange-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                     </span>
                                 {% endif %}
                             {% endfor %}
-                            
                             
                             <!-- Category Chips -->
                             {% if current_filters.category_level1 %}
                                 {% for category in level1_categories %}
                                     {% if category.id|stringformat:"s" == current_filters.category_level1 %}
-                                        <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                            {{ category.name }}
-                                            <button type="button" onclick="clearCategory('level1')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                        <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-indigo-100 to-blue-200 text-indigo-800 rounded-full border border-indigo-300 transition-all duration-300 hover:from-indigo-200 hover:to-blue-300 hover:shadow-md transform hover:scale-105">
+                                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="font-medium">{{ category.name }}</span>
+                                            <button type="button" onclick="clearCategory('level1')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-bold hover:bg-indigo-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                         </span>
                                     {% endif %}
                                 {% endfor %}
@@ -80,9 +166,12 @@
                             {% if current_filters.category_level2 %}
                                 {% for category in level2_categories_with_parent %}
                                     {% if category.id|stringformat:"s" == current_filters.category_level2 %}
-                                        <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                            {{ category.name }}
-                                            <button type="button" onclick="clearCategory('level2')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                        <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-indigo-100 to-blue-200 text-indigo-800 rounded-full border border-indigo-300 transition-all duration-300 hover:from-indigo-200 hover:to-blue-300 hover:shadow-md transform hover:scale-105">
+                                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="font-medium">{{ category.name }}</span>
+                                            <button type="button" onclick="clearCategory('level2')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-bold hover:bg-indigo-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                         </span>
                                     {% endif %}
                                 {% endfor %}
@@ -91,9 +180,12 @@
                             {% if current_filters.category_level3 %}
                                 {% for category in level3_categories_with_parent %}
                                     {% if category.id|stringformat:"s" == current_filters.category_level3 %}
-                                        <span class="inline-flex items-center px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                                            {{ category.name }}
-                                            <button type="button" onclick="clearCategory('level3')" class="ml-1 text-blue-600 hover:text-blue-800">×</button>
+                                        <span class="inline-flex items-center px-3 py-1.5 text-xs bg-gradient-to-r from-indigo-100 to-blue-200 text-indigo-800 rounded-full border border-indigo-300 transition-all duration-300 hover:from-indigo-200 hover:to-blue-300 hover:shadow-md transform hover:scale-105">
+                                            <svg class="w-3 h-3 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            <span class="font-medium">{{ category.name }}</span>
+                                            <button type="button" onclick="clearCategory('level3')" class="ml-2 text-indigo-600 hover:text-indigo-800 font-bold hover:bg-indigo-300 rounded-full w-4 h-4 flex items-center justify-center transition-colors">×</button>
                                         </span>
                                     {% endif %}
                                 {% endfor %}
@@ -127,7 +219,7 @@
                             <div class="space-y-2">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                                    <select name="category_level1" id="category_level1" class="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <select name="category_level1" id="category_level1" class="w-full custom-select">
                                         <option value="">All Categories</option>
                                         {% for category in level1_categories %}
                                             <option value="{{ category.id }}" {% if current_filters.category_level1 == category.id|stringformat:"s" %}selected{% endif %}>{{ category.name }}</option>
@@ -137,7 +229,7 @@
 
                                 <div>
                                     <!--<label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>-->
-                                    <select name="category_level2" id="category_level2" class="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <select name="category_level2" id="category_level2" class="w-full custom-select">
                                         <option value="">All Subcategories</option>
                                         {% for category in level2_categories_with_parent %}
                                             <option value="{{ category.id }}" 
@@ -151,7 +243,7 @@
 
                                 <div>
                                     <!--<label class="block text-sm font-medium text-gray-700 mb-1">Product Type</label>-->
-                                    <select name="category_level3" id="category_level3" class="w-full px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    <select name="category_level3" id="category_level3" class="w-full custom-select">
                                         <option value="">All Product Types</option>
                                         {% for category in level3_categories_with_parent %}
                                             <option value="{{ category.id }}" 
@@ -166,64 +258,108 @@
                         </div>
 
                         <!-- Brand Filter -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('brand')" 
-                                    aria-expanded="false" aria-controls="brand-content" aria-labelledby="brand-header"
-                                    onkeydown="handleFilterKeydown(event, 'brand')" tabindex="0">
-                                <span id="brand-header" class="text-sm font-medium text-gray-700">
-                                    Brand
-                                    {% if filter_counts.brands.selected > 0 %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <svg class="w-4 h-4 transform transition-transform" id="brand-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="filter-group mb-4">
+                            <button type="button" 
+                                    class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-100"
+                                    onclick="toggleFilterGroup('brand')">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="font-semibold text-gray-900">Brand</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium" id="brand-count">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
+                                            {% if filter_counts.brands.selected > 0 %}
+                                            <button type="button" onclick="clearFilterGroup('brand')" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Clear</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" id="brand-chevron">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="brand-content" class="filter-content" role="region" aria-labelledby="brand-header">
-                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2" role="group" aria-label="Brand filter options">
+                            
+                            <div id="brand-content" class="filter-group-content mt-3 hidden">
+                                <!-- Search within brands -->
+                                <div class="mb-4">
+                                    <div class="relative">
+                                        <input type="text" 
+                                               placeholder="Search brands..." 
+                                               class="w-full px-4 py-2.5 pl-10 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                               onkeyup="filterBrands(this.value)"
+                                               id="brand-search">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Brand list with checkboxes -->
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2" id="brand-list">
                                     {% for brand in brands %}
-                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer" for="brand_{{ brand.id }}">
+                                        <label class="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors group" for="brand_{{ brand.id }}">
                                             <input type="checkbox" name="brand" value="{{ brand.id }}" id="brand_{{ brand.id }}"
                                                    {% if brand.id|stringformat:"s" in selected_brand_ids %}checked{% endif %}
-                                                   class="mr-2 text-blue-600 focus:ring-blue-500"
+                                                   class="mr-3 text-blue-600 focus:ring-blue-500 rounded"
                                                    onchange="setTimeout(() => this.form.submit(), 10)"
                                                    aria-describedby="brand_{{ brand.id }}_desc">
-                                            <span class="text-sm" id="brand_{{ brand.id }}_desc">{{ brand.name }}</span>
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700" id="brand_{{ brand.id }}_desc">{{ brand.name }}</span>
                                         </label>
                                     {% endfor %}
                                 </div>
+                                
+                                <!-- Show more/less for long lists -->
+                                {% if brands|length > 10 %}
+                                <button type="button" 
+                                        class="w-full mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium py-2 px-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                        onclick="toggleShowAll('brand')">
+                                    <span id="brand-show-text">Show All Brands</span>
+                                </button>
+                                {% endif %}
                             </div>
                         </div>
 
                         <!-- Voltage Filter -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('voltage')" 
-                                    aria-expanded="true" aria-controls="voltage-content" aria-labelledby="voltage-header"
-                                    onkeydown="handleFilterKeydown(event, 'voltage')" tabindex="0">
-                                <span id="voltage-header" class="text-sm font-medium text-gray-700">
-                                    Voltage
-                                    {% if filter_counts.voltages.selected > 0 %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <svg class="w-4 h-4 transform transition-transform" id="voltage-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="filter-group mb-4">
+                            <button type="button" 
+                                    class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl hover:from-green-100 hover:to-emerald-100 transition-all duration-200 border border-green-100"
+                                    onclick="toggleFilterGroup('voltage')">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="font-semibold text-gray-900">Voltage</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium" id="voltage-count">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
+                                            {% if filter_counts.voltages.selected > 0 %}
+                                            <button type="button" onclick="clearFilterGroup('voltage')" class="text-xs text-green-600 hover:text-green-800 font-medium">Clear</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" id="voltage-chevron">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="voltage-content" class="filter-content">
-                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
+                            
+                            <div id="voltage-content" class="filter-group-content mt-3">
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
                                     {% for voltage in voltages %}
-                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer">
+                                        <label class="flex items-center px-3 py-2 hover:bg-green-50 cursor-pointer rounded-lg transition-colors group">
                                             <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
                                                    {% if voltage.id|stringformat:"s" in selected_voltage_ids %}checked{% endif %}
-                                                   class="mr-2 text-blue-600 focus:ring-blue-500"
+                                                   class="mr-3 text-green-600 focus:ring-green-500 rounded"
                                                    onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm">{{ voltage.value }}V</span>
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-green-700">{{ voltage.value }}V</span>
                                         </label>
                                     {% endfor %}
                                 </div>
@@ -231,31 +367,40 @@
                         </div>
 
                         <!-- Platform Filter -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('platform')" 
-                                    aria-expanded="true" aria-controls="platform-content" aria-labelledby="platform-header"
-                                    onkeydown="handleFilterKeydown(event, 'platform')" tabindex="0">
-                                <span id="platform-header" class="text-sm font-medium text-gray-700">
-                                    Platform
-                                    {% if filter_counts.platforms.selected > 0 %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <svg class="w-4 h-4 transform transition-transform" id="platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="filter-group mb-4">
+                            <button type="button" 
+                                    class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl hover:from-purple-100 hover:to-violet-100 transition-all duration-200 border border-purple-100"
+                                    onclick="toggleFilterGroup('platform')">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="font-semibold text-gray-900">Platform</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full font-medium" id="platform-count">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
+                                            {% if filter_counts.platforms.selected > 0 %}
+                                            <button type="button" onclick="clearFilterGroup('platform')" class="text-xs text-purple-600 hover:text-purple-800 font-medium">Clear</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" id="platform-chevron">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="platform-content" class="filter-content">
-                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
+                            
+                            <div id="platform-content" class="filter-group-content mt-3">
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
                                     {% for platform in platforms %}
-                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer">
+                                        <label class="flex items-center px-3 py-2 hover:bg-purple-50 cursor-pointer rounded-lg transition-colors group">
                                             <input type="checkbox" name="platform" value="{{ platform.id }}" 
                                                    {% if platform.id|stringformat:"s" in selected_platform_ids %}checked{% endif %}
-                                                   class="mr-2 text-blue-600 focus:ring-blue-500"
+                                                   class="mr-3 text-purple-600 focus:ring-purple-500 rounded"
                                                    onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm">{{ platform.name }}</span>
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700">{{ platform.name }}</span>
                                         </label>
                                     {% endfor %}
                                 </div>
@@ -263,31 +408,40 @@
                         </div>
 
                         <!-- Status Filter -->
-                        <div class="filter-section mb-6 bg-gray-50 p-4 rounded-lg">
-                            <button type="button" class="filter-header w-full flex items-center justify-between text-left" onclick="toggleSection('status')" 
-                                    aria-expanded="false" aria-controls="status-content" aria-labelledby="status-header"
-                                    onkeydown="handleFilterKeydown(event, 'status')" tabindex="0">
-                                <span id="status-header" class="text-sm font-medium text-gray-700">
-                                    Status
-                                    {% if filter_counts.statuses.selected > 0 %}
-                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            {{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}
-                                        </span>
-                                    {% endif %}
-                                </span>
-                                <svg class="w-4 h-4 transform transition-transform" id="status-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="filter-group mb-4">
+                            <button type="button" 
+                                    class="filter-group-header w-full flex items-center justify-between p-4 bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl hover:from-orange-100 hover:to-amber-100 transition-all duration-200 border border-orange-100"
+                                    onclick="toggleFilterGroup('status')">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <span class="font-semibold text-gray-900">Status</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium" id="status-count">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
+                                            {% if filter_counts.statuses.selected > 0 %}
+                                            <button type="button" onclick="clearFilterGroup('status')" class="text-xs text-orange-600 hover:text-orange-800 font-medium">Clear</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200" id="status-chevron">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="status-content" class="filter-content hidden">
-                                <div class="max-h-32 overflow-y-auto border border-gray-200 rounded p-2">
+                            
+                            <div id="status-content" class="filter-group-content mt-3 hidden">
+                                <div class="max-h-64 overflow-y-auto space-y-1 border border-gray-100 rounded-lg p-2">
                                     {% for status in statuses %}
-                                        <label class="flex items-center px-2 py-1 hover:bg-gray-50 cursor-pointer">
+                                        <label class="flex items-center px-3 py-2 hover:bg-orange-50 cursor-pointer rounded-lg transition-colors group">
                                             <input type="checkbox" name="status" value="{{ status.id }}" 
                                                    {% if status.id|stringformat:"s" in selected_status_ids %}checked{% endif %}
-                                                   class="mr-2 text-blue-600 focus:ring-blue-500"
+                                                   class="mr-3 text-orange-600 focus:ring-orange-500 rounded"
                                                    onchange="setTimeout(() => this.form.submit(), 10)">
-                                            <span class="text-sm">{{ status.name }}</span>
+                                            <span class="text-sm font-medium text-gray-700 group-hover:text-orange-700">{{ status.name }}</span>
                                         </label>
                                     {% endfor %}
                                 </div>
@@ -317,7 +471,7 @@
                     <!-- Sort Dropdown -->
                     <div class="flex items-center space-x-2">
                         <label for="sortSelect" class="text-sm font-medium text-gray-700">Sort by:</label>
-                        <select id="sortSelect" name="sort" class="px-3 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" onchange="handleSortChange(this)">
+                        <select id="sortSelect" name="sort" class="custom-select" onchange="handleSortChange(this)">
                             <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
                             <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand</option>
                             <option value="voltage" {% if current_filters.sort == 'voltage' %}selected{% endif %}>Voltage</option>
@@ -336,13 +490,13 @@
                 </div>
 
                 {% if products %}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {% for product in products %}
-                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col">
-                                <a href="{% url 'product_detail' product.id %}">
-                                    <div class="aspect-square bg-white rounded-t-xl overflow-hidden">
+                            <div class="bg-white rounded-xl shadow-sm border group flex flex-col hover:shadow-lg hover:border-blue-200 transition-all duration-300 transform hover:-translate-y-1 hover-lift animate-fade-in mobile-card mobile-touch-target gradient-border">
+                                <a href="{% url 'product_detail' product.id %}" class="relative">
+                                    <div class="aspect-square bg-white rounded-t-xl overflow-hidden relative">
                                         {% if product.image %}
-                                            <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2">
+                                            <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300">
                                         {% else %}
                                             <div class="w-full h-full flex items-center justify-center text-gray-400">
                                                 <div class="text-center">
@@ -353,11 +507,29 @@
                                                 </div>
                                             </div>
                                         {% endif %}
+                                        
+                                        <!-- Quick View Overlay -->
+                                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                            <button onclick="openQuickView('{{ product.id }}')" class="bg-white text-gray-900 px-4 py-2 rounded-lg shadow-lg font-medium hover:bg-gray-50 transition-colors ripple">
+                                                Quick View
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Compare Checkbox -->
+                                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <label class="flex items-center justify-center w-6 h-6 bg-white rounded-full shadow-md cursor-pointer hover:bg-blue-50">
+                                                <input type="checkbox" class="compare-checkbox" data-product-id="{{ product.id }}" onchange="toggleCompare(this)">
+                                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                </svg>
+                                            </label>
+                                        </div>
                                     </div>
                                 </a>
+                                
                                 <div class="p-5 flex flex-col flex-grow">
                                     <div class="mb-3">
-                                        <h3 class="font-semibold text-gray-900 line-clamp-2 leading-tight mb-2">{{ product.name }}</h3>
+                                        <h3 class="font-semibold text-gray-900 line-clamp-2 leading-tight mb-2 group-hover:text-blue-600 transition-colors">{{ product.name }}</h3>
                                         {% if product.status.name != 'Active' %}
                                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                                                 {% if product.status.name == 'Discontinued' %}bg-red-100 text-red-800
@@ -386,10 +558,12 @@
                                         {% endif %}
                                     </div>
 
-
                                     <div class="mt-auto">
-                                        <a href="{% url 'product_detail' product.id %}" class="block w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 text-center">
+                                        <a href="{% url 'product_detail' product.id %}" class="block w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-blue-700 text-center transition-colors group/btn">
                                             View Details
+                                            <svg class="w-4 h-4 inline-block ml-1 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
                                         </a>
                                     </div>
                                 </div>
@@ -455,14 +629,68 @@
                         </div>
                     {% endif %}
                 {% else %}
-                    <div class="text-center py-12">
-                        <div class="text-gray-400 mb-4">
-                            <svg class="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
-                            </svg>
+                    <!-- Enhanced Empty State -->
+                    <div class="text-center py-16">
+                        <div class="mx-auto w-64 h-64 mb-8 relative">
+                            <!-- Empty state illustration -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-48 h-48 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-24 h-24 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <!-- Floating elements -->
+                            <div class="absolute top-8 left-8 w-8 h-8 bg-yellow-200 rounded-full animate-bounce-gentle"></div>
+                            <div class="absolute top-16 right-12 w-6 h-6 bg-green-200 rounded-full animate-bounce-gentle" style="animation-delay: 0.5s;"></div>
+                            <div class="absolute bottom-12 left-12 w-4 h-4 bg-purple-200 rounded-full animate-bounce-gentle" style="animation-delay: 1s;"></div>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-                        <p class="text-gray-500">Try adjusting your filters or search terms.</p>
+                        
+                        <h3 class="text-2xl font-bold text-gray-900 mb-4">No products found</h3>
+                        <p class="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                            We couldn't find any products matching your current search and filter criteria.
+                        </p>
+                        
+                        <!-- Suggestions -->
+                        <div class="bg-gray-50 rounded-xl p-6 mb-8 max-w-lg mx-auto">
+                            <h4 class="text-lg font-semibold text-gray-900 mb-4">Try these suggestions:</h4>
+                            <ul class="text-left space-y-2 text-gray-600">
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Clear some filters to see more results
+                                </li>
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Try different search terms
+                                </li>
+                                <li class="flex items-center">
+                                    <svg class="w-5 h-5 text-blue-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Browse popular categories
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Action buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button onclick="clearAllFilters()" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                Clear All Filters
+                            </button>
+                            <a href="{% url 'index' %}" class="inline-flex items-center px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                                </svg>
+                                Browse All Products
+                            </a>
+                        </div>
                     </div>
                 {% endif %}
             </div>
@@ -653,7 +881,230 @@
     
     // updateChips function removed - chips are server-rendered
     
+    // Enhanced Filter Management
+    function toggleFilterGroup(groupId) {
+        const content = document.getElementById(groupId + '-content');
+        const chevron = document.getElementById(groupId + '-chevron');
+        const header = document.querySelector(`[onclick="toggleFilterGroup('${groupId}')"]`);
+        
+        if (content && chevron && header) {
+            const isExpanded = !content.classList.contains('hidden');
+            
+            if (isExpanded) {
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        }
+    }
     
+    function filterBrands(query) {
+        const brandList = document.getElementById('brand-list');
+        const labels = brandList.querySelectorAll('label');
+        
+        labels.forEach(label => {
+            const text = label.textContent.toLowerCase();
+            if (text.includes(query.toLowerCase())) {
+                label.style.display = 'flex';
+            } else {
+                label.style.display = 'none';
+            }
+        });
+    }
+    
+    function toggleShowAll(groupId) {
+        const content = document.getElementById(groupId + '-content');
+        const list = content.querySelector('.max-h-64');
+        const button = content.querySelector('button');
+        const showText = document.getElementById(groupId + '-show-text');
+        
+        if (list && button && showText) {
+            if (list.classList.contains('max-h-64')) {
+                list.classList.remove('max-h-64');
+                list.classList.add('max-h-96');
+                showText.textContent = 'Show Less';
+            } else {
+                list.classList.remove('max-h-96');
+                list.classList.add('max-h-64');
+                showText.textContent = 'Show All Brands';
+            }
+        }
+    }
+    
+    function clearFilterGroup(groupId) {
+        const checkboxes = document.querySelectorAll(`input[name="${groupId}"]`);
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        document.getElementById('filterForm').submit();
+    }
+    
+    function clearAllFilters() {
+        // Clear all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Clear all selects
+        document.querySelectorAll('select').forEach(select => {
+            select.selectedIndex = 0;
+        });
+        
+        // Clear search
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Submit form
+        document.getElementById('filterForm').submit();
+    }
+    
+    // Quick Navigation Functions
+    function quickFilter(type, value) {
+        const form = document.getElementById('filterForm');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = type;
+        input.value = value;
+        form.appendChild(input);
+        form.submit();
+    }
+    
+    function toggleView(viewType) {
+        const gridView = document.getElementById('grid-view');
+        const listView = document.getElementById('list-view');
+        const productGrid = document.getElementById('product-grid');
+        
+        if (viewType === 'grid') {
+            gridView.classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+            gridView.classList.remove('text-gray-500');
+            listView.classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+            listView.classList.add('text-gray-500');
+            
+            if (productGrid) {
+                productGrid.classList.remove('grid-cols-1');
+                productGrid.classList.add('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'xl:grid-cols-4');
+            }
+        } else {
+            listView.classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+            listView.classList.remove('text-gray-500');
+            gridView.classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+            gridView.classList.add('text-gray-500');
+            
+            if (productGrid) {
+                productGrid.classList.remove('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'xl:grid-cols-4');
+                productGrid.classList.add('grid-cols-1');
+            }
+        }
+        
+        // Save preference
+        localStorage.setItem('viewType', viewType);
+    }
+    
+    function changeResultsPerPage(value) {
+        const url = new URL(window.location);
+        url.searchParams.set('page_size', value);
+        url.searchParams.set('page', '1');
+        
+        // Show skeleton loading
+        LoadingStates.showSkeletonGrid('product-grid', 12);
+        showLoading('Loading products...');
+        
+        window.location.href = url.toString();
+    }
+    
+    // Quick View and Compare Functions
+    function openQuickView(productId) {
+        // For now, redirect to product detail page
+        // In a full implementation, this would open a modal
+        window.location.href = `/product/${productId}/`;
+    }
+    
+    function toggleCompare(checkbox) {
+        const productId = checkbox.dataset.productId;
+        const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+        
+        if (checkbox.checked) {
+            if (compareList.length >= 4) {
+                showToast('You can compare up to 4 products at once.', 'warning');
+                checkbox.checked = false;
+                return;
+            }
+            if (!compareList.includes(productId)) {
+                compareList.push(productId);
+                showToast('Product added to comparison', 'success');
+            }
+        } else {
+            const index = compareList.indexOf(productId);
+            if (index > -1) {
+                compareList.splice(index, 1);
+                showToast('Product removed from comparison', 'info');
+            }
+        }
+        
+        localStorage.setItem('compareList', JSON.stringify(compareList));
+        updateCompareButton();
+    }
+    
+    function updateCompareButton() {
+        const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+        const compareButton = document.getElementById('compare-button');
+        
+        if (compareButton) {
+            if (compareList.length > 0) {
+                compareButton.textContent = `Compare (${compareList.length})`;
+                compareButton.classList.remove('hidden');
+            } else {
+                compareButton.classList.add('hidden');
+            }
+        }
+    }
+    
+    function openCompareModal() {
+        const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+        if (compareList.length === 0) {
+            alert('Please select products to compare.');
+            return;
+        }
+        
+        // For now, redirect to a compare page
+        // In a full implementation, this would open a modal
+        const compareUrl = `/compare/?products=${compareList.join(',')}`;
+        window.location.href = compareUrl;
+    }
+    
+    // Initialize compare state on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+        compareList.forEach(productId => {
+            const checkbox = document.querySelector(`input[data-product-id="${productId}"]`);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+        updateCompareButton();
+    });
+    
+    // Enhanced form submission with loading states
+    function submitFilterForm() {
+        showLoading('Applying filters...');
+        LoadingStates.showSkeletonGrid('product-grid', 12);
+        document.getElementById('filterForm').submit();
+    }
+    
+    // Override form submission to show loading
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filterForm');
+        if (filterForm) {
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitFilterForm();
+            });
+        }
+    });
     
     // Debounced search functionality
     function initializeDebouncedSearch() {

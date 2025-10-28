@@ -5,7 +5,7 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Quick Navigation Bar -->
         <div class="sticky top-16 z-40 bg-white border-b border-gray-200 mb-6 -mx-4 px-4 py-3">
-            <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <!-- Category Shortcuts -->
                 <div class="flex flex-wrap gap-2">
                     <span class="text-sm font-medium text-gray-700">Quick Filters:</span>
@@ -46,6 +46,9 @@
                     <button id="compare-button" onclick="openComparisonModal()" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm mobile-button mobile-touch-target ripple">
                         Compare (0)
                     </button>
+                    <button id="clear-compare-button" onclick="clearComparison()" class="hidden bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors">
+                        Clear
+                    </button>
                     
                     <!-- Results per page -->
                     <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
@@ -54,20 +57,6 @@
                         <option value="48">48 per page</option>
                     </select>
                     
-                    <!-- Sort dropdown -->
-                    <select id="quick-sort" onchange="handleSortChange(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
-                        <option value="name">Sort by Name</option>
-                        <option value="-name">Sort by Name (Z-A)</option>
-                        <option value="brand__name">Sort by Brand</option>
-                        <option value="-brand__name">Sort by Brand (Z-A)</option>
-                        <option value="created_at">Sort by Date (Oldest)</option>
-                        <option value="-created_at">Sort by Date (Newest)</option>
-                    </select>
-                    
-                    <!-- Compare Button -->
-                    <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
-                        Compare (0)
-                    </button>
                 </div>
             </div>
         </div>
@@ -490,12 +479,14 @@
                                         </div>
                                         
                                         <!-- Compare Checkbox -->
-                                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <div class="absolute top-2 right-2 transition-opacity duration-300" id="compare-checkbox-{{ component.id }}">
                                             <label class="flex items-center justify-center w-6 h-6 bg-white rounded-full shadow-md cursor-pointer hover:bg-blue-50">
-                                                <input type="checkbox" class="compare-checkbox" data-component-id="{{ component.id }}" onchange="toggleCompare(this)">
-                                                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                                </svg>
+                                                <input type="checkbox" class="compare-checkbox sr-only" data-component-id="{{ component.id }}" onchange="toggleCompare(this)">
+                                                <div class="w-4 h-4 border-2 border-gray-300 rounded flex items-center justify-center checkbox-visual">
+                                                    <svg class="w-3 h-3 text-white hidden checkmark" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
                                             </label>
                                         </div>
                                     </div>
@@ -635,6 +626,28 @@
                     </div>
                 {% endif %}
             </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick View Modal -->
+    <div id="quickViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Quick View</h3>
+                    <button onclick="closeQuickView()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div id="quickViewContent">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
             </div>
         </div>
     </div>
@@ -1075,29 +1088,158 @@ function changeResultsPerPage(value) {
 
 // Quick View and Compare Functions
 function openQuickView(componentId) {
-    // For now, redirect to component detail page
-    // In a full implementation, this would open a modal
-    window.location.href = `/components/${componentId}/`;
+    // Show loading state
+    const modal = document.getElementById('quickViewModal');
+    const content = document.getElementById('quickViewContent');
+    
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    content.innerHTML = `
+        <div class="flex items-center justify-center p-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="ml-2 text-gray-600">Loading...</span>
+        </div>
+    `;
+    
+    // Fetch component data
+    fetch(`/api/quick-info/${componentId}/?type=component`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                content.innerHTML = `
+                    <div class="text-center p-8">
+                        <p class="text-red-600">Error loading component details</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Populate modal with component data
+            content.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/2">
+                        <div class="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                            ${data.image ? `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain p-4">` : 
+                                `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                    <div class="text-center">
+                                        <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        <p class="text-sm">No Image</p>
+                                    </div>
+                                </div>`}
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
+                        ${data.brand ? `<p class="text-sm text-gray-600 mb-2">Brand: ${data.brand}</p>` : ''}
+                        ${data.sku ? `<p class="text-sm text-gray-600 mb-2">SKU: ${data.sku}</p>` : ''}
+                        ${data.description ? `<p class="text-gray-700 mb-4">${data.description}</p>` : ''}
+                        <div class="flex gap-2">
+                            <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
+                                View Full Details
+                            </a>
+                            <button onclick="closeQuickView()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="text-center p-8">
+                    <p class="text-red-600">Error loading component details</p>
+                </div>
+            `;
+        });
+}
+
+function closeQuickView() {
+    const modal = document.getElementById('quickViewModal');
+    modal.classList.add('hidden');
 }
 
 function toggleCompare(checkbox) {
     const componentId = checkbox.dataset.componentId;
-    const isChecked = checkbox.checked;
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+    const checkmark = checkboxContainer.querySelector('.checkmark');
+    const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
     
-    if (isChecked) {
-        addToComparison(componentId, 'component');
+    if (checkbox.checked) {
+        if (compareList.length >= 4) {
+            showToast('You can compare up to 4 components at once.', 'warning');
+            checkbox.checked = false;
+            return;
+        }
+        if (!compareList.includes(componentId)) {
+            compareList.push(componentId);
+            showToast('Component added to comparison', 'success');
+        }
+        // Show checkbox as checked
+        checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+        checkmark.classList.remove('hidden');
+        checkboxContainer.classList.remove('opacity-0');
+        checkboxContainer.classList.add('opacity-100');
     } else {
-        removeFromComparison(componentId, 'component');
+        const index = compareList.indexOf(componentId);
+        if (index > -1) {
+            compareList.splice(index, 1);
+            showToast('Component removed from comparison', 'info');
+        }
+        // Show checkbox as unchecked
+        checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+        checkmark.classList.add('hidden');
+        checkboxContainer.classList.add('opacity-0');
+        checkboxContainer.classList.remove('opacity-100');
     }
+    
+    localStorage.setItem('compareList', JSON.stringify(compareList));
+    updateCompareButton();
+}
+
+function clearComparison() {
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    
+    // Uncheck all checkboxes
+    compareList.forEach(componentId => {
+        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
+        if (checkbox) {
+            checkbox.checked = false;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            const checkmark = checkboxContainer.querySelector('.checkmark');
+            const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+            
+            checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+            checkmark.classList.add('hidden');
+            checkboxContainer.classList.add('opacity-0');
+            checkboxContainer.classList.remove('opacity-100');
+        }
+    });
+    
+    // Clear localStorage
+    localStorage.setItem('compareList', JSON.stringify([]));
+    updateCompareButton();
+    showToast('Comparison cleared', 'info');
 }
 
 function updateCompareButton() {
-    const compareList = JSON.parse(localStorage.getItem('comparisonList') || '[]');
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
     const compareButton = document.getElementById('compare-button');
+    const clearButton = document.getElementById('clear-compare-button');
     
     if (compareButton) {
         compareButton.textContent = `Compare (${compareList.length})`;
         compareButton.disabled = compareList.length < 2;
+        if (clearButton) {
+            if (compareList.length > 0) {
+                clearButton.classList.remove('hidden');
+            } else {
+                clearButton.classList.add('hidden');
+            }
+        }
     }
 }
 
@@ -1124,6 +1266,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
         if (checkbox) {
             checkbox.checked = true;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            const checkmark = checkboxContainer.querySelector('.checkmark');
+            const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+            
+            checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+            checkmark.classList.remove('hidden');
+            checkboxContainer.classList.remove('opacity-0');
+            checkboxContainer.classList.add('opacity-100');
         }
     });
     updateCompareButton();

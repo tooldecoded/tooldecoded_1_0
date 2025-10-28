@@ -23,6 +23,36 @@ class ItemCategories(models.Model):
         ordering = ['level', 'sortorder', 'name']
         unique_together = ('parent', 'name', 'level')
 
+class Categories(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField()
+    fullname = models.TextField(unique=True)
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'Categories'
+        ordering = ['sortorder', 'name']
+
+class Subcategories(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField()
+    fullname = models.TextField(unique=True)
+    categories = models.ManyToManyField('Categories')
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'Subcategories'
+        ordering = ['sortorder', 'name']
+
+class ItemTypes(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField()
+    fullname = models.TextField(unique=True)
+    categories = models.ManyToManyField('Categories')
+    subcategories = models.ManyToManyField('Subcategories')
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'ItemTypes'
+        ordering = ['sortorder', 'name']
+
 class ListingTypes(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField(unique=True)
@@ -75,6 +105,9 @@ class Products(models.Model):
     brand = models.ForeignKey('Brands', on_delete=models.CASCADE, blank=True, null=True)
     sku = models.TextField(blank=True, null=True)
     itemcategories = models.ManyToManyField('ItemCategories')
+    itemtypes = models.ManyToManyField('ItemTypes')
+    subcategories = models.ManyToManyField('Subcategories')
+    categories = models.ManyToManyField('Categories')
     batteryplatforms = models.ManyToManyField('BatteryPlatforms')
     batteryvoltages = models.ManyToManyField('BatteryVoltages')
     image = models.TextField(blank=True, null=True)
@@ -95,6 +128,9 @@ class Components(models.Model):
     brand = models.ForeignKey('Brands', on_delete=models.CASCADE, blank=True, null=True)
     sku = models.TextField(blank=True, null=True)
     itemcategories = models.ManyToManyField('ItemCategories')
+    itemtypes = models.ManyToManyField('ItemTypes')
+    subcategories = models.ManyToManyField('Subcategories')
+    categories = models.ManyToManyField('Categories')
     batteryplatforms = models.ManyToManyField('BatteryPlatforms')
     batteryvoltages = models.ManyToManyField('BatteryVoltages')
     productlines = models.ManyToManyField('ProductLines')

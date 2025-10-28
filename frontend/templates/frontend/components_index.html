@@ -3,52 +3,59 @@
 {% block content %}
 <div>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Quick Navigation Bar -->
-        <div class="sticky top-16 z-40 bg-white border-b border-gray-200 mb-6 -mx-4 px-4 py-3">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <!-- Category Shortcuts -->
-                <div class="flex flex-wrap gap-2">
-                    <span class="text-sm font-medium text-gray-700">Quick Filters:</span>
-                    {% if brands %}
-                    <button onclick="quickFilter('brand', '{{ brands.0.id }}')" class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors">
-                        {{ brands.0.name }}
-                    </button>
-                    {% endif %}
-                    {% if voltages %}
-                    <button onclick="quickFilter('voltage', '{{ voltages.0.id }}')" class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors">
-                        {{ voltages.0.value }}V
-                    </button>
-                    {% endif %}
-                    {% if platforms %}
-                    <button onclick="quickFilter('platform', '{{ platforms.0.id }}')" class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors">
-                        {{ platforms.0.name }}
-                    </button>
-                    {% endif %}
+        <!-- Quick Filters Bar -->
+        <div class="sticky top-16 z-40 bg-white rounded-xl shadow-sm border border-gray-200 mb-6 py-3">
+            <div class="px-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- Left Side - Filters Section -->
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                        </svg>
+                        <h2 class="text-sm font-semibold text-gray-900">Filters</h2>
+                    </div>
+                    
+                    <!-- Active Filters -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium text-gray-700">Active Filters</span>
+                        {% if current_filters.search or current_filters.brand or current_filters.voltage or current_filters.platform or current_filters.category_level1 or current_filters.category_level2 or current_filters.category_level3 or current_filters.product_line or selected_attribute_filters or selected_feature_filters %}
+                            <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                                Clear All
+                            </a>
+                        {% endif %}
+                    </div>
                 </div>
                 
-                <!-- View Controls -->
+                <!-- Left Side - Compare Button -->
+                <div class="flex items-center gap-4">
+                    <!-- Compare Button with integrated X -->
+                    <button id="compare-button" onclick="openCompareModal()" class="hidden bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
+                        <span>Compare</span>
+                        <span id="compare-count" class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">(0)</span>
+                        <button onclick="clearComparison(); event.stopPropagation();" class="ml-1 text-white hover:text-red-200 transition-colors" title="Clear comparison">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </button>
+                </div>
+                
+                <!-- Right Side - View Controls -->
                 <div class="flex items-center gap-4">
                     <!-- View Toggle -->
                     <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                        <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                            </svg>
-                        </button>
                         <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-gray-500 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z" clip-rule="evenodd"></path>
                             </svg>
                         </button>
+                        <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                            </svg>
+                        </button>
                     </div>
-                    
-                    <!-- Compare Button -->
-                    <button id="compare-button" onclick="openCompareModal()" disabled class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm mobile-button mobile-touch-target ripple">
-                        Compare (0)
-                    </button>
-                    <button id="clear-compare-button" onclick="clearComparison()" class="hidden bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors">
-                        Clear
-                    </button>
                     
                     <!-- Sort Dropdown -->
                     <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
@@ -70,8 +77,19 @@
                         <option value="24">24 per page</option>
                         <option value="48">48 per page</option>
                     </select>
-                    
                 </div>
+            </div>
+            
+            <!-- Product Count Display -->
+            <div class="mt-3">
+                <div class="text-sm text-gray-600">
+                    {% if components %}
+                        Showing {{ components.start_index }}-{{ components.end_index }} of {{ components.paginator.count }} components
+                    {% else %}
+                        No components found
+                    {% endif %}
+                </div>
+            </div>
             </div>
         </div>
 
@@ -434,15 +452,6 @@
 
             <!-- Main Content -->
             <div class="lg:w-3/4">
-                <div class="mb-6 flex justify-between items-center">
-                    <h2 class="text-xl font-semibold text-gray-900">
-                        {% if components %}
-                            Showing {{ components.start_index }}-{{ components.end_index }} of {{ components.paginator.count }} components
-                        {% else %}
-                            No components found
-                        {% endif %}
-                    </h2>
-                </div>
 
                 {% if components %}
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -702,6 +711,28 @@
                     <button onclick="closeFairPriceModal()" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors">
                         Close
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Modal -->
+    <div id="comparison-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-5/6 lg:w-4/5 xl:w-3/4 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-medium text-gray-900">Compare Components</h2>
+                    <button onclick="closeComparisonModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div id="comparison-content">
+                    <!-- Content will be populated by JavaScript -->
                 </div>
             </div>
         </div>
@@ -1196,28 +1227,40 @@ function toggleCompare(checkbox) {
     const checkmark = checkboxContainer.querySelector('.checkmark');
     const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
     
+    console.log('toggleCompare called for component:', componentId, 'checked:', checkbox.checked);
+    
     if (checkbox.checked) {
-        if (compareList.length >= 4) {
-            showToast('You can compare up to 4 components at once.', 'warning');
+        if (compareList.length >= 6) {
+            showToast('You can compare up to 6 components at once.', 'warning');
             checkbox.checked = false;
             return;
         }
         if (!compareList.includes(componentId)) {
             compareList.push(componentId);
+            console.log('Added component to compare list, new length:', compareList.length);
         }
         // Show checkbox as checked
-        checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
-        checkmark.classList.remove('hidden');
+        if (checkboxVisual) {
+            checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+        }
+        if (checkmark) {
+            checkmark.classList.remove('hidden');
+        }
         checkboxContainer.classList.remove('opacity-0');
         checkboxContainer.classList.add('opacity-100');
     } else {
         const index = compareList.indexOf(componentId);
         if (index > -1) {
             compareList.splice(index, 1);
+            console.log('Removed component from compare list, new length:', compareList.length);
         }
         // Show checkbox as unchecked
-        checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
-        checkmark.classList.add('hidden');
+        if (checkboxVisual) {
+            checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+        }
+        if (checkmark) {
+            checkmark.classList.add('hidden');
+        }
         // Keep checkbox visible but with reduced opacity
         checkboxContainer.classList.remove('opacity-0');
         checkboxContainer.classList.add('opacity-100');
@@ -1237,17 +1280,17 @@ function clearComparison() {
             checkbox.checked = false;
             const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
             if (checkboxContainer) {
-            const checkmark = checkboxContainer.querySelector('.checkmark');
-            const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
-            
+                const checkmark = checkboxContainer.querySelector('.checkmark');
+                const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+                
                 if (checkboxVisual) {
-            checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+                    checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
                 }
                 if (checkmark) {
-            checkmark.classList.add('hidden');
+                    checkmark.classList.add('hidden');
                 }
-            checkboxContainer.classList.add('opacity-0');
-            checkboxContainer.classList.remove('opacity-100');
+                checkboxContainer.classList.add('opacity-0');
+                checkboxContainer.classList.remove('opacity-100');
             }
         }
     });
@@ -1255,23 +1298,32 @@ function clearComparison() {
     // Clear localStorage
     localStorage.setItem('componentCompareList', JSON.stringify([]));
     updateCompareButton();
+    showToast('Comparison cleared', 'info');
 }
 
 function updateCompareButton() {
     const compareList = JSON.parse(localStorage.getItem('componentCompareList') || '[]');
     const compareButton = document.getElementById('compare-button');
-    const clearButton = document.getElementById('clear-compare-button');
+    const compareCount = document.getElementById('compare-count');
+    
+    console.log('updateCompareButton called, compareList length:', compareList.length);
+    console.log('compareButton found:', !!compareButton);
+    console.log('compareCount found:', !!compareCount);
     
     if (compareButton) {
-        compareButton.textContent = `Compare (${compareList.length})`;
-        compareButton.disabled = compareList.length < 2;
-        if (clearButton) {
-            if (compareList.length > 0) {
-                clearButton.classList.remove('hidden');
-            } else {
-                clearButton.classList.add('hidden');
+        if (compareList.length > 0) {
+            compareButton.classList.remove('hidden');
+            if (compareCount) {
+                compareCount.textContent = `(${compareList.length})`;
+                console.log('Updated count to:', compareCount.textContent);
             }
+            // Enable/disable button based on minimum items
+            compareButton.disabled = compareList.length < 2;
+        } else {
+            compareButton.classList.add('hidden');
         }
+    } else {
+        console.error('Compare button not found!');
     }
 }
 
@@ -1698,11 +1750,51 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     updateCompareButton();
-    
-    // Initialize global comparison button
-    if (typeof updateComparisonButton === 'function') {
-        updateComparisonButton();
-    }
 });
+
+// Loading indicator functions
+function showLoading(message = 'Loading...') {
+    // Create or update loading indicator
+    let loadingDiv = document.getElementById('loading-indicator');
+    if (!loadingDiv) {
+        loadingDiv = document.createElement('div');
+        loadingDiv.id = 'loading-indicator';
+        loadingDiv.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+        loadingDiv.innerHTML = `
+            <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span class="text-gray-700">${message}</span>
+            </div>
+        `;
+        document.body.appendChild(loadingDiv);
+    } else {
+        loadingDiv.querySelector('span').textContent = message;
+        loadingDiv.classList.remove('hidden');
+    }
+}
+
+function hideLoading() {
+    const loadingDiv = document.getElementById('loading-indicator');
+    if (loadingDiv) {
+        loadingDiv.classList.add('hidden');
+    }
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Simple toast implementation
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'warning' ? 'bg-yellow-500' : 
+        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
     </script>
 {% endblock %}

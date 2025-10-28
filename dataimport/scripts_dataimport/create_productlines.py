@@ -7,24 +7,10 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tooldecoded.settings')
 django.setup()
 
 from toolanalysis.models import ProductLines, BatteryPlatforms, BatteryVoltages, Brands
-brand = Brands.objects.get(name='Milwaukee')
-batterym12 = BatteryPlatforms.objects.get(name='M12')
-batterym18 = BatteryPlatforms.objects.get(name='M18')
-v12 = BatteryVoltages.objects.get(value=12)
+brand = Brands.objects.get(name='Ryobi')
+batteryplatformoneplus = BatteryPlatforms.objects.get(name='18V ONE+')
 v18 = BatteryVoltages.objects.get(value=18)
-productlines = [['M18', 'Milwaukee M18', brand , [batterym18], [v18]],
-['M12', 'Milwaukee M12', brand , [batterym12], [v12]],
-['M18 FUEL', 'Milwaukee M18 FUEL', brand , [batterym18], [v18]],
-['M12 FUEL', 'Milwaukee M12 FUEL', brand , [batterym12], [v12]],
-['M18 Brushless', 'Milwaukee M18 Brushless', brand , [batterym18], [v18]],
-['M18 Compact Brushless', 'Milwaukee M18 Compact Brushless', brand , [batterym18], [v18]],
-['M12 Compact Brushless', 'Milwaukee M12 Compact Brushless', brand , [batterym12], [v12]],
-['M12 Subcompact Brushless', 'Milwaukee M12 Subcompact Brushless', brand , [batterym12], [v12]],
-['M18 REDLITHIUM HIGH OUTPUT', 'Milwaukee M18 REDLITHIUM HIGH OUTPUT', brand , [batterym18], [v18]],
-['M18 REDLITHIUM FORGE', 'Milwaukee M18 REDLITHIUM FORGE', brand , [batterym18], [v18]],
-['M18 REDLITHIUM CP', 'Milwaukee M18 REDLITHIUM CP', brand , [batterym18], [v18]],
-['M18 REDLITHIUM XC', 'Milwaukee M18 REDLITHIUM XC', brand , [batterym18], [v18]],
-['M18 REDLITHIUM HIGH DEMAND', 'Milwaukee M18 REDLITHIUM HIGH DEMAND', brand , [batterym18], [v18]]]
+productlines = [['18V ONE+', 'Ryobi 18V ONE+', brand , [batteryplatformoneplus], [v18]]]
 
 
 for p in productlines:

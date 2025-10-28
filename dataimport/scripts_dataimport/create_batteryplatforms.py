@@ -7,10 +7,9 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tooldecoded.settings')
 django.setup()
 
 from toolanalysis.models import BatteryPlatforms, BatteryVoltages, Brands
-brand = Brands.objects.get(name='Milwaukee')
+brand = Brands.objects.get(name='Ryobi')
 v18 = BatteryVoltages.objects.get(value=18)
-v12 = BatteryVoltages.objects.get(value=12)
-batteryplatforms = [['M18',brand , [v18]],['M12', brand, [v12]]]
+batteryplatforms = [['18V ONE+', brand , [v18]],]
 
 
 for b in batteryplatforms:

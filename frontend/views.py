@@ -10,6 +10,7 @@ from toolanalysis.models import (
     ProductLines, ProductComponents
 )
 from .models import LearningArticle, Tag, SiteSettings
+from .utils import get_category_hierarchy_filters, build_category_hierarchy_data
 
 # ============================================================================
 # FLAGSHIP PRODUCTS CONFIGURATION
@@ -26,12 +27,12 @@ from .models import LearningArticle, Tag, SiteSettings
 #   '2804-20',  # Milwaukee M18 FUEL Hammer Drill
 #
 FLAGSHIP_PRODUCT_SKUS = [
-    # Add SKUs here - one per line
-    # User will populate this list
+    2904-20,
+     # User will populate this list
 ]
 
 def index(request):
-    """Product catalog with filtering and pagination"""
+    """Product catalog with comprehensive filtering and pagination"""
     # Get filter parameters
     search = request.GET.get('search', '')
     brand = request.GET.get('brand', '')
@@ -41,18 +42,20 @@ def index(request):
     category_level2 = request.GET.get('category_level2', '')
     category_level3 = request.GET.get('category_level3', '')
     status = request.GET.get('status', '')
+    release_date_from = request.GET.get('release_date_from', '')
+    release_date_to = request.GET.get('release_date_to', '')
     sort = request.GET.get('sort', 'name')
     sort_direction = request.GET.get('sort_direction', 'asc')
     page = int(request.GET.get('page', 1))
     
-    # Parse multi-select values - handle both single values and comma-separated
-    # First try to get from individual checkbox parameters (most common)
+    
+    # Parse multi-select values
     brand_ids = request.GET.getlist('brand')
     voltage_ids = request.GET.getlist('voltage')
     platform_ids = request.GET.getlist('platform')
     status_ids = request.GET.getlist('status')
     
-    # If no individual values, try comma-separated values
+    # Handle comma-separated values if no individual values
     if not brand_ids and brand:
         brand_ids = [x.strip() for x in brand.split(',')]
     if not voltage_ids and voltage:
@@ -61,12 +64,6 @@ def index(request):
         platform_ids = [x.strip() for x in platform.split(',')]
     if not status_ids and status:
         status_ids = [x.strip() for x in status.split(',')]
-    
-    # Store original string IDs for template display
-    original_brand_ids = brand_ids.copy()
-    original_voltage_ids = voltage_ids.copy()
-    original_platform_ids = platform_ids.copy()
-    original_status_ids = status_ids.copy()
     
     # Convert string IDs to UUIDs for database filtering
     def convert_to_uuids(id_list):
@@ -81,10 +78,6 @@ def index(request):
     voltage_ids = convert_to_uuids(voltage_ids)
     platform_ids = convert_to_uuids(platform_ids)
     status_ids = convert_to_uuids(status_ids)
-    
-    # Debug: Print what we're filtering by
-    print(f"DEBUG: brand_ids={brand_ids}, platform_ids={platform_ids}, status_ids={status_ids}")
-    
     
     # Start with all products
     products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
@@ -108,24 +101,18 @@ def index(request):
     if platform_ids:
         products = products.filter(batteryplatforms__id__in=platform_ids)
     
-    # Category filtering with hierarchy support (includes child categories)
-    if category_level3:
-        # Level 3: only filter by this specific category
-        products = products.filter(itemcategories__id=category_level3)
-    elif category_level2:
-        # Level 2: include this category and all Level 3 children
-        level3_ids = ItemCategories.objects.filter(parent=category_level2).values_list('id', flat=True)
-        descendant_ids = [category_level2] + list(level3_ids)
-        products = products.filter(itemcategories__id__in=descendant_ids)
-    elif category_level1:
-        # Level 1: include this category and all Level 2/3 descendants
-        level2_ids = ItemCategories.objects.filter(parent=category_level1).values_list('id', flat=True)
-        level3_ids = ItemCategories.objects.filter(parent__in=level2_ids).values_list('id', flat=True)
-        all_ids = [category_level1] + list(level2_ids) + list(level3_ids)
-        products = products.filter(itemcategories__id__in=all_ids)
+    # Category filtering with hierarchy support
+    products = get_category_hierarchy_filters(products, category_level1, category_level2, category_level3, 'products')
     
     if status_ids:
         products = products.filter(status__id__in=status_ids)
+    
+    # Date range filtering
+    if release_date_from:
+        products = products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        products = products.filter(releasedate__lte=release_date_to)
     
     # Apply sorting
     if sort == 'brand':
@@ -157,128 +144,142 @@ def index(request):
     except:
         page_obj = paginator.page(1)
     
-    # Get filter options - filter by non-category filters to avoid circular dependency
-    # Start with products filtered by everything EXCEPT categories
-    non_category_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+    # Get filter options that would actually change the result count
+    # Start with all products for each filter type, then apply other filters
+    
+    # For brands: apply all filters except brand
+    brand_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
         'batteryvoltages', 'batteryplatforms', 'itemcategories'
     ).all()
     
-    # Apply non-category filters
     if search:
-        non_category_products = non_category_products.filter(
+        brand_base_products = brand_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if voltage_ids:
+        brand_base_products = brand_base_products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        brand_base_products = brand_base_products.filter(batteryplatforms__id__in=platform_ids)
+    
+    if status_ids:
+        brand_base_products = brand_base_products.filter(status__id__in=status_ids)
+    
+    if release_date_from:
+        brand_base_products = brand_base_products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        brand_base_products = brand_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply category filters to brand base
+    brand_base_products = get_category_hierarchy_filters(brand_base_products, category_level1, category_level2, category_level3, 'products')
+    
+    # For voltages: apply all filters except voltage
+    voltage_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    if search:
+        voltage_base_products = voltage_base_products.filter(
             Q(name__icontains=search) | 
             Q(description__icontains=search) |
             Q(sku__icontains=search)
         )
     
     if brand_ids:
-        non_category_products = non_category_products.filter(brand__id__in=brand_ids)
-    
-    if voltage_ids:
-        non_category_products = non_category_products.filter(batteryvoltages__id__in=voltage_ids)
+        voltage_base_products = voltage_base_products.filter(brand__id__in=brand_ids)
     
     if platform_ids:
-        non_category_products = non_category_products.filter(batteryplatforms__id__in=platform_ids)
+        voltage_base_products = voltage_base_products.filter(batteryplatforms__id__in=platform_ids)
     
     if status_ids:
-        non_category_products = non_category_products.filter(status__id__in=status_ids)
+        voltage_base_products = voltage_base_products.filter(status__id__in=status_ids)
     
-    # Get all available filter options - don't filter by current selections
-    brands = Brands.objects.filter(products__isnull=False).distinct().order_by('name')
-    voltages = BatteryVoltages.objects.filter(products__isnull=False).distinct().order_by('value')
-    platforms = BatteryPlatforms.objects.filter(products__isnull=False).distinct().order_by('name')
-    statuses = Statuses.objects.filter(products__isnull=False).distinct().order_by('sortorder')
+    if release_date_from:
+        voltage_base_products = voltage_base_products.filter(releasedate__gte=release_date_from)
     
-    # Get categories - filter by non-category filtered products to show only relevant categories
-    # First, get all category IDs that have products matching the non-category filters
-    relevant_category_ids = set()
+    if release_date_to:
+        voltage_base_products = voltage_base_products.filter(releasedate__lte=release_date_to)
     
-    # Get Level 3 categories that have products
-    level3_with_products = ItemCategories.objects.filter(
-        level=3, 
-        products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level3_with_products)
+    # Apply category filters to voltage base
+    voltage_base_products = get_category_hierarchy_filters(voltage_base_products, category_level1, category_level2, category_level3, 'products')
     
-    # Get Level 2 categories that have products or have children with products
-    level2_with_products = ItemCategories.objects.filter(
-        level=2,
-        products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level2_with_products)
+    # For platforms: apply all filters except platform
+    platform_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
     
-    # Get Level 2 categories that have children with products
-    level2_with_children_products = ItemCategories.objects.filter(
-        level=2,
-        itemcategories__products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level2_with_children_products)
+    if search:
+        platform_base_products = platform_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
     
-    # Get Level 1 categories that have products
-    level1_with_products = ItemCategories.objects.filter(
-        level=1,
-        products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_products)
+    if brand_ids:
+        platform_base_products = platform_base_products.filter(brand__id__in=brand_ids)
     
-    # Get Level 1 categories that have children with products
-    level1_with_children_products = ItemCategories.objects.filter(
-        level=1,
-        itemcategories__products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_children_products)
+    if voltage_ids:
+        platform_base_products = platform_base_products.filter(batteryvoltages__id__in=voltage_ids)
     
-    # Get Level 1 categories that have grandchildren with products
-    level1_with_grandchildren_products = ItemCategories.objects.filter(
-        level=1,
-        itemcategories__itemcategories__products__in=non_category_products
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_grandchildren_products)
+    if status_ids:
+        platform_base_products = platform_base_products.filter(status__id__in=status_ids)
     
-    # Now filter categories based on the relevant IDs and parent selection
-    if category_level1:
-        level1_categories = ItemCategories.objects.filter(
-            level=1, 
-            id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
-        
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
-            parent=category_level1,
-            id__in=relevant_category_ids
-        ).order_by('parent__sortorder', 'sortorder', 'name')
-        
-        if category_level2:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent=category_level2,
-                id__in=relevant_category_ids
-            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
-        else:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent__parent=category_level1,
-                id__in=relevant_category_ids
-            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
-    else:
-        level1_categories = ItemCategories.objects.filter(
-            level=1, 
-            id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
-        
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
-            id__in=relevant_category_ids
-        ).order_by('parent__sortorder', 'sortorder', 'name')
-        
-        level3_categories = ItemCategories.objects.filter(
-            level=3, 
-            id__in=relevant_category_ids
-        ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
+    if release_date_from:
+        platform_base_products = platform_base_products.filter(releasedate__gte=release_date_from)
     
-    # Get categories with parent for cascading dropdowns
-    level2_categories_with_parent = level2_categories.values('id', 'name', 'parent', 'sortorder')
-    level3_categories_with_parent = level3_categories.values('id', 'name', 'parent', 'sortorder')
+    if release_date_to:
+        platform_base_products = platform_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply category filters to platform base
+    platform_base_products = get_category_hierarchy_filters(platform_base_products, category_level1, category_level2, category_level3, 'products')
+    
+    # For statuses: apply all filters except status
+    status_base_products = Products.objects.select_related('brand', 'status', 'listingtype').prefetch_related(
+        'batteryvoltages', 'batteryplatforms', 'itemcategories'
+    ).all()
+    
+    if search:
+        status_base_products = status_base_products.filter(
+            Q(name__icontains=search) | 
+            Q(description__icontains=search) |
+            Q(sku__icontains=search)
+        )
+    
+    if brand_ids:
+        status_base_products = status_base_products.filter(brand__id__in=brand_ids)
+    
+    if voltage_ids:
+        status_base_products = status_base_products.filter(batteryvoltages__id__in=voltage_ids)
+    
+    if platform_ids:
+        status_base_products = status_base_products.filter(batteryplatforms__id__in=platform_ids)
+    
+    if release_date_from:
+        status_base_products = status_base_products.filter(releasedate__gte=release_date_from)
+    
+    if release_date_to:
+        status_base_products = status_base_products.filter(releasedate__lte=release_date_to)
+    
+    # Apply category filters to status base
+    status_base_products = get_category_hierarchy_filters(status_base_products, category_level1, category_level2, category_level3, 'products')
+    
+    # Get filter options based on their respective base products
+    brands = Brands.objects.filter(products__in=brand_base_products).distinct().order_by('name')
+    voltages = BatteryVoltages.objects.filter(products__in=voltage_base_products).distinct().order_by('value')
+    platforms = BatteryPlatforms.objects.filter(products__in=platform_base_products).distinct().order_by('name')
+    statuses = Statuses.objects.filter(products__in=status_base_products).distinct().order_by('name')
+    
+    # Get categories using utility function - use brand_base_products as it has all non-category filters applied
+    category_data = build_category_hierarchy_data(brand_base_products, category_level1, category_level2, category_level3, 'products')
+    level1_categories = category_data['level1_categories']
+    level2_categories = category_data['level2_categories']
+    level3_categories = category_data['level3_categories']
+    level2_categories_with_parent = category_data['level2_categories_with_parent']
+    level3_categories_with_parent = category_data['level3_categories_with_parent']
     
     # Calculate filter counts
     filter_counts = {
@@ -305,12 +306,12 @@ def index(request):
         'brands': brands,
         'voltages': voltages,
         'platforms': platforms,
+        'statuses': statuses,
         'level1_categories': level1_categories,
         'level2_categories': level2_categories,
         'level3_categories': level3_categories,
         'level2_categories_with_parent': level2_categories_with_parent,
         'level3_categories_with_parent': level3_categories_with_parent,
-        'statuses': statuses,
         'filter_counts': filter_counts,
         'current_filters': {
             'search': search,
@@ -321,13 +322,15 @@ def index(request):
             'category_level2': category_level2,
             'category_level3': category_level3,
             'status': status,
+            'release_date_from': release_date_from,
+            'release_date_to': release_date_to,
             'sort': sort,
             'sort_direction': sort_direction,
         },
-        'selected_brand_ids': original_brand_ids,
-        'selected_voltage_ids': original_voltage_ids,
-        'selected_platform_ids': original_platform_ids,
-        'selected_status_ids': original_status_ids,
+        'selected_brand_ids': brand_ids,
+        'selected_voltage_ids': voltage_ids,
+        'selected_platform_ids': platform_ids,
+        'selected_status_ids': status_ids,
     }
     
     return render(request, 'frontend/index.html', context)
@@ -543,17 +546,7 @@ def components_index(request):
         components = components.filter(batteryplatforms__id__in=platform_ids)
     
     # Category filtering with hierarchy support
-    if category_level3:
-        components = components.filter(itemcategories__id=category_level3)
-    elif category_level2:
-        level3_ids = ItemCategories.objects.filter(parent=category_level2).values_list('id', flat=True)
-        descendant_ids = [category_level2] + list(level3_ids)
-        components = components.filter(itemcategories__id__in=descendant_ids)
-    elif category_level1:
-        level2_ids = ItemCategories.objects.filter(parent=category_level1).values_list('id', flat=True)
-        level3_ids = ItemCategories.objects.filter(parent__in=level2_ids).values_list('id', flat=True)
-        all_ids = [category_level1] + list(level2_ids) + list(level3_ids)
-        components = components.filter(itemcategories__id__in=all_ids)
+    components = get_category_hierarchy_filters(components, category_level1, category_level2, category_level3, 'components')
     
     if product_line_ids:
         components = components.filter(productlines__id__in=product_line_ids)
@@ -672,92 +665,13 @@ def components_index(request):
         platforms = BatteryPlatforms.objects.all().order_by('name')
     product_lines = ProductLines.objects.filter(components__in=non_category_components).distinct().order_by('name')
     
-    # Get categories - filter by non-category filtered components
-    relevant_category_ids = set()
-    
-    # Get Level 3 categories that have components
-    level3_with_components = ItemCategories.objects.filter(
-        level=3, 
-        components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level3_with_components)
-    
-    # Get Level 2 categories that have components or have children with components
-    level2_with_components = ItemCategories.objects.filter(
-        level=2,
-        components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level2_with_components)
-    
-    level2_with_children_components = ItemCategories.objects.filter(
-        level=2,
-        itemcategories__components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level2_with_children_components)
-    
-    # Get Level 1 categories that have components
-    level1_with_components = ItemCategories.objects.filter(
-        level=1,
-        components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_components)
-    
-    level1_with_children_components = ItemCategories.objects.filter(
-        level=1,
-        itemcategories__components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_children_components)
-    
-    level1_with_grandchildren_components = ItemCategories.objects.filter(
-        level=1,
-        itemcategories__itemcategories__components__in=non_category_components
-    ).values_list('id', flat=True)
-    relevant_category_ids.update(level1_with_grandchildren_components)
-    
-    # Filter categories based on relevant IDs and parent selection
-    if category_level1:
-        level1_categories = ItemCategories.objects.filter(
-            level=1, 
-            id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
-        
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
-            parent=category_level1,
-            id__in=relevant_category_ids
-        ).order_by('parent__sortorder', 'sortorder', 'name')
-        
-        if category_level2:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent=category_level2,
-                id__in=relevant_category_ids
-            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
-        else:
-            level3_categories = ItemCategories.objects.filter(
-                level=3, 
-                parent__parent=category_level1,
-                id__in=relevant_category_ids
-            ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
-    else:
-        level1_categories = ItemCategories.objects.filter(
-            level=1, 
-            id__in=relevant_category_ids
-        ).order_by('sortorder', 'name')
-        
-        level2_categories = ItemCategories.objects.filter(
-            level=2, 
-            id__in=relevant_category_ids
-        ).order_by('parent__sortorder', 'sortorder', 'name')
-        
-        level3_categories = ItemCategories.objects.filter(
-            level=3, 
-            id__in=relevant_category_ids
-        ).order_by('parent__parent__sortorder', 'parent__sortorder', 'sortorder', 'name')
-    
-    # Get categories with parent for cascading dropdowns
-    level2_categories_with_parent = level2_categories.values('id', 'name', 'parent', 'sortorder')
-    level3_categories_with_parent = level3_categories.values('id', 'name', 'parent', 'sortorder')
+    # Get categories using utility function
+    category_data = build_category_hierarchy_data(non_category_components, category_level1, category_level2, category_level3, 'components')
+    level1_categories = category_data['level1_categories']
+    level2_categories = category_data['level2_categories']
+    level3_categories = category_data['level3_categories']
+    level2_categories_with_parent = category_data['level2_categories_with_parent']
+    level3_categories_with_parent = category_data['level3_categories_with_parent']
     
     # Get attributes with their values for filtering - only from filtered components
     attributes_with_values = ComponentAttributes.objects.filter(

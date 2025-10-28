@@ -30,7 +30,7 @@ SKIP_IF_HAS_DATA = True  # Set to False to process all components regardless of 
 
 # Filter for drill driver components
 try:
-    drill_driver_category = ItemCategories.objects.get(name__icontains="drill driver")
+    drill_driver_category = ItemCategories.objects.get(name__icontains="impact drivers")
     drill_driver_components = Components.objects.filter(itemcategories=drill_driver_category)
     
     # Initialize statistics counters

@@ -385,9 +385,9 @@
                         <button type="button" id="sortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleSortDirection()" title="Toggle sort direction">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {% if current_filters.sort_direction == 'desc' %}
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                {% else %}
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                {% else %}
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
                                 {% endif %}
                             </svg>
                         </button>
@@ -431,7 +431,7 @@
                                         {% if component.sku %}
                                             <div class="flex items-center text-sm text-gray-600">
                                                 <span class="font-medium w-16">Model#:</span>
-                                                <span class="font-mono">{{ component.sku }}</span>
+                                                <span class="font-medium">{{ component.sku }}</span>
                                             </div>
                                         {% endif %}
                                         

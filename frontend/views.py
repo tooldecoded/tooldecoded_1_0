@@ -825,18 +825,30 @@ def component_detail(request, component_id):
     """Component detail view"""
     component = get_object_or_404(Components, id=component_id)
     
-    # Get component attributes
+    # Get all component attributes
     component_attributes = ComponentAttributes.objects.filter(component=component).select_related('attribute')
     
+    # Get category-designated attributes from component's ItemCategories
+    category_attributes = Attributes.objects.filter(
+        itemcategories__in=component.itemcategories.all()
+    ).distinct()
+    
+    # Separate important vs additional attributes
+    # Important attributes are those that are designated for the component's categories
+    important_attributes = component_attributes.filter(attribute__in=category_attributes)
+    # Additional attributes are everything else
+    additional_attributes = component_attributes.exclude(attribute__in=category_attributes)
+    
     # Get products that use this component
-    product_components = ProductComponents.objects.filter(component=component).select_related('product')
+    product_components = ProductComponents.objects.filter(component=component).select_related('product').prefetch_related('product__productimages_set')
     
     # Get site settings for fair price feature
     site_settings = SiteSettings.get_settings()
     
     context = {
         'component': component,
-        'component_attributes': component_attributes,
+        'important_attributes': important_attributes,
+        'additional_attributes': additional_attributes,
         'product_components': product_components,
         'show_fair_price': site_settings.show_fair_price_feature,
     }

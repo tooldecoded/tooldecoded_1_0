@@ -1,208 +1,499 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ component.name }} - ToolDecoded</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'brand-blue': '#1e40af',
-                        'brand-gray': '#6b7280',
-                    }
-                }
-            }
+{% extends 'frontend/base.html' %}
+{% load static %}
+
+{% block title %}{{ component.name }} - ToolDecoded{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ripple effect styles */
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.6);
+        transform: scale(0);
+        animation: ripple-animation 0.6s linear;
+        pointer-events: none;
+    }
+    
+    @keyframes ripple-animation {
+        to {
+            transform: scale(4);
+            opacity: 0;
         }
-    </script>
-</head>
-<body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-6">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">ToolDecoded</h1>
-                    <p class="text-sm text-gray-600">Component Database and Technical Analysis</p>
-                </div>
-                <!-- Navigation Tabs -->
-                <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-                    <a href="{% url 'index' %}" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-md transition-colors">
-                        Products
-                    </a>
-                    <a href="{% url 'components_index' %}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md">
-                        Components
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 1024px) {
+        .tab-button {
+            width: 100%;
+            justify-content: flex-start;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tab-button.active {
+            background-color: #eff6ff;
+        }
+        
+        #sticky-sidebar {
+            display: none !important;
+        }
+    }
+    
+    /* Smooth transitions */
+    .transition-all {
+        transition: all 0.3s ease-in-out;
+    }
+    
+    
+    /* Loading animation */
+    .loading {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: .5;
+        }
+    }
+</style>
+{% endblock %}
 
+{% block content %}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Back Button -->
-        <div class="mb-6">
-            <a href="{% url 'components_index' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+    <!-- Breadcrumb Navigation -->
+    <nav class="mb-6" aria-label="Breadcrumb">
+        <ol class="flex items-center space-x-2 text-sm text-gray-600">
+            <li>
+                <a href="{% url 'home' %}" class="hover:text-blue-600 transition-colors">Home</a>
+            </li>
+            <li>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                 </svg>
-                Back to Components
-            </a>
-        </div>
+            </li>
+            <li>
+                <a href="{% url 'components_index' %}" class="hover:text-blue-600 transition-colors">Components</a>
+            </li>
+            {% if component.itemcategories.first %}
+                {% if component.itemcategories.first.parent %}
+                    {% if component.itemcategories.first.parent.parent %}
+                        <!-- Level 1 Category -->
+                        <li>
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </li>
+                        <li>
+                            <a href="{% url 'components_index' %}?category_level1={{ component.itemcategories.first.parent.parent.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.parent.parent.name }}</a>
+                        </li>
+                        <!-- Level 2 Category -->
+                        <li>
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </li>
+                        <li>
+                            <a href="{% url 'components_index' %}?category_level2={{ component.itemcategories.first.parent.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.parent.name }}</a>
+                        </li>
+                    {% endif %}
+                    <!-- Level 3 Category -->
+                    <li>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </li>
+                    <li>
+                        <a href="{% url 'components_index' %}?category_level3={{ component.itemcategories.first.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.name }}</a>
+                    </li>
+                {% else %}
+                    <!-- Single level category -->
+                    <li>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </li>
+                    <li>
+                        <a href="{% url 'components_index' %}?category_level1={{ component.itemcategories.first.id }}" class="hover:text-blue-600 transition-colors">{{ component.itemcategories.first.name }}</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+            <li>
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            </li>
+            <li>
+                <span class="text-gray-900 font-medium">{{ component.name }}</span>
+            </li>
+        </ol>
+    </nav>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <!-- Component Image and Basic Info -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center mb-6">
+    <!-- Back to Search Results -->
+    <div class="mb-4">
+        <a href="javascript:history.back()" class="inline-flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Search Results
+        </a>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="bg-white rounded-xl shadow-sm border mb-8 overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+            <!-- Image Gallery -->
+            <div class="space-y-4">
+                <!-- Main Image -->
+                <div class="aspect-square bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
                         {% if component.image %}
-                            <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-cover rounded-lg">
+                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-lg hover:scale-105 transition-transform duration-300 cursor-pointer" onclick="openImageModal('{{ component.image }}')">
                         {% else %}
                             <div class="text-gray-400 text-center">
-                                <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-24 h-24 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
                                 </svg>
-                                <p class="text-sm">No Image</p>
+                            <p class="text-lg font-medium">No Image Available</p>
                             </div>
                         {% endif %}
                     </div>
                     
-                    <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ component.name }}</h1>
-                    
-                    <div class="space-y-3">
-                        {% if component.brand %}
-                            <div class="flex justify-between">
-                                <span class="font-medium text-gray-700">Brand:</span>
-                                <span class="text-gray-900">{{ component.brand.name }}</span>
-                            </div>
-                        {% endif %}
-                        
-                        {% if component.sku %}
-                            <div class="flex justify-between">
-                                <span class="font-medium text-gray-700">SKU:</span>
-                                <span class="text-gray-900">{{ component.sku }}</span>
-                            </div>
-                        {% endif %}
-                        
-                        <!-- Fair Price Badge -->
-                        {% if show_fair_price and component.fair_price_narrative %}
-                            <div class="mt-3">
-                                <!-- Hidden data elements for this component -->
-                                <div id="component-{{ component.id }}-data" style="display: none;">
-                                    <span id="component-{{ component.id }}-name">{{ component.name }}</span>
-                                    <span id="component-{{ component.id }}-sku">{{ component.sku|default:"" }}</span>
-                                    <span id="component-{{ component.id }}-fair-price">{{ component.fair_price_narrative.fair_price|default:"" }}</span>
-                                    <span id="component-{{ component.id }}-reasoning">{{ component.fair_price_narrative.reasoning|default:"" }}</span>
-                                    <span id="component-{{ component.id }}-pros">{{ component.fair_price_narrative.pros|join:"|||" }}</span>
-                                    <span id="component-{{ component.id }}-cons">{{ component.fair_price_narrative.cons|join:"|||" }}</span>
-                                    <span id="component-{{ component.id }}-market-notes">{{ component.fair_price_narrative.market_notes|join:"|||" }}</span>
-                                </div>
-                                <button onclick="openFairPriceModal('{{ component.id }}')" 
-                                        class="inline-flex items-center px-3 py-2 text-sm font-medium bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                    </svg>
-                                    {% if component.fair_price_narrative.fair_price %}
-                                        Fair Value: ${{ component.fair_price_narrative.fair_price }}
-                                    {% else %}
-                                        Value Guide Available
-                                    {% endif %}
-                                </button>
-                            </div>
-                        {% endif %}
-                        
-                        {% if component.description %}
-                            <div>
-                                <span class="font-medium text-gray-700">Description:</span>
-                                <p class="text-gray-900 mt-1">{{ component.description }}</p>
-                            </div>
-                        {% endif %}
+                <!-- Thumbnail Strip (placeholder for future multiple images) -->
+                {% if component.image %}
+                <div class="flex space-x-2">
+                    <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center cursor-pointer border-2 border-blue-500">
+                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-lg">
                     </div>
+                    <!-- Additional thumbnails would go here -->
                 </div>
+                {% endif %}
             </div>
-
-            <!-- Technical Specifications and Details -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Technical Attributes -->
-                {% if component_attributes %}
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Technical Specifications
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {% for attr in component_attributes %}
+            
+            <!-- Component Header Information -->
+            <div class="space-y-6">
+                <!-- Component Name and Brand -->
+                <div>
+                        {% if component.brand %}
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mb-3">
+                            {{ component.brand.name }}
+                        </div>
+                    {% endif %}
+                    <h1 class="text-4xl font-bold text-gray-900 mb-2">{{ component.name }}</h1>
+                    {% if component.sku %}
+                        <p class="text-lg text-gray-600">{{ component.sku }}</p>
+                    {% endif %}
+                </div>
+                
+                
+                <!-- Fair Price Card -->
+                {% if show_fair_price and component.fair_price_narrative %}
+                    <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-6 border border-emerald-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-emerald-900 mb-1">Fair Value Analysis</h3>
+                                {% if component.fair_price_narrative.fair_price %}
+                                    {% if component.fair_price_narrative.fair_price|add:0 %}
+                                        <p class="text-3xl font-bold text-emerald-700">${{ component.fair_price_narrative.fair_price|floatformat:0 }}</p>
+                                    {% else %}
+                                        <p class="text-lg text-emerald-700">Value Guide Available</p>
+                                    {% endif %}
+                                {% else %}
+                                    <p class="text-lg text-emerald-700">Value Guide Available</p>
+                                {% endif %}
+                            </div>
+                            <button onclick="openFairPriceModal('{{ component.id }}')" 
+                                    class="inline-flex items-center px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                View Details
+                            </button>
+                        </div>
+                            </div>
+                        {% endif %}
+                
+                <!-- Key Specifications -->
+                {% if important_attributes %}
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
+                    <div class="space-y-3">
+                        {% for attr in important_attributes %}
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="font-medium text-gray-700">
-                                    {{ attr.attribute.name }}{% if attr.attribute.unit %} ({{ attr.attribute.unit }}){% endif %}:
+                                <span class="text-sm font-medium text-gray-700">
+                                    {{ attr.attribute.name }}
+                                    {% if attr.attribute.unit %}
+                                        <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                    {% endif %}
                                 </span>
-                                <span class="text-gray-900 font-semibold">{{ attr.value }}</span>
+                                <span class="text-sm text-gray-700 font-medium">{{ attr.value }}</span>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
                 {% endif %}
+                        
+                
+            </div>
+        </div>
+    </div>
+                        
+    <!-- Hidden data elements for fair price modal -->
+                        {% if show_fair_price and component.fair_price_narrative %}
+                                <div id="component-{{ component.id }}-data" style="display: none;">
+                                    <span id="component-{{ component.id }}-name">{{ component.name }}</span>
+                                    <span id="component-{{ component.id }}-sku">{{ component.sku|default:"" }}</span>
+                                    <span id="component-{{ component.id }}-fair-price">{% if component.fair_price_narrative.fair_price|add:0 %}{{ component.fair_price_narrative.fair_price|floatformat:0 }}{% endif %}</span>
+                                    <span id="component-{{ component.id }}-reasoning">{{ component.fair_price_narrative.reasoning|default:"" }}</span>
+                                    <span id="component-{{ component.id }}-pros">{{ component.fair_price_narrative.pros|join:"|||" }}</span>
+                                    <span id="component-{{ component.id }}-cons">{{ component.fair_price_narrative.cons|join:"|||" }}</span>
+                                    <span id="component-{{ component.id }}-market-notes">{{ component.fair_price_narrative.market_notes|default:"" }}</span>
+                            </div>
+                        {% endif %}
+                        
 
-                <!-- Battery Compatibility -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+    <!-- Tabbed Content Section -->
+    <div class="bg-white rounded-xl shadow-sm border mt-8">
+        <!-- Tab Navigation -->
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-8" aria-label="Tabs">
+                <button onclick="switchTab('specifications')" id="tab-specifications" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Specifications
+                </button>
+                <button onclick="switchTab('compatibility')" id="tab-compatibility" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    Compatibility
+                </button>
+                <button onclick="switchTab('products')" id="tab-products" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                    </svg>
+                    Used In Products
+                </button>
+                <button onclick="switchTab('details')" id="tab-details" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Details
+                </button>
+            </nav>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="p-8">
+            <!-- Specifications Tab -->
+            <div id="content-specifications" class="tab-content">
+                {% if important_attributes or additional_attributes %}
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Important Specifications -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
+                            {% if important_attributes %}
+                                <div class="space-y-2">
+                                    {% for attr in important_attributes %}
+                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
+                                            <span class="text-sm font-medium text-gray-700">
+                                                {{ attr.attribute.name }}
+                                                {% if attr.attribute.unit %}
+                                                    <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-gray-500">No key specifications available.</p>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Additional Specifications -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Specifications</h3>
+                            {% if additional_attributes %}
+                                <div class="space-y-2">
+                                    {% for attr in additional_attributes %}
+                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
+                                            <span class="text-sm font-medium text-gray-700">
+                                                {{ attr.attribute.name }}
+                                                {% if attr.attribute.unit %}
+                                                    <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                                {% endif %}
+                                            </span>
+                                            <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-gray-500">No additional specifications available.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-gray-500">No technical specifications available for this component.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Compatibility Tab -->
+            <div id="content-compatibility" class="tab-content hidden">
+                <div class="space-y-8">
+                    <!-- Battery Voltages -->
+                    {% if component.batteryvoltages.all %}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                         <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
-                        Battery Compatibility
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Voltages -->
-                        {% if component.batteryvoltages.all %}
-                        <div>
-                            <h3 class="font-medium text-gray-700 mb-2">Compatible Voltages:</h3>
-                            <div class="flex flex-wrap gap-2">
+                            Compatible Voltages
+                        </h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {% for voltage in component.batteryvoltages.all %}
-                                    <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                                        {{ voltage.value }}V
-                                    </span>
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
+                                    <div class="text-2xl font-bold text-blue-700">{{ voltage.value }}V</div>
+                                    <div class="text-sm text-blue-600">Battery Voltage</div>
+                                </div>
                                 {% endfor %}
                             </div>
                         </div>
                         {% endif %}
                         
-                        <!-- Platforms -->
+                    <!-- Battery Platforms -->
                         {% if component.batteryplatforms.all %}
                         <div>
-                            <h3 class="font-medium text-gray-700 mb-2">Compatible Platforms:</h3>
-                            <div class="flex flex-wrap gap-2">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Compatible Platforms
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {% for platform in component.batteryplatforms.all %}
-                                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                        {{ platform.name }}
-                                    </span>
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                                    <div class="flex items-center">
+                                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                                        <div class="font-semibold text-green-800">{{ platform.name }}</div>
+                                    </div>
+                                </div>
                                 {% endfor %}
                             </div>
+                        </div>
+                        {% endif %}
+                    
+                    {% if not component.batteryvoltages.all and not component.batteryplatforms.all %}
+                    <div class="text-center py-12">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        <p class="text-gray-500">No compatibility information available for this component.</p>
                         </div>
                         {% endif %}
                     </div>
                 </div>
 
-                <!-- Categories and Product Lines -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            <!-- Products Tab -->
+            <div id="content-products" class="tab-content hidden">
+                {% if product_components %}
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-900">Products Using This Component</h3>
+                            <div class="flex space-x-2">
+                                <select class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                                    <option>Sort by Name</option>
+                                    <option>Sort by Brand</option>
+                                    <option>Sort by Quantity</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for product_component in product_components %}
+                                <div class="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                                    <!-- Product Image -->
+                                    <div class="mb-4">
+                                        {% if product_component.product.image %}
+                                            <img src="{{ product_component.product.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-cover rounded-lg mb-3">
+                                        {% elif product_component.product.productimages_set.first %}
+                                            <img src="{{ product_component.product.productimages_set.first.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-cover rounded-lg mb-3">
+                                        {% else %}
+                                            <div class="w-full h-32 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex items-start justify-between mb-4">
+                                        <div class="flex-1">
+                                            <h4 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{{ product_component.product.name }}</h4>
+                                            {% if product_component.product.brand %}
+                                                <div class="flex items-center mb-2">
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                        {{ product_component.product.brand.name }}
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                                            Qty: {{ product_component.quantity }}
+                                        </div>
+                                    </div>
+                                    {% if product_component.product.sku %}
+                                        <p class="text-sm text-gray-500 mb-4 bg-gray-50 px-3 py-2 rounded-lg">{{ product_component.product.sku }}</p>
+                                    {% endif %}
+                                    <a href="{% url 'product_detail' product_component.product.id %}" class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-center shadow-sm hover:shadow-md">
+                                        <span class="flex items-center justify-center">
+                                            View Product Details
+                                            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                            </svg>
+                                        </span>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-12">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        Categories & Product Lines
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <p class="text-gray-500">No products currently use this component.</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Details Tab -->
+            <div id="content-details" class="tab-content hidden">
+                <div class="space-y-6">
                         <!-- Categories -->
                         {% if component.itemcategories.all %}
                         <div>
-                            <h3 class="font-medium text-gray-700 mb-2">Categories:</h3>
-                            <div class="space-y-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Categories
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {% for category in component.itemcategories.all %}
+                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
                                     <div class="flex items-center">
-                                        <span class="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-                                        <span class="text-gray-900">{{ category.name }}</span>
+                                        <div class="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
+                                        <span class="font-medium text-purple-900">{{ category.name }}</span>
+                                    </div>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -212,67 +503,147 @@
                         <!-- Product Lines -->
                         {% if component.productlines.all %}
                         <div>
-                            <h3 class="font-medium text-gray-700 mb-2">Product Lines:</h3>
-                            <div class="flex flex-wrap gap-2">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            Product Lines
+                        </h3>
+                        <div class="flex flex-wrap gap-3">
                                 {% for product_line in component.productlines.all %}
-                                    <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                                <span class="px-4 py-2 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
                                         {{ product_line.name }}
                                     </span>
                                 {% endfor %}
                             </div>
                         </div>
                         {% endif %}
+                    
+                    <!-- Additional Information -->
+                    {% if component.listingtype %}
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Additional Information
+                        </h3>
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium text-gray-700">Listing Type:</span>
+                                <span class="text-gray-900 font-semibold">{{ component.listingtype.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Related Components Section -->
+    <div class="bg-white rounded-xl shadow-sm border mt-8">
+        <div class="p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Components</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Similar Components (by category) -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        Similar Components
+                    </h3>
+                    <div class="space-y-3">
+                        {% for category in component.itemcategories.all %}
+                            <a href="{% url 'components_index' %}?category_level3={{ category.id }}" class="block bg-purple-50 rounded-lg p-4 border border-purple-200 hover:shadow-md hover:bg-purple-100 transition-all cursor-pointer">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-purple-900">{{ category.name }}</h4>
+                                        <p class="text-sm text-purple-600">Same category</p>
+                                    </div>
+                                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </a>
+                        {% endfor %}
                     </div>
                 </div>
 
-                <!-- Products Using This Component -->
-                {% if product_components %}
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Commonly Paired With -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                        Commonly Paired With
+                    </h3>
+                    <div class="space-y-3">
+                        {% for product_component in product_components|slice:":3" %}
+                            <a href="{% url 'product_detail' product_component.product.id %}" class="block bg-green-50 rounded-lg p-4 border border-green-200 hover:shadow-md hover:bg-green-100 transition-all cursor-pointer">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-green-900">{{ product_component.product.name }}</h4>
+                                        <p class="text-sm text-green-600">Used together in {{ product_component.quantity }} products</p>
+                                    </div>
+                                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- From Same Product Line -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        Products Using This Component
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {% for product_component in product_components %}
-                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                                <h3 class="font-semibold text-gray-900 mb-2">{{ product_component.product.name }}</h3>
-                                <div class="text-sm text-gray-600 mb-3">
-                                    {% if product_component.product.brand %}
-                                        <p><span class="font-medium">Brand:</span> {{ product_component.product.brand.name }}</p>
-                                    {% endif %}
-                                    {% if product_component.product.sku %}
-                                        <p><span class="font-medium">SKU:</span> {{ product_component.product.sku }}</p>
-                                    {% endif %}
-                                    <p><span class="font-medium">Quantity:</span> {{ product_component.quantity }}</p>
+                        From Same Product Line
+                    </h3>
+                    <div class="space-y-3">
+                        {% for product_line in component.productlines.all %}
+                            <a href="{% url 'components_index' %}?product_line={{ product_line.id }}" class="block bg-indigo-50 rounded-lg p-4 border border-indigo-200 hover:shadow-md hover:bg-indigo-100 transition-all cursor-pointer">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-medium text-indigo-900">{{ product_line.name }}</h4>
+                                        <p class="text-sm text-indigo-600">Product line</p>
+                                    </div>
+                                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
                                 </div>
-                                <a href="{% url 'product_detail' product_component.product.id %}" class="block w-full bg-blue-600 text-white py-2 px-3 rounded text-sm font-medium hover:bg-blue-700 transition-colors text-center">
-                                    View Product
-                                </a>
+                            </a>
+                        {% empty %}
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <p class="text-sm text-gray-500">No product lines available for this component.</p>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
-                {% endif %}
+            </div>
+        </div>
+    </div>
 
-                <!-- Additional Information -->
-                {% if component.listingtype %}
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    <!-- Image Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 md:w-3/4 lg:w-1/2">
+            <div class="bg-white rounded-lg overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b">
+                    <h3 class="text-lg font-medium text-gray-900">Component Image</h3>
+                    <button onclick="closeImageModal()" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
-                        Additional Information
-                    </h2>
-                    <div class="space-y-3">
-                        <div class="flex justify-between">
-                            <span class="font-medium text-gray-700">Listing Type:</span>
-                            <span class="text-gray-900">{{ component.listingtype.name }}</span>
-                        </div>
-                    </div>
+                    </button>
                 </div>
-                {% endif %}
+                <div class="p-4">
+                    <img id="modalImage" src="" alt="Component Image" class="w-full h-auto rounded-lg">
+                </div>
             </div>
         </div>
     </div>
@@ -341,6 +712,52 @@
     </div>
 
     <script>
+// Tab Switching Functions
+function switchTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab content
+    const selectedContent = document.getElementById(`content-${tabName}`);
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+    }
+    
+    // Add active class to selected tab button
+    const selectedButton = document.getElementById(`tab-${tabName}`);
+    if (selectedButton) {
+        selectedButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        selectedButton.classList.remove('border-transparent', 'text-gray-500');
+    }
+}
+
+// Image Modal Functions
+function openImageModal(imageSrc) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    
+    modalImage.src = imageSrc;
+    modalImage.alt = '{{ component.name }}';
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
 // Fair Price Modal Functions
 function openFairPriceModal(componentId) {
     const modal = document.getElementById('fairPriceModal');
@@ -376,13 +793,13 @@ function openFairPriceModal(componentId) {
     
     // Show modal
     modal.classList.remove('hidden');
-    document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
 }
 
 function closeFairPriceModal() {
     const modal = document.getElementById('fairPriceModal');
     modal.classList.add('hidden');
-    document.body.style.overflow = 'auto'; // Restore scrolling
+    document.body.style.overflow = 'auto';
 }
 
 function populateModalSection(sectionId, elementId, data) {
@@ -414,20 +831,75 @@ function populateModalList(sectionId, listId, data) {
     }
 }
 
-// Close modal when clicking outside
+// Close modals when clicking outside
 document.addEventListener('click', function(event) {
-    const modal = document.getElementById('fairPriceModal');
-    if (event.target === modal) {
+    const fairPriceModal = document.getElementById('fairPriceModal');
+    const imageModal = document.getElementById('imageModal');
+    
+    if (event.target === fairPriceModal) {
         closeFairPriceModal();
+    }
+    if (event.target === imageModal) {
+        closeImageModal();
     }
 });
 
-// Close modal with Escape key
+// Close modals with Escape key
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeFairPriceModal();
+        closeImageModal();
     }
 });
+
+
+// Mobile Menu Toggle for Tabs
+function toggleMobileTabs() {
+    const tabNav = document.querySelector('nav[aria-label="Tabs"]');
+    if (window.innerWidth < 1024) {
+        // Convert to accordion on mobile
+        tabNav.classList.add('flex-col', 'space-x-0', 'space-y-2');
+    } else {
+        // Convert back to tabs on desktop
+        tabNav.classList.remove('flex-col', 'space-x-0', 'space-y-2');
+        tabNav.classList.add('flex', 'space-x-8');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    window.addEventListener('resize', toggleMobileTabs);
+    
+    // Initial calls
+    toggleMobileTabs();
+    
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+
+// Add loading states for interactive elements
+function addLoadingState(element) {
+    element.classList.add('opacity-50', 'pointer-events-none');
+    const originalText = element.textContent;
+    element.textContent = 'Loading...';
+    
+    return function removeLoadingState() {
+        element.classList.remove('opacity-50', 'pointer-events-none');
+        element.textContent = originalText;
+    };
+}
+
     </script>
-</body>
-</html>
+</div>
+{% endblock %}

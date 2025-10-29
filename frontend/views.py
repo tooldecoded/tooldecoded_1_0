@@ -323,6 +323,11 @@ def home(request):
     total_brands = Brands.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     total_categories = Categories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     
+    # Get latest published articles (first 4)
+    latest_articles = LearningArticle.objects.filter(
+        is_published=True
+    ).prefetch_related('tags')[:4]
+    
     # Get flagship components preview (first 4 featured components)
     flagship_preview = Components.objects.filter(
         is_featured=True
@@ -339,6 +344,7 @@ def home(request):
         'total_components': total_components,
         'total_brands': total_brands,
         'total_categories': total_categories,
+        'latest_articles': latest_articles,
         'flagship_preview': flagship_preview,
         'recent_products': recent_products,
         'recent_components': recent_components,

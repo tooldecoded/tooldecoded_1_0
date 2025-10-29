@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- Simple Hero -->
-<div class="bg-white">
+<!--<div class="bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div class="text-center">
             <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">ToolDecoded</h1>
@@ -15,7 +15,91 @@
         </div>
     </div>
 </div>
+-->
 
+<!-- Latest Articles Section -->
+{% if latest_articles %}
+<div class="bg-gray-50 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Section Header -->
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Latest Articles</h2>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                Stay informed with our latest insights on power tools, components, and technical concepts.
+            </p>
+        </div>
+        
+        <!-- Articles Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {% for article in latest_articles %}
+                <article class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                    <div class="p-6">
+                        <!-- Tags at the top -->
+                        {% if article.tags.all %}
+                            <div class="flex flex-wrap gap-1 mb-3">
+                                {% for tag in article.tags.all %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium"
+                                          style="background-color: {{ tag.color }}20; color: {{ tag.color }};">
+                                        {{ tag.name }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <time class="text-sm text-gray-500" datetime="{{ article.published_at|date:'c' }}">
+                                {{ article.published_at|date:"M j, Y" }}
+                            </time>
+                            <div class="flex items-center">
+                                {% if article.is_pinned %}
+                                    <span class="text-amber-500 text-sm" title="Pinned article">📌</span>
+                                {% else %}
+                                    <span class="w-4 h-4"></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3 line-clamp-2">
+                            <a href="{% url 'learning_detail' article.slug %}" class="hover:text-blue-600 transition-colors">
+                                {{ article.title }}
+                            </a>
+                        </h3>
+                        
+                        {% if article.summary %}
+                            <p class="text-gray-600 mb-4 line-clamp-3 text-sm">
+                                {{ article.summary }}
+                            </p>
+                        {% endif %}
+                        
+                        <a 
+                            href="{% url 'learning_detail' article.slug %}" 
+                            class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm transition-colors"
+                        >
+                            Read more
+                            <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+        
+        <!-- View All Articles Button -->
+        <div class="text-center">
+            <a 
+                href="{% url 'learning_index' %}" 
+                class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            >
+                View All Articles
+                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Three Main Sections Preview -->
 <div class="bg-white py-16">

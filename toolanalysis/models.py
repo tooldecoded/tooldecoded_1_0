@@ -173,6 +173,8 @@ class Components(models.Model):
         db_table = 'Components'
         ordering = ['name']
         unique_together = ('brand', 'sku')
+        verbose_name = "Component"
+        verbose_name_plural = "Components"
 
 class ProductComponents(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)

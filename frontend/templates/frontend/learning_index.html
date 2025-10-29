@@ -7,8 +7,8 @@
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
     <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">Learning Center</h1>
-        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+        <h1 class="text-4xl font-bold text-[#313131] mb-4">Learning Center</h1>
+        <p class="text-xl text-[#505050] max-w-3xl mx-auto">
             Learn about power tools, components, and technical concepts to make informed decisions about your tool purchases.
         </p>
     </div>
@@ -21,16 +21,16 @@
                 name="search" 
                 value="{{ search }}"
                 placeholder="Search articles..." 
-                class="w-full px-4 py-3 pl-12 pr-4 text-gray-900 placeholder-gray-500 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-4 py-3 pl-12 pr-4 text-[#313131] placeholder-[#505050] bg-white border border-[#E1E4E8] rounded-2xl focus:ring-2 focus:ring-[#0089D9] focus:border-transparent"
             >
             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="h-5 w-5 text-[#505050]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
             </div>
             <button 
                 type="submit" 
-                class="absolute inset-y-0 right-0 px-4 py-2 bg-blue-600 text-white rounded-r-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="absolute inset-y-0 right-0 px-4 py-2 bg-[#0089D9] text-white rounded-r-2xl hover:bg-[#006FB3] focus:outline-none focus:ring-2 focus:ring-[#0089D9]"
             >
                 Search
             </button>
@@ -41,19 +41,19 @@
     {% if all_tags %}
         <div class="max-w-4xl mx-auto mb-8">
             <div class="text-center mb-4">
-                <h3 class="text-lg font-medium text-gray-900">Filter by Tag</h3>
+                <h3 class="text-lg font-medium text-[#313131]">Filter by Tag</h3>
             </div>
             <div class="flex flex-wrap justify-center gap-2">
                 <a 
                     href="?{% if search %}search={{ search }}&{% endif %}page=1" 
-                    class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if not tag_slug %}bg-blue-100 text-blue-800 border border-blue-200{% else %}bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200{% endif %}"
+                    class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if not tag_slug %}bg-[#0089D9] text-white border border-blue-200{% else %}bg-[#F5F6F8] text-[#505050] border border-[#E1E4E8] hover:bg-[#E1E4E8]{% endif %}"
                 >
                     All Articles
                 </a>
                 {% for tag in all_tags %}
                     <a 
                         href="?{% if search %}search={{ search }}&{% endif %}tag={{ tag.slug }}&page=1" 
-                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if tag.slug == tag_slug %}text-white border{% else %}text-gray-700 border border-gray-200 hover:bg-gray-100{% endif %}"
+                        class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors {% if tag.slug == tag_slug %}text-white border{% else %}text-[#505050] border border-[#E1E4E8] hover:bg-[#F5F6F8]{% endif %}"
                         style="{% if tag.slug == tag_slug %}background-color: {{ tag.color }}; border-color: {{ tag.color }};{% else %}background-color: {{ tag.color }}20;{% endif %}"
                     >
                         {{ tag.name }}
@@ -68,7 +68,7 @@
     {% if articles %}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for article in articles %}
-                <article class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <article class="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                     <div class="p-6">
                         <!-- Tags at the top -->
                         {% if article.tags.all %}
@@ -86,7 +86,7 @@
                         {% endif %}
                         
                         <div class="flex items-center justify-between mb-3">
-                            <time class="text-sm text-gray-500" datetime="{{ article.published_at|date:'c' }}">
+                            <time class="text-sm text-[#505050]" datetime="{{ article.published_at|date:'c' }}">
                                 {{ article.published_at|date:"M j, Y" }}
                             </time>
                             <div class="flex items-center">
@@ -98,21 +98,21 @@
                             </div>
                         </div>
                         
-                        <h2 class="text-xl font-semibold text-gray-900 mb-3 line-clamp-2">
-                            <a href="{% url 'learning_detail' article.slug %}" class="hover:text-blue-600 transition-colors">
+                        <h2 class="text-xl font-semibold text-[#313131] mb-3 line-clamp-2">
+                            <a href="{% url 'learning_detail' article.slug %}" class="hover:text-[#0089D9] transition-colors">
                                 {{ article.title }}
                             </a>
                         </h2>
                         
                         {% if article.summary %}
-                            <p class="text-gray-600 mb-4 line-clamp-3">
+                            <p class="text-[#505050] mb-4 line-clamp-3">
                                 {{ article.summary }}
                             </p>
                         {% endif %}
                         
                         <a 
                             href="{% url 'learning_detail' article.slug %}" 
-                            class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                            class="inline-flex items-center text-[#0089D9] hover:text-white font-medium transition-colors"
                         >
                             Read more
                             <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -131,7 +131,7 @@
                     {% if articles.has_previous %}
                         <a 
                             href="?page={{ articles.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tag_slug %}&tag={{ tag_slug }}{% endif %}" 
-                            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                            class="px-3 py-2 text-sm font-medium text-[#505050] bg-white border border-[#E1E4E8] rounded-2xl hover:bg-[#F5F6F8]"
                         >
                             Previous
                         </a>
@@ -139,13 +139,13 @@
                     
                     {% for num in articles.paginator.page_range %}
                         {% if articles.number == num %}
-                            <span class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md">
+                            <span class="px-3 py-2 text-sm font-medium text-white bg-[#0089D9] border border-blue-600 rounded-2xl">
                                 {{ num }}
                             </span>
                         {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
                             <a 
                                 href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if tag_slug %}&tag={{ tag_slug }}{% endif %}" 
-                                class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                                class="px-3 py-2 text-sm font-medium text-[#505050] bg-white border border-[#E1E4E8] rounded-2xl hover:bg-[#F5F6F8]"
                             >
                                 {{ num }}
                             </a>
@@ -155,7 +155,7 @@
                     {% if articles.has_next %}
                         <a 
                             href="?page={{ articles.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if tag_slug %}&tag={{ tag_slug }}{% endif %}" 
-                            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                            class="px-3 py-2 text-sm font-medium text-[#505050] bg-white border border-[#E1E4E8] rounded-2xl hover:bg-[#F5F6F8]"
                         >
                             Next
                         </a>
@@ -166,11 +166,11 @@
     {% else %}
         <!-- No Articles Found -->
         <div class="text-center py-12">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto h-12 w-12 text-[#505050]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
-            <h3 class="mt-2 text-sm font-medium text-gray-900">No articles found</h3>
-            <p class="mt-1 text-sm text-gray-500">
+            <h3 class="mt-2 text-sm font-medium text-[#313131]">No articles found</h3>
+            <p class="mt-1 text-sm text-[#505050]">
                 {% if search %}
                     No articles match your search criteria.
                 {% else %}
@@ -179,7 +179,7 @@
             </p>
             {% if search %}
                 <div class="mt-6">
-                    <a href="{% url 'learning_index' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <a href="{% url 'learning_index' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-2xl text-white bg-[#0089D9] hover:bg-[#006FB3] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         View all articles
                     </a>
                 </div>

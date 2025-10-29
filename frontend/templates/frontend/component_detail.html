@@ -68,9 +68,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-2 text-sm text-gray-600">
+        <ol class="flex items-center space-x-2 text-sm text-[#505050]">
             <li>
-                <a href="{% url 'home' %}" class="hover:text-blue-600 transition-colors">Home</a>
+                <a href="{% url 'home' %}" class="hover:text-[#0089D9] transition-colors">Home</a>
             </li>
             <li>
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -78,7 +78,7 @@
                 </svg>
             </li>
             <li>
-                <a href="{% url 'components_index' %}" class="hover:text-blue-600 transition-colors">Tools & Components</a>
+                <a href="{% url 'components_index' %}" class="hover:text-[#0089D9] transition-colors">Tools & Components</a>
             </li>
             {% if component.itemtypes.all %}
                 {% for itemtype in component.itemtypes.all %}
@@ -90,7 +90,7 @@
                                 </svg>
                             </li>
                             <li>
-                                <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-blue-600 transition-colors">{{ breadcrumb_part }}</a>
+                                <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-[#0089D9] transition-colors">{{ breadcrumb_part }}</a>
                             </li>
                         {% endfor %}
                     {% else %}
@@ -100,7 +100,7 @@
                             </svg>
                         </li>
                         <li>
-                            <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-blue-600 transition-colors">{{ itemtype.name }}</a>
+                            <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-[#0089D9] transition-colors">{{ itemtype.name }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
@@ -111,14 +111,14 @@
                 </svg>
             </li>
             <li>
-                <span class="text-gray-900 font-medium">{{ component.name }}</span>
+                <span class="text-[#313131] font-medium">{{ component.name }}</span>
             </li>
         </ol>
     </nav>
 
     <!-- Back to Search Results -->
     <div class="mb-4">
-        <a href="javascript:history.back()" class="inline-flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors">
+        <a href="javascript:history.back()" class="inline-flex items-center text-sm text-[#505050] hover:text-[#0089D9] transition-colors">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>
@@ -132,11 +132,11 @@
             <!-- Image Gallery -->
             <div class="space-y-4">
                 <!-- Main Image -->
-                <div class="aspect-square bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                <div class="aspect-square bg-white rounded-2xl flex items-center justify-center overflow-hidden border border-[#E1E4E8]">
                         {% if component.image %}
-                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-lg hover:scale-105 transition-transform duration-300 cursor-pointer" onclick="openImageModal('{{ component.image }}')">
+                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-2xl hover:scale-105 transition-transform duration-300 cursor-pointer" onclick="openImageModal('{{ component.image }}')">
                         {% else %}
-                            <div class="text-gray-400 text-center">
+                            <div class="text-[#505050] text-center">
                             <svg class="w-24 h-24 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
                                 </svg>
@@ -148,8 +148,8 @@
                 <!-- Thumbnail Strip (placeholder for future multiple images) -->
                 {% if component.image %}
                 <div class="flex space-x-2">
-                    <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center cursor-pointer border-2 border-blue-500">
-                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-lg">
+                    <div class="w-16 h-16 bg-white rounded-2xl flex items-center justify-center cursor-pointer border-2 border-blue-500">
+                        <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full object-contain rounded-2xl">
                     </div>
                     <!-- Additional thumbnails would go here -->
                 </div>
@@ -161,20 +161,20 @@
                 <!-- Component Name and Brand -->
                 <div>
                         {% if component.brand %}
-                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 mb-3">
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-[#006FB3] mb-3">
                             {{ component.brand.name }}
                         </div>
                     {% endif %}
-                    <h1 class="text-4xl font-bold text-gray-900 mb-2">{{ component.name }}</h1>
+                    <h1 class="text-4xl font-bold text-[#313131] mb-2">{{ component.name }}</h1>
                     {% if component.sku %}
-                        <p class="text-lg text-gray-600">{{ component.sku }}</p>
+                        <p class="text-lg text-[#505050]">{{ component.sku }}</p>
                     {% endif %}
                 </div>
                 
                 
                 <!-- Fair Price Card -->
                 {% if show_fair_price and component.fair_price_narrative %}
-                    <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-6 border border-emerald-200">
+                    <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-200">
                         <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="text-lg font-semibold text-emerald-900 mb-1">Fair Value Analysis</h3>
@@ -189,7 +189,7 @@
                                 {% endif %}
                             </div>
                             <button onclick="openFairPriceModal('{{ component.id }}')" 
-                                    class="inline-flex items-center px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                    class="inline-flex items-center px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 transition-colors">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
@@ -202,26 +202,26 @@
                 <!-- Key Specifications -->
                 {% if component.motortype or important_attributes %}
                 <div class="mt-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
+                    <h3 class="text-lg font-semibold text-[#313131] mb-4">Key Specifications</h3>
                     <div class="space-y-3">
                         <!-- Motor Type - First Item -->
                         {% if component.motortype %}
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm font-medium text-gray-700">Motor Type</span>
-                                <span class="text-sm text-gray-700 font-medium">{{ component.motortype.name }}</span>
+                                <span class="text-sm font-medium text-[#505050]">Motor Type</span>
+                                <span class="text-sm text-[#505050] font-medium">{{ component.motortype.name }}</span>
                             </div>
                         {% endif %}
                         
                         <!-- Other Important Attributes -->
                         {% for attr in important_attributes %}
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
-                                <span class="text-sm font-medium text-gray-700">
+                                <span class="text-sm font-medium text-[#505050]">
                                     {{ attr.attribute.name }}
                                     {% if attr.attribute.unit %}
-                                        <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                        <span class="text-[#505050]">({{ attr.attribute.unit }})</span>
                                     {% endif %}
                                 </span>
-                                <span class="text-sm text-gray-700 font-medium">{{ attr.value }}</span>
+                                <span class="text-sm text-[#505050] font-medium">{{ attr.value }}</span>
                             </div>
                         {% endfor %}
                     </div>
@@ -250,27 +250,27 @@
     <!-- Tabbed Content Section -->
     <div class="bg-white rounded-xl shadow-sm border mt-8">
         <!-- Tab Navigation -->
-        <div class="border-b border-gray-200">
+        <div class="border-b border-[#E1E4E8]">
             <nav class="flex space-x-8 px-8" aria-label="Tabs">
-                <button onclick="switchTab('specifications')" id="tab-specifications" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                <button onclick="switchTab('specifications')" id="tab-specifications" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-[#0089D9]">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Specifications
                 </button>
-                <button onclick="switchTab('compatibility')" id="tab-compatibility" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                <button onclick="switchTab('compatibility')" id="tab-compatibility" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                     Compatibility
                 </button>
-                <button onclick="switchTab('products')" id="tab-products" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                <button onclick="switchTab('products')" id="tab-products" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                     Used In Products
                 </button>
-                <button onclick="switchTab('details')" id="tab-details" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                <button onclick="switchTab('details')" id="tab-details" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -288,32 +288,32 @@
                         <!-- Key Specifications -->
                         {% if component.motortype or important_attributes %}
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
+                            <h3 class="text-lg font-semibold text-[#313131] mb-4">Key Specifications</h3>
                             {% if component.motortype or important_attributes %}
                                 <div class="space-y-2">
                                     <!-- Motor Type - First Item -->
                                     {% if component.motortype %}
-                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
-                                            <span class="text-sm font-medium text-gray-700">Motor Type</span>
-                                            <span class="text-sm text-gray-900 font-semibold">{{ component.motortype.name }}</span>
+                                        <div class="flex justify-between items-center py-2 px-3 bg-[#F5F6F8] rounded border-b border-[#E1E4E8]">
+                                            <span class="text-sm font-medium text-[#505050]">Motor Type</span>
+                                            <span class="text-sm text-[#313131] font-semibold">{{ component.motortype.name }}</span>
                                         </div>
                                     {% endif %}
                                     
                                     <!-- Other Important Attributes -->
                                     {% for attr in important_attributes %}
-                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
-                                            <span class="text-sm font-medium text-gray-700">
+                                        <div class="flex justify-between items-center py-2 px-3 bg-[#F5F6F8] rounded border-b border-[#E1E4E8]">
+                                            <span class="text-sm font-medium text-[#505050]">
                                                 {{ attr.attribute.name }}
                                                 {% if attr.attribute.unit %}
-                                                    <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                                    <span class="text-[#505050]">({{ attr.attribute.unit }})</span>
                                                 {% endif %}
                                             </span>
-                                            <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
+                                            <span class="text-sm text-[#313131] font-semibold">{{ attr.value }}</span>
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% else %}
-                                <p class="text-sm text-gray-500">No key specifications available.</p>
+                                <p class="text-sm text-[#505050]">No key specifications available.</p>
                             {% endif %}
                         </div>
                         {% endif %}
@@ -321,13 +321,13 @@
                         <!-- Features Section -->
                         {% if component_features %}
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Features</h3>
+                            <h3 class="text-lg font-semibold text-[#313131] mb-4">Features</h3>
                             <div class="flex flex-wrap gap-2">
                                 {% for comp_feature in component_features %}
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-[#006FB3] border border-blue-200">
                                         {{ comp_feature.feature.name }}
                                         {% if comp_feature.value and comp_feature.value != 'Yes' %}
-                                            <span class="ml-1 text-blue-600">({{ comp_feature.value }})</span>
+                                            <span class="ml-1 text-[#0089D9]">({{ comp_feature.value }})</span>
                                         {% endif %}
                                     </span>
                                 {% endfor %}
@@ -338,17 +338,17 @@
                         <!-- Additional Specifications -->
                         {% if additional_attributes %}
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Specifications</h3>
+                            <h3 class="text-lg font-semibold text-[#313131] mb-4">Additional Specifications</h3>
                             <div class="space-y-2">
                                 {% for attr in additional_attributes %}
-                                    <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
-                                        <span class="text-sm font-medium text-gray-700">
+                                    <div class="flex justify-between items-center py-2 px-3 bg-[#F5F6F8] rounded border-b border-[#E1E4E8]">
+                                        <span class="text-sm font-medium text-[#505050]">
                                             {{ attr.attribute.name }}
                                             {% if attr.attribute.unit %}
-                                                <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                                <span class="text-[#505050]">({{ attr.attribute.unit }})</span>
                                             {% endif %}
                                         </span>
-                                        <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
+                                        <span class="text-sm text-[#313131] font-semibold">{{ attr.value }}</span>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -357,10 +357,10 @@
                     </div>
                 {% else %}
                     <div class="text-center py-12">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-12 h-12 text-[#505050] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        <p class="text-gray-500">No technical specifications available for this component.</p>
+                        <p class="text-[#505050]">No technical specifications available for this component.</p>
                     </div>
                 {% endif %}
             </div>
@@ -371,17 +371,17 @@
                     <!-- Battery Voltages -->
                     {% if component.batteryvoltages.all %}
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 class="text-lg font-semibold text-[#313131] mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                             Compatible Voltages
                         </h3>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {% for voltage in component.batteryvoltages.all %}
-                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
+                                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4 text-center border border-blue-200">
                                     <div class="text-2xl font-bold text-blue-700">{{ voltage.value }}V</div>
-                                    <div class="text-sm text-blue-600">Battery Voltage</div>
+                                    <div class="text-sm text-[#0089D9]">Battery Voltage</div>
                                 </div>
                                 {% endfor %}
                             </div>
@@ -391,7 +391,7 @@
                     <!-- Battery Platforms -->
                         {% if component.batteryplatforms.all %}
                         <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <h3 class="text-lg font-semibold text-[#313131] mb-4 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                             </svg>
@@ -399,7 +399,7 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {% for platform in component.batteryplatforms.all %}
-                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
                                     <div class="flex items-center">
                                         <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
                                         <div class="font-semibold text-green-800">{{ platform.name }}</div>
@@ -412,10 +412,10 @@
                     
                     {% if not component.batteryvoltages.all and not component.batteryplatforms.all %}
                     <div class="text-center py-12">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-12 h-12 text-[#505050] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
-                        <p class="text-gray-500">No compatibility information available for this component.</p>
+                        <p class="text-[#505050]">No compatibility information available for this component.</p>
                         </div>
                         {% endif %}
                     </div>
@@ -426,9 +426,9 @@
                 {% if product_components %}
                     <div class="space-y-6">
                         <div class="flex justify-between items-center">
-                            <h3 class="text-lg font-semibold text-gray-900">Products Using This Component</h3>
+                            <h3 class="text-lg font-semibold text-[#313131]">Products Using This Component</h3>
                             <div class="flex space-x-2">
-                                <select class="text-sm border border-gray-300 rounded-lg px-3 py-1">
+                                <select class="text-sm border border-[#E1E4E8] rounded-2xl px-3 py-1">
                                     <option>Sort by Name</option>
                                     <option>Sort by Brand</option>
                                     <option>Sort by Quantity</option>
@@ -437,16 +437,16 @@
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {% for product_component in product_components %}
-                                <div class="group bg-white border border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300">
+                                <div class="group bg-white border border-[#E1E4E8] rounded-xl p-6 hover:shadow-xl hover:border-blue-300 transition-all duration-300">
                                     <!-- Product Image -->
                                     <div class="mb-4">
                                         {% if product_component.product.image %}
-                                            <img src="{{ product_component.product.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-lg mb-3 bg-white">
+                                            <img src="{{ product_component.product.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-2xl mb-3 bg-white">
                                         {% elif product_component.product.productimages_set.first %}
-                                            <img src="{{ product_component.product.productimages_set.first.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-lg mb-3 bg-white">
+                                            <img src="{{ product_component.product.productimages_set.first.image }}" alt="{{ product_component.product.name }}" class="w-full h-32 object-contain rounded-2xl mb-3 bg-white">
                                         {% else %}
-                                            <div class="w-full h-32 bg-white rounded-lg mb-3 flex items-center justify-center">
-                                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div class="w-full h-32 bg-white rounded-2xl mb-3 flex items-center justify-center">
+                                                <svg class="w-12 h-12 text-[#505050]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                                 </svg>
                                             </div>
@@ -455,10 +455,10 @@
                                     
                                     <div class="flex items-start justify-between mb-4">
                                         <div class="flex-1">
-                                            <h4 class="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">{{ product_component.product.name }}</h4>
+                                            <h4 class="font-semibold text-[#313131] mb-2 group-hover:text-[#0089D9] transition-colors">{{ product_component.product.name }}</h4>
                                             {% if product_component.product.brand %}
                                                 <div class="flex items-center mb-2">
-                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#F5F6F8] text-gray-800">
                                                         {{ product_component.product.brand.name }}
                                                     </span>
                                                 </div>
@@ -469,9 +469,9 @@
                                         </div>
                                     </div>
                                     {% if product_component.product.sku %}
-                                        <p class="text-sm text-gray-500 mb-4 bg-gray-50 px-3 py-2 rounded-lg">{{ product_component.product.sku }}</p>
+                                        <p class="text-sm text-[#505050] mb-4 bg-[#F5F6F8] px-3 py-2 rounded-2xl">{{ product_component.product.sku }}</p>
                                     {% endif %}
-                                    <a href="{% url 'product_detail' product_component.product.id %}" class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-center shadow-sm hover:shadow-md">
+                                    <a href="{% url 'product_detail' product_component.product.id %}" class="block w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-2xl text-sm font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-center shadow-sm hover:shadow-md">
                                         <span class="flex items-center justify-center">
                                             View Product Details
                                             <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -485,10 +485,10 @@
                     </div>
                 {% else %}
                     <div class="text-center py-12">
-                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-12 h-12 text-[#505050] mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
-                        <p class="text-gray-500">No products currently use this component.</p>
+                        <p class="text-[#505050]">No products currently use this component.</p>
                     </div>
                 {% endif %}
             </div>
@@ -499,7 +499,7 @@
                         <!-- Categories -->
                         {% if component.itemcategories.all %}
                         <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <h3 class="text-lg font-semibold text-[#313131] mb-4 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                             </svg>
@@ -507,7 +507,7 @@
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {% for category in component.itemcategories.all %}
-                                <div class="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                <div class="bg-purple-50 rounded-2xl p-4 border border-purple-200">
                                     <div class="flex items-center">
                                         <div class="w-2 h-2 bg-purple-500 rounded-full mr-3"></div>
                                         <span class="font-medium text-purple-900">{{ category.name }}</span>
@@ -521,7 +521,7 @@
                         <!-- Product Lines -->
                         {% if component.productlines.all %}
                         <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <h3 class="text-lg font-semibold text-[#313131] mb-4 flex items-center">
                             <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                             </svg>
@@ -540,16 +540,16 @@
                     <!-- Additional Information -->
                     {% if component.listingtype %}
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <h3 class="text-lg font-semibold text-[#313131] mb-4 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-[#505050]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Additional Information
                         </h3>
-                        <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="bg-[#F5F6F8] rounded-2xl p-4">
                             <div class="flex justify-between items-center">
-                                <span class="font-medium text-gray-700">Listing Type:</span>
-                                <span class="text-gray-900 font-semibold">{{ component.listingtype.name }}</span>
+                                <span class="font-medium text-[#505050]">Listing Type:</span>
+                                <span class="text-[#313131] font-semibold">{{ component.listingtype.name }}</span>
                             </div>
                         </div>
                     </div>
@@ -562,12 +562,12 @@
     <!-- Related Components Section -->
     <div class="bg-white rounded-xl shadow-sm border mt-8">
         <div class="p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Tools & Components</h2>
+            <h2 class="text-2xl font-bold text-[#313131] mb-6">Related Tools & Components</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Similar Components (by category) -->
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <h3 class="text-lg font-semibold text-[#313131] flex items-center">
                         <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                         </svg>
@@ -575,7 +575,7 @@
                     </h3>
                     <div class="space-y-3">
                         {% for category in component.itemcategories.all %}
-                            <a href="{% url 'components_index' %}?category_level3={{ category.id }}" class="block bg-purple-50 rounded-lg p-4 border border-purple-200 hover:shadow-md hover:bg-purple-100 transition-all cursor-pointer">
+                            <a href="{% url 'components_index' %}?category_level3={{ category.id }}" class="block bg-purple-50 rounded-2xl p-4 border border-purple-200 hover:shadow-md hover:bg-purple-100 transition-all cursor-pointer">
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h4 class="font-medium text-purple-900">{{ category.name }}</h4>
@@ -592,7 +592,7 @@
 
                 <!-- Commonly Paired With -->
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <h3 class="text-lg font-semibold text-[#313131] flex items-center">
                         <svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
                         </svg>
@@ -600,7 +600,7 @@
                     </h3>
                     <div class="space-y-3">
                         {% for product_component in product_components|slice:":3" %}
-                            <a href="{% url 'product_detail' product_component.product.id %}" class="block bg-green-50 rounded-lg p-4 border border-green-200 hover:shadow-md hover:bg-green-100 transition-all cursor-pointer">
+                            <a href="{% url 'product_detail' product_component.product.id %}" class="block bg-green-50 rounded-2xl p-4 border border-green-200 hover:shadow-md hover:bg-green-100 transition-all cursor-pointer">
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h4 class="font-medium text-green-900">{{ product_component.product.name }}</h4>
@@ -617,7 +617,7 @@
                 
                 <!-- From Same Product Line -->
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <h3 class="text-lg font-semibold text-[#313131] flex items-center">
                         <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                         </svg>
@@ -625,7 +625,7 @@
                     </h3>
                     <div class="space-y-3">
                         {% for product_line in component.productlines.all %}
-                            <a href="{% url 'components_index' %}?product_line={{ product_line.id }}" class="block bg-indigo-50 rounded-lg p-4 border border-indigo-200 hover:shadow-md hover:bg-indigo-100 transition-all cursor-pointer">
+                            <a href="{% url 'components_index' %}?product_line={{ product_line.id }}" class="block bg-indigo-50 rounded-2xl p-4 border border-indigo-200 hover:shadow-md hover:bg-indigo-100 transition-all cursor-pointer">
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <h4 class="font-medium text-indigo-900">{{ product_line.name }}</h4>
@@ -637,8 +637,8 @@
                                 </div>
                             </a>
                         {% empty %}
-                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                <p class="text-sm text-gray-500">No product lines available for this component.</p>
+                            <div class="bg-[#F5F6F8] rounded-2xl p-4 border border-[#E1E4E8]">
+                                <p class="text-sm text-[#505050]">No product lines available for this component.</p>
                             </div>
                         {% endfor %}
                     </div>
@@ -650,17 +650,17 @@
     <!-- Image Modal -->
     <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-75 overflow-y-auto h-full w-full hidden z-50">
         <div class="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 md:w-3/4 lg:w-1/2">
-            <div class="bg-white rounded-lg overflow-hidden">
+            <div class="bg-white rounded-2xl overflow-hidden">
                 <div class="flex items-center justify-between p-4 border-b">
-                    <h3 class="text-lg font-medium text-gray-900">Component Image</h3>
-                    <button onclick="closeImageModal()" class="text-gray-400 hover:text-gray-600">
+                    <h3 class="text-lg font-medium text-[#313131]">Component Image</h3>
+                    <button onclick="closeImageModal()" class="text-[#505050] hover:text-[#505050]">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
                 <div class="p-4">
-                    <img id="modalImage" src="" alt="Component Image" class="w-full h-auto rounded-lg">
+                    <img id="modalImage" src="" alt="Component Image" class="w-full h-auto rounded-2xl">
                 </div>
             </div>
         </div>
@@ -672,8 +672,8 @@
             <div class="mt-3">
                 <!-- Modal Header -->
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Fair Value Analysis</h3>
-                    <button onclick="closeFairPriceModal()" class="text-gray-400 hover:text-gray-600">
+                    <h3 class="text-lg font-medium text-[#313131]" id="modalTitle">Fair Value Analysis</h3>
+                    <button onclick="closeFairPriceModal()" class="text-[#505050] hover:text-[#505050]">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -683,39 +683,39 @@
                 <!-- Modal Content -->
                 <div class="space-y-4" id="modalContent">
                     <!-- Component Info -->
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-900" id="componentName"></h4>
-                        <p class="text-sm text-gray-600" id="componentSku"></p>
+                    <div class="bg-[#F5F6F8] p-4 rounded-2xl">
+                        <h4 class="font-semibold text-[#313131]" id="componentName"></h4>
+                        <p class="text-sm text-[#505050]" id="componentSku"></p>
                     </div>
                     
                     <!-- Fair Price -->
-                    <div class="bg-emerald-50 p-4 rounded-lg">
+                    <div class="bg-emerald-50 p-4 rounded-2xl">
                         <h4 class="font-semibold text-emerald-900 mb-2">Fair Value Price</h4>
                         <p class="text-2xl font-bold text-emerald-700" id="fairPrice"></p>
                     </div>
                     
                     <!-- Reasoning -->
                     <div id="reasoningSection" class="hidden">
-                        <h4 class="font-semibold text-gray-900 mb-2">Analysis</h4>
-                        <p class="text-gray-700" id="reasoning"></p>
+                        <h4 class="font-semibold text-[#313131] mb-2">Analysis</h4>
+                        <p class="text-[#505050]" id="reasoning"></p>
                     </div>
                     
                     <!-- Pros -->
                     <div id="prosSection" class="hidden">
                         <h4 class="font-semibold text-green-900 mb-2">Pros</h4>
-                        <ul class="list-disc list-inside text-gray-700 space-y-1" id="prosList"></ul>
+                        <ul class="list-disc list-inside text-[#505050] space-y-1" id="prosList"></ul>
                     </div>
                     
                     <!-- Cons -->
                     <div id="consSection" class="hidden">
                         <h4 class="font-semibold text-red-900 mb-2">Cons</h4>
-                        <ul class="list-disc list-inside text-gray-700 space-y-1" id="consList"></ul>
+                        <ul class="list-disc list-inside text-[#505050] space-y-1" id="consList"></ul>
                     </div>
                     
                     <!-- Market Notes -->
                     <div id="marketNotesSection" class="hidden">
-                        <h4 class="font-semibold text-gray-900 mb-2">Market Notes</h4>
-                        <p class="text-gray-700" id="marketNotes"></p>
+                        <h4 class="font-semibold text-[#313131] mb-2">Market Notes</h4>
+                        <p class="text-[#505050]" id="marketNotes"></p>
                     </div>
                 </div>
                 
@@ -741,8 +741,8 @@ function switchTab(tabName) {
     // Remove active class from all tab buttons
     const tabButtons = document.querySelectorAll('.tab-button');
     tabButtons.forEach(button => {
-        button.classList.remove('active', 'border-blue-500', 'text-blue-600');
-        button.classList.add('border-transparent', 'text-gray-500');
+        button.classList.remove('active', 'border-blue-500', 'text-[#0089D9]');
+        button.classList.add('border-transparent', 'text-[#505050]');
     });
     
     // Show selected tab content
@@ -754,8 +754,8 @@ function switchTab(tabName) {
     // Add active class to selected tab button
     const selectedButton = document.getElementById(`tab-${tabName}`);
     if (selectedButton) {
-        selectedButton.classList.add('active', 'border-blue-500', 'text-blue-600');
-        selectedButton.classList.remove('border-transparent', 'text-gray-500');
+        selectedButton.classList.add('active', 'border-blue-500', 'text-[#0089D9]');
+        selectedButton.classList.remove('border-transparent', 'text-[#505050]');
     }
 }
 

@@ -1,0 +1,66 @@
+{% load static %}
+
+<a href="{% url 'component_detail' component_id=component.id %}" class="group block bg-gradient-to-br from-[#F5F6F8] to-[#E8EAED] rounded-2xl border border-[#E1E4E8] p-4 hover:border-[#0089D9] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:ring-offset-2 transition-all duration-200">
+    <!-- Header with brand and platform -->
+    <div class="mb-4 text-center">
+        <div class="text-xs text-[#505050] font-medium">
+            <span class="font-bold text-[#313131]">{{ component.brand.name|upper }}</span>
+            {% with bp=component.batteryplatforms.all|first %}
+                {% if bp %}
+                    {{ bp.name }}
+                {% endif %}
+            {% endwith %}
+            {% with pl=component.productlines.all|first %}
+                {% if pl %}
+                    {{ pl.name }}{% if component.sku %} {{ component.sku }}{% endif %}
+                {% elif component.sku %}
+                    {{ component.sku }}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    
+    <!-- Image and specs -->
+    <div class="flex gap-3">
+        <!-- Image section -->
+        <div class="w-2/5 bg-white border border-[#E1E4E8] rounded-xl flex items-center justify-center p-2 group-hover:border-[#0089D9] transition-colors duration-200">
+            {% if component.image %}
+                <img src="{{ component.image }}" alt="{{ component.name }}" class="max-w-full max-h-16 object-contain">
+            {% else %}
+                <div class="w-8 h-8 text-[#505050] group-hover:text-[#0089D9] transition-colors duration-200">
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Specs section -->
+        <div class="w-3/5 space-y-2">
+            {% if component.motortype %}
+                <div class="font-semibold text-[#313131] text-sm mb-2">{{ component.motortype.name }}</div>
+            {% endif %}
+            <div class="space-y-1.5">
+                {% for important_attr in important_attributes %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-[#505050] font-medium">{{ important_attr.name }}</span>
+                        <span class="text-xs font-bold text-[#313131]">
+                            {% for component_attr in component.componentattributes_set.all %}
+                                {% if component_attr.attribute.id == important_attr.id %}
+                                    {{ component_attr.value|default:"?" }}
+                                {% endif %}
+                            {% empty %}
+                                ?
+                            {% endfor %}
+                        </span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hover indicator -->
+    <div class="mt-3 flex justify-center">
+        <div class="w-8 h-0.5 bg-[#0089D9] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+    </div>
+</a>

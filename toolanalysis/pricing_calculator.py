@@ -1,7 +1,7 @@
 from django.db import transaction
 from django.db.models import Count, Max
+from django.utils import timezone
 from decimal import Decimal
-from datetime import datetime
 from .models import Components, Products, PriceListings, ProductComponents, ComponentPricingHistory
 
 
@@ -31,12 +31,14 @@ def get_standalone_component_prices():
         ).order_by('-datepulled').first()
         
         if latest_pricelisting:
-            standalone_prices[component.id] = {
-                'price': latest_pricelisting.price,
-                'date': latest_pricelisting.datepulled,
-                'product': product,
-                'pricelisting': latest_pricelisting
-            }
+            existing = standalone_prices.get(component.id)
+            if not existing or latest_pricelisting.datepulled > existing['date']:
+                standalone_prices[component.id] = {
+                    'price': latest_pricelisting.price,
+                    'date': latest_pricelisting.datepulled,
+                    'product': product,
+                    'pricelisting': latest_pricelisting
+                }
     
     return standalone_prices
 
@@ -102,14 +104,13 @@ def calculate_prorated_prices(product, standalone_prices_dict):
                 'product_price': float(product_price),
                 'total_weight': float(total_weight),
                 'source_product': product.name,
-                'source_pricelisting_id': latest_pricelisting.id
+                'source_pricelisting_id': str(latest_pricelisting.id)
             }
         }
     
     return prorated_prices
 
 
-@transaction.atomic
 def update_all_component_pricing(dry_run=False, verbose=False):
     """
     Update all component pricing based on PriceListings data.
@@ -141,24 +142,27 @@ def update_all_component_pricing(dry_run=False, verbose=False):
                 # Only update if not using manual price
                 if not component.use_manual_price:
                     if not dry_run:
-                        component.calculated_price = price_data['price']
-                        component.last_calculated_date = datetime.now()
-                        component.price_source_product = price_data['product']
-                        component.price_source_pricelisting = price_data['pricelisting']
-                        component.save()
-                        
-                        # Create history entry
-                        ComponentPricingHistory.objects.create(
-                            component=component,
-                            price=price_data['price'],
-                            source_type='standalone',
-                            source_product=price_data['product'],
-                            source_pricelisting=price_data['pricelisting'],
+                        with transaction.atomic():
+                            component.calculated_price = price_data['price']
+                            component.last_calculated_date = timezone.now()
+                            component.price_source_product = price_data['product']
+                            component.price_source_pricelisting = price_data['pricelisting']
+                            component.save()
+
+                            # Create history entry
+                            ComponentPricingHistory.objects.create(
+                                component=component,
+                                price=price_data['price'],
+                                source_type='standalone',
+                                source_product=price_data['product'],
+                                source_pricelisting=price_data['pricelisting'],
                             metadata={
                                 'calculation_date': price_data['date'].isoformat(),
-                                'source': 'standalone_product'
+                                'source': 'standalone_product',
+                                'source_product_id': str(price_data['product'].id),
+                                'source_pricelisting_id': str(price_data['pricelisting'].id)
                             }
-                        )
+                            )
                     
                     stats['standalone_updated'] += 1
                     
@@ -198,38 +202,34 @@ def update_all_component_pricing(dry_run=False, verbose=False):
                         print(f"Skipped {product.name} (missing standalone prices or no price listing)")
                     continue
                 
-                # Update components with prorated prices
+                # Record prorated prices in history only (do not overwrite component standalone price)
                 for component_id, price_data in prorated_prices.items():
                     try:
                         component = Components.objects.get(id=component_id)
                         
-                        # Only update if not using manual price
+                        # Only record history; do not change component fields
                         if not component.use_manual_price:
                             if not dry_run:
-                                component.calculated_price = price_data['price']
-                                component.last_calculated_date = datetime.now()
-                                component.price_source_product = product
-                                # Get the latest pricelisting for this product
-                                latest_pricelisting = PriceListings.objects.filter(
-                                    product=product
-                                ).order_by('-datepulled').first()
-                                component.price_source_pricelisting = latest_pricelisting
-                                component.save()
-                                
-                                # Create history entry
-                                ComponentPricingHistory.objects.create(
-                                    component=component,
-                                    price=price_data['price'],
-                                    source_type='prorated',
-                                    source_product=product,
-                                    source_pricelisting=latest_pricelisting,
-                                    metadata=price_data['metadata']
-                                )
+                                with transaction.atomic():
+                                    # Get the latest pricelisting for this product
+                                    latest_pricelisting = PriceListings.objects.filter(
+                                        product=product
+                                    ).order_by('-datepulled').first()
+
+                                    # Create history entry only
+                                    ComponentPricingHistory.objects.create(
+                                        component=component,
+                                        price=price_data['price'],
+                                        source_type='prorated',
+                                        source_product=product,
+                                        source_pricelisting=latest_pricelisting,
+                                        metadata=price_data['metadata']
+                                    )
                             
                             stats['prorated_updated'] += 1
                             
                             if verbose:
-                                print(f"Updated {component.name} with prorated price: ${price_data['price']:.2f} (ratio: {price_data['weight_ratio']:.3f})")
+                                print(f"Recorded prorated allocation for {component.name}: ${price_data['price']:.2f} (ratio: {price_data['weight_ratio']:.3f})")
                         else:
                             stats['skipped'] += 1
                             if verbose:

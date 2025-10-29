@@ -5,54 +5,54 @@
 {% block title %}{{ product.name }} - ToolDecoded{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-white">
     <!-- Breadcrumb Navigation -->
-    <nav class="bg-gray-50 px-4 py-3" aria-label="Breadcrumb">
+    <nav class="bg-[#F5F6F8] px-4 py-3" aria-label="Breadcrumb">
         <div class="max-w-7xl mx-auto">
             <ol class="flex items-center space-x-2 text-sm">
                 <li>
-                    <a href="{% url 'home' %}" class="text-gray-500 hover:text-gray-700 transition-colors">Home</a>
+                    <a href="{% url 'home' %}" class="text-[#505050] hover:text-[#505050] transition-colors">Home</a>
                 </li>
                 <li>
-                    <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
                 </li>
                 <li>
-                    <a href="{% url 'index' %}" class="text-gray-500 hover:text-gray-700 transition-colors">Products</a>
+                    <a href="{% url 'index' %}" class="text-[#505050] hover:text-[#505050] transition-colors">Products</a>
                 </li>
                 {% if product.itemtypes.all %}
                     {% for itemtype in product.itemtypes.all %}
                         {% if itemtype.fullname %}
                             {% for breadcrumb_part in itemtype.fullname|split:"/" %}
                                 <li>
-                                    <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                     </svg>
                                 </li>
                                 <li>
-                                    <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ breadcrumb_part }}</a>
+                                    <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-[#505050] hover:text-[#505050] transition-colors">{{ breadcrumb_part }}</a>
                                 </li>
                             {% endfor %}
                         {% else %}
                             <li>
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                                 </svg>
                             </li>
                             <li>
-                                <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-gray-500 hover:text-gray-700 transition-colors">{{ itemtype.name }}</a>
+                                <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-[#505050] hover:text-[#505050] transition-colors">{{ itemtype.name }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
                 <li>
-                    <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
                 </li>
                 <li>
-                    <span class="text-gray-900 font-medium">{{ product.name|truncatechars:50 }}</span>
+                    <span class="text-[#313131] font-medium">{{ product.name|truncatechars:50 }}</span>
                 </li>
             </ol>
         </div>
@@ -61,7 +61,7 @@
     <!-- Back Button -->
     <div class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-2 py-4">
-            <button onclick="history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+            <button onclick="history.back()" class="inline-flex items-center text-[#0089D9] hover:text-[#006FB3] font-medium">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
@@ -76,18 +76,18 @@
             <!-- Left Column - Product Images -->
             <div class="lg:col-span-4">
                 <!-- Main Product Image with Carousel -->
-                <div class="bg-white rounded-lg shadow-sm border p-2 mb-2">
+                <div class="bg-white rounded-2xl shadow-sm border p-2 mb-2">
                     <div class="flex gap-2">
                         <!-- Thumbnails on the left -->
                         {% if product.image or product.productimages_set.all %}
                         <div class="flex flex-col gap-2 overflow-y-auto h-80 flex-shrink-0">
                             {% if product.image %}
-                                <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer border-2 border-blue-500 thumbnail flex-shrink-0" onclick="changeMainImageByIndex(0)">
+                                <div class="w-16 h-16 bg-white border border-[#E1E4E8] rounded overflow-hidden cursor-pointer border-2 border-blue-500 thumbnail flex-shrink-0" onclick="changeMainImageByIndex(0)">
                                     <img src="{{ product.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                                 </div>
                             {% endif %}
                             {% for image in product.productimages_set.all %}
-                                <div class="w-16 h-16 bg-white border border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-500 border-2 border-transparent transition-colors thumbnail flex-shrink-0" onclick="changeMainImageByIndex({% if product.image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %})">
+                                <div class="w-16 h-16 bg-white border border-[#E1E4E8] rounded overflow-hidden cursor-pointer hover:border-blue-500 border-2 border-transparent transition-colors thumbnail flex-shrink-0" onclick="changeMainImageByIndex({% if product.image %}{{ forloop.counter }}{% else %}{{ forloop.counter0 }}{% endif %})">
                                     <img src="{{ image.image }}" alt="{{ product.name }}" class="w-full h-full object-contain">
                                 </div>
                             {% endfor %}
@@ -95,7 +95,7 @@
                         {% endif %}
                         
                         <!-- Main image on the right -->
-                        <div class="flex-1 relative bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="flex-1 relative bg-white border border-[#E1E4E8] rounded-2xl overflow-hidden">
                             {% if product.image %}
                                 <div class="aspect-[4/3] bg-white flex items-center justify-center relative">
                                     <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75" onclick="previousImage()">
@@ -125,7 +125,7 @@
                                     </button>
                                 </div>
                             {% else %}
-                                <div class="aspect-[4/3] bg-white flex items-center justify-center text-gray-400">
+                                <div class="aspect-[4/3] bg-white flex items-center justify-center text-[#505050]">
                                     <div class="text-center">
                                         <svg class="w-16 h-16 mx-auto mb-2" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
@@ -142,24 +142,24 @@
             <!-- Right Column - Product Information -->
             <div class="lg:col-span-5">
                 <!-- Product Header -->
-                <div class="bg-white rounded-lg shadow-sm border p-6">
+                <div class="bg-white rounded-2xl shadow-sm border p-6">
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex-1">
                             <!-- Brand -->
-                            <div class="text-sm font-semibold text-gray-700 mb-0">{{ product.brand.name|upper }}</div>
+                            <div class="text-sm font-semibold text-[#505050] mb-0">{{ product.brand.name|upper }}</div>
                             
                             <!-- Product Name -->
-                            <h1 class="text-2xl font-bold text-gray-900 mb-0">{{ product.name }}</h1>
+                            <h1 class="text-2xl font-bold text-[#313131] mb-0">{{ product.name }}</h1>
                             
                             <!-- Model# -->
                             {% if product.sku %}
-                            <div class="text-sm text-gray-600 mb-3">Model#: {{ product.sku }}</div>
+                            <div class="text-sm text-[#505050] mb-3">Model#: {{ product.sku }}</div>
                             {% endif %}
                             
                             <!-- Product Line with Battery Voltage -->
                             {% if product.batteryvoltages.all %}
                             <div class="mb-3">
-                                <span class="text-sm text-gray-600">Product Line: 
+                                <span class="text-sm text-[#505050]">Product Line: 
                                     {% for voltage in product.batteryvoltages.all %}
                                         M18 Fuel ({{ voltage.value }}V)
                                     {% endfor %}
@@ -170,7 +170,7 @@
                             <!-- Categories -->
                             {% if product.categories.all or product.subcategories.all or product.itemtypes.all %}
                             <div class="mb-3">
-                                <span class="text-sm text-gray-600">Categories: </span>
+                                <span class="text-sm text-[#505050]">Categories: </span>
                                 {% for category in product.categories.all %}
                                     <a href="{% url 'index' %}?category={{ category.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ category.name }}</a>
                                 {% endfor %}
@@ -187,7 +187,7 @@
                         <!-- Release Date and Status -->
                         <div class="text-right">
                             {% if product.releasedate %}
-                            <div class="text-sm text-gray-600 mb-2">
+                            <div class="text-sm text-[#505050] mb-2">
                                 Release Date: {{ product.releasedate|date:"M Y" }}
                             </div>
                             {% endif %}
@@ -206,13 +206,13 @@
     <!-- Components Table Section - max-w-7xl for consistency -->
     {% if product.productcomponents_set.all %}
     <div class="max-w-7xl mx-auto px-2 pb-6">
-        <div class="bg-white rounded-lg shadow-sm border p-6 space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
             <!-- Components Table - full width -->
             <div>
                 <button type="button" class="w-full flex items-center justify-between text-left" onclick="toggleComponentsSection()" 
                         aria-expanded="true" aria-controls="components-content" aria-labelledby="components-header"
                         onkeydown="handleComponentsKeydown(event)" tabindex="0">
-                    <h2 id="components-header" class="text-xl font-bold text-gray-900">COMPONENTS</h2>
+                    <h2 id="components-header" class="text-xl font-bold text-[#313131]">COMPONENTS</h2>
                     <svg class="w-5 h-5 transform transition-transform" id="components-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
@@ -222,13 +222,13 @@
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">Tools & Components</h3>
                         <div class="flex items-center space-x-2">
-                            <label for="componentSortSelect" class="text-sm font-medium text-gray-700">Sort by:</label>
+                            <label for="componentSortSelect" class="text-sm font-medium text-[#505050]">Sort by:</label>
                             <select id="componentSortSelect" name="sort" class="custom-select" onchange="handleComponentSortChange(this)">
                                 <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
                                 <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
                                 <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model#</option>
                             </select>
-                            <button type="button" id="componentSortDirectionToggle" class="p-1 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
+                            <button type="button" id="componentSortDirectionToggle" class="p-1 text-[#505050] hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     {% if current_filters.sort_direction == 'desc' %}
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -250,11 +250,11 @@
                                 {% endif %}
                                 
                                 <div class="overflow-x-auto">
-                                    <table class="w-full border-collapse border border-gray-300 text-sm">
+                                    <table class="w-full border-collapse border border-[#E1E4E8] text-sm">
                                         <thead>
-                                            <tr class="bg-gray-100">
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">
-                                                    <button onclick="sortComponents('quantity')" class="flex items-center space-x-1 hover:text-blue-600">
+                                            <tr class="bg-[#F5F6F8]">
+                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs w-10">
+                                                    <button onclick="sortComponents('quantity')" class="flex items-center space-x-1 hover:text-[#0089D9]">
                                                         <span>Qty</span>
                                                         {% if current_filters.sort == 'quantity' %}
                                                             {% if current_filters.sort_direction == 'desc' %}
@@ -269,8 +269,8 @@
                                                         {% endif %}
                                                     </button>
                                                 </th>
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
-                                                    <button onclick="sortComponents('name')" class="flex items-center space-x-1 hover:text-blue-600">
+                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
+                                                    <button onclick="sortComponents('name')" class="flex items-center space-x-1 hover:text-[#0089D9]">
                                                         <span>Name</span>
                                                         {% if current_filters.sort == 'name' %}
                                                             {% if current_filters.sort_direction == 'desc' %}
@@ -285,8 +285,8 @@
                                                         {% endif %}
                                                     </button>
                                                 </th>
-                                                <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
-                                                    <button onclick="sortComponents('sku')" class="flex items-center space-x-1 hover:text-blue-600">
+                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
+                                                    <button onclick="sortComponents('sku')" class="flex items-center space-x-1 hover:text-[#0089D9]">
                                                         <span>Model#</span>
                                                         {% if current_filters.sort == 'sku' %}
                                                             {% if current_filters.sort_direction == 'desc' %}
@@ -302,7 +302,7 @@
                                                     </button>
                                                 </th>
                                                 {% for column in group_data.columns %}
-                                                    <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">
+                                                    <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
                                                         {{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}
                                                     </th>
                                                 {% endfor %}
@@ -311,8 +311,8 @@
                                         <tbody>
                                             {% for pc in group_data.components %}
                                             <tr>
-                                                <td class="border border-gray-300 px-2 py-1 text-md w-10">{{ pc.quantity }}</td>
-                                                <td class="border border-gray-300 px-2 py-1 text-md">
+                                                <td class="border border-[#E1E4E8] px-2 py-1 text-md w-10">{{ pc.quantity }}</td>
+                                                <td class="border border-[#E1E4E8] px-2 py-1 text-md">
                                                     <div class="flex items-center gap-2">
                                                         {% if pc.component.image %}
                                                             <a href="{% url 'component_detail' pc.component.id %}">
@@ -323,14 +323,14 @@
                                                                 <img src="{{ component_products|lookup:pc.component.id }}" alt="{{ pc.component.name }}" class="w-8 h-8 object-contain bg-white">
                                                             </a>
                                                         {% endif %}
-                                                        <a href="{% url 'component_detail' pc.component.id %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                                                        <a href="{% url 'component_detail' pc.component.id %}" class="text-[#0089D9] hover:text-[#006FB3] font-medium">
                                                             {{ pc.component.name }}
                                                         </a>
                                                     </div>
                                                 </td>
-                                                <td class="border border-gray-300 px-2 py-1 text-xs">{{ pc.component.sku|default:"" }}</td>
+                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ pc.component.sku|default:"" }}</td>
                                                 {% for column in group_data.columns %}
-                                                    <td class="border border-gray-300 px-2 py-1 text-xs">
+                                                    <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
                                                         {% for attr in pc.component.componentattributes_set.all %}
                                                             {% if attr.attribute.id == column.id %}
                                                                 {{ attr.value|default:"" }}
@@ -354,8 +354,8 @@
                 <!-- Product Description - 1/2 width -->
                 {% if product.description %}
                 <div class="col-span-1">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-3">PRODUCT DESCRIPTION</h3>
-                    <div class="text-sm text-gray-700 leading-relaxed">
+                    <h3 class="text-lg font-semibold text-[#313131] mb-3">PRODUCT DESCRIPTION</h3>
+                    <div class="text-sm text-[#505050] leading-relaxed">
                         {{ product.description }}
                     </div>
                 </div>
@@ -366,20 +366,20 @@
                     <!-- Accessories Table -->
                     {% if product.productaccessories_set.all %}
                     <div>
-                        <h2 class="text-xl font-bold text-gray-900 mb-4">ACCESSORIES</h2>
+                        <h2 class="text-xl font-bold text-[#313131] mb-4">ACCESSORIES</h2>
                         <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border border-gray-300 text-sm">
+                            <table class="w-full border-collapse border border-[#E1E4E8] text-sm">
                                 <thead>
-                                    <tr class="bg-gray-100">
-                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
-                                        <th class="border border-gray-300 px-2 py-1 text-left font-semibold text-xs">Name</th>
+                                    <tr class="bg-[#F5F6F8]">
+                                        <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
+                                        <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">Name</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for accessory in product.productaccessories_set.all %}
                                     <tr>
-                                        <td class="border border-gray-300 px-2 py-1 text-xs w-10">{{ accessory.quantity }}</td>
-                                        <td class="border border-gray-300 px-2 py-1 text-xs">{{ accessory.name }}</td>
+                                        <td class="border border-[#E1E4E8] px-2 py-1 text-xs w-10">{{ accessory.quantity }}</td>
+                                        <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ accessory.name }}</td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -391,9 +391,9 @@
                     <!-- Key Features -->
                     {% if product.bullets %}
                     <div>
-                        <h3 class="text-base font-bold text-gray-900 mb-3">Key Features</h3>
-                        <div class="text-sm text-gray-700">
-                            <div class="space-y-2 [&>p]:flex [&>p]:items-start [&>p]:before:content-['•'] [&>p]:before:text-gray-500 [&>p]:before:mr-2 [&>p]:before:mt-1">
+                        <h3 class="text-base font-bold text-[#313131] mb-3">Key Features</h3>
+                        <div class="text-sm text-[#505050]">
+                            <div class="space-y-2 [&>p]:flex [&>p]:items-start [&>p]:before:content-['•'] [&>p]:before:text-[#505050] [&>p]:before:mr-2 [&>p]:before:mt-1">
                                 {{ product.bullets|linebreaks }}
                             </div>
                         </div>

@@ -1,15 +1,15 @@
 <!-- Quick Filter Bar - Shared partial for product and component catalogs -->
-<div class="sticky top-16 z-30 bg-white rounded-xl shadow-sm border border-gray-200 mb-6 py-3">
+<div class="sticky top-16 z-30 bg-white rounded-2xl shadow-sm border border-[#E1E4E8] mb-6 py-3">
     <div class="px-6">
         <!-- 4-Cell Grid Layout -->
         <div class="grid grid-cols-2 gap-2">
             <!-- Top Left: Active Filters Heading -->
             <div class="flex items-center gap-2">
-                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
                 </svg>
-                <h2 class="text-sm font-semibold text-gray-900">Active Filters</h2>
-                <a href="?" class="text-sm text-blue-600 hover:text-blue-800 font-medium" id="clear-all-link" style="display: none;">
+                <h2 class="text-sm font-semibold text-[#313131]">Active Filters</h2>
+                <a href="?" class="text-sm text-[#0089D9] hover:text-[#006FB3] font-medium" id="clear-all-link" style="display: none;">
                     Clear All
                 </a>
             </div>
@@ -32,7 +32,7 @@
                 {% endcomment %}
                 
                 <!-- Filter Toggle Button (Mobile) -->
-                <button id="filter-toggle" onclick="toggleFilterSidebar()" class="lg:hidden flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                <button id="filter-toggle" onclick="toggleFilterSidebar()" class="lg:hidden flex items-center gap-2 px-3 py-2 bg-[#0089D9] text-white rounded-lg text-sm font-medium hover:bg-[#006FB3] transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                     </svg>
@@ -41,12 +41,12 @@
                 
                 <!-- View Toggle -->
                 <div class="flex items-center bg-gray-100 rounded-lg p-1">
-                    <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-gray-700 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                    <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-[#505050] hover:text-[#0089D9] transition-colors mobile-button mobile-touch-target ripple">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                         </svg>
                     </button>
-                    <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-gray-500 hover:text-blue-600 transition-colors mobile-button mobile-touch-target ripple">
+                    <button id="list-view" onclick="toggleView('list')" class="p-2 rounded-md text-[#505050] hover:text-[#0089D9] transition-colors mobile-button mobile-touch-target ripple">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M3 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3zm0 4a1 1 0 000 2h14a1 1 0 100-2H3z" clip-rule="evenodd"></path>
                         </svg>
@@ -54,7 +54,7 @@
                 </div>
                 
                 <!-- Sort Dropdown -->
-                <select id="sortSelect" name="sort" class="text-sm border border-gray-300 rounded px-2 py-1" onchange="handleSortChange(this)">
+                <select id="sortSelect" name="sort" class="text-sm border border-[#E1E4E8] rounded px-2 py-1" onchange="handleSortChange(this)">
                     <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
                     <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
                     <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
@@ -70,7 +70,7 @@
                 </select>
                 
                 <!-- Results per page -->
-                <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-gray-300 rounded px-2 py-1">
+                <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-[#E1E4E8] rounded px-2 py-1">
                     <option value="12" {% if request.GET.page_size == '12' or not request.GET.page_size %}selected{% endif %}>12 per page</option>
                     <option value="24" {% if request.GET.page_size == '24' %}selected{% endif %}>24 per page</option>
                     <option value="48" {% if request.GET.page_size == '48' %}selected{% endif %}>48 per page</option>
@@ -89,32 +89,32 @@
                         <!-- Previous arrow -->
                         {% if items.has_previous %}
                             <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ items.previous_page_number }}" 
-                               class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                               class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
                                 <
                             </a>
                         {% else %}
-                            <span class="text-gray-300 text-xl"></span>
+                            <span class="text-[#E1E4E8] text-xl"></span>
                         {% endif %}
 
                         <!-- Page numbers -->
                         {% for num in items.paginator.page_range %}
                             {% if items.number == num %}
-                                <span class="font-semibold text-gray-900 border-b-2 border-orange-500 text-md">{{ num }}</span>
+                                <span class="font-semibold text-[#313131] border-b-2 border-[#0089D9] text-md">{{ num }}</span>
                             {% elif num >= items.number|add:'-2' and num <= items.number|add:'2' or items.number <= 3 and num <= 5 %}
                                 <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
                                     {{ num }}
                                 </a>
                             {% elif num == 1 and items.number > 4 %}
                                 <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
                                     {{ num }}
                                 </a>
-                                <span class="text-gray-400 text-sm">...</span>
+                                <span class="text-[#505050] text-sm">...</span>
                             {% elif num == items.paginator.num_pages and items.number < items.paginator.num_pages|add:'-3' %}
-                                <span class="text-gray-400 text-sm">...</span>
+                                <span class="text-[#505050] text-sm">...</span>
                                 <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
                                     {{ num }}
                                 </a>
                             {% endif %}
@@ -123,11 +123,11 @@
                         <!-- Next arrow -->
                         {% if items.has_next %}
                             <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ items.next_page_number }}" 
-                               class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                               class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
                                 >
                             </a>
                         {% else %}
-                            <span class="text-gray-300 text-xl"></span>
+                            <span class="text-[#E1E4E8] text-xl"></span>
                         {% endif %}
                     </nav>
                 {% endif %}

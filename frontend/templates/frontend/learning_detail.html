@@ -9,7 +9,7 @@
     <nav class="flex mb-8" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
-                <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+                <a href="{% url 'home' %}" class="inline-flex items-center text-sm font-medium text-[#505050] hover:text-[#0089D9]">
                     <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
                     </svg>
@@ -18,18 +18,18 @@
             </li>
             <li>
                 <div class="flex items-center">
-                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-6 h-6 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
-                    <a href="{% url 'learning_index' %}" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2">Learning Center</a>
+                    <a href="{% url 'learning_index' %}" class="ml-1 text-sm font-medium text-[#505050] hover:text-[#0089D9] md:ml-2">Learning Center</a>
                 </div>
             </li>
             <li aria-current="page">
                 <div class="flex items-center">
-                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg class="w-6 h-6 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                     </svg>
-                    <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{{ article.title }}</span>
+                    <span class="ml-1 text-sm font-medium text-[#505050] md:ml-2">{{ article.title }}</span>
                 </div>
             </li>
         </ol>
@@ -38,15 +38,15 @@
     <!-- Article Header -->
     <header class="mb-8">
         <div class="flex items-center justify-between mb-4">
-            <time class="text-sm text-gray-500" datetime="{{ article.published_at|date:'c' }}">
+            <time class="text-sm text-[#505050]" datetime="{{ article.published_at|date:'c' }}">
                 Published on {{ article.published_at|date:"F j, Y" }}
             </time>
         </div>
         
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ article.title }}</h1>
+        <h1 class="text-4xl font-bold text-[#313131] mb-4">{{ article.title }}</h1>
         
         {% if article.summary %}
-            <p class="text-xl text-gray-600 leading-relaxed mb-4">{{ article.summary }}</p>
+            <p class="text-xl text-[#505050] leading-relaxed mb-4">{{ article.summary }}</p>
         {% endif %}
         
         <!-- Tags -->
@@ -67,19 +67,19 @@
 
     <!-- Article Content -->
     <article class="prose prose-lg max-w-none mb-12">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-[#E1E4E8] p-8">
             {{ article.content|markdownify }}
         </div>
     </article>
 
     <!-- Article Meta -->
-    <div class="border-t border-gray-200 pt-8 mb-12">
-        <div class="flex items-center justify-between text-sm text-gray-500">
+    <div class="border-t border-[#E1E4E8] pt-8 mb-12">
+        <div class="flex items-center justify-between text-sm text-[#505050]">
             <div>
                 <span>Last updated: {{ article.updated_at|date:"F j, Y" }}</span>
             </div>
             <div class="flex items-center space-x-4">
-                <a href="{% url 'learning_index' %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                <a href="{% url 'learning_index' %}" class="text-[#0089D9] hover:text-[#006FB3] font-medium">
                     ← Back to Learning Center
                 </a>
             </div>
@@ -88,33 +88,33 @@
 
     <!-- Related Articles -->
     {% if related_articles %}
-        <section class="border-t border-gray-200 pt-12">
-            <h2 class="text-2xl font-bold text-gray-900 mb-8">Related Articles</h2>
+        <section class="border-t border-[#E1E4E8] pt-12">
+            <h2 class="text-2xl font-bold text-[#313131] mb-8">Related Articles</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for related_article in related_articles %}
-                    <article class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300 overflow-hidden">
+                    <article class="bg-white rounded-2xl shadow-sm border border-[#E1E4E8] hover:shadow-md transition-shadow duration-300 overflow-hidden">
                         <div class="p-6">
                             <div class="flex items-center justify-between mb-3">
-                                <time class="text-sm text-gray-500" datetime="{{ related_article.published_at|date:'c' }}">
+                                <time class="text-sm text-[#505050]" datetime="{{ related_article.published_at|date:'c' }}">
                                     {{ related_article.published_at|date:"M j, Y" }}
                                 </time>
                             </div>
                             
-                            <h3 class="text-lg font-semibold text-gray-900 mb-3 line-clamp-2">
-                                <a href="{% url 'learning_detail' related_article.slug %}" class="hover:text-blue-600 transition-colors">
+                            <h3 class="text-lg font-semibold text-[#313131] mb-3 line-clamp-2">
+                                <a href="{% url 'learning_detail' related_article.slug %}" class="hover:text-[#0089D9] transition-colors">
                                     {{ related_article.title }}
                                 </a>
                             </h3>
                             
                             {% if related_article.summary %}
-                                <p class="text-gray-600 mb-4 line-clamp-3">
+                                <p class="text-[#505050] mb-4 line-clamp-3">
                                     {{ related_article.summary }}
                                 </p>
                             {% endif %}
                             
                             <a 
                                 href="{% url 'learning_detail' related_article.slug %}" 
-                                class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                class="inline-flex items-center text-[#0089D9] hover:text-[#006FB3] font-medium transition-colors"
                             >
                                 Read more
                                 <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

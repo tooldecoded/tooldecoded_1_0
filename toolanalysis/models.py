@@ -6,9 +6,11 @@ class Attributes(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField()
     unit = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    sortorder = models.IntegerField(blank=True, null=True)
     class Meta:
         db_table = 'Attributes'
-        ordering = ['name']
+        ordering = ['sortorder', 'name']
         unique_together = ('name', 'unit')
 
 class Features(models.Model):
@@ -30,18 +32,6 @@ class ComponentFeatures(models.Model):
         ordering = ['component', 'feature']
         unique_together = ('component', 'feature', 'value')
 
-'''class ItemCategories(models.Model):
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-    name = models.TextField()
-    #parent = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
-    level = models.IntegerField(blank=True, null=True)
-    sortorder = models.IntegerField(blank=True, null=True)
-    attributes = models.ManyToManyField('Attributes')
-    class Meta:
-        db_table = 'ItemCategories'
-        ordering = ['level', 'sortorder', 'name']
-        unique_together = ('name', 'level')
-'''
 class Categories(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField()

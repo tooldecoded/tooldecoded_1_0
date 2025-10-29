@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Case, When, Value, F, FloatField
+from django.db.models import Q, Count, Case, When, Value, F, FloatField, Prefetch
 from django.db.models.functions import Cast
 from django.http import JsonResponse
 import uuid
@@ -328,16 +328,42 @@ def home(request):
         is_published=True
     ).prefetch_related('tags')[:4]
     
-    # Get flagship components preview (first 4 featured components)
+    # Get flagship components preview (first 4 featured components, ordered by showcase priority)
     flagship_preview = Components.objects.filter(
         is_featured=True
-    ).select_related('brand').prefetch_related('categories', 'subcategories', 'itemtypes')[:4]
+    ).select_related('brand').prefetch_related('categories', 'subcategories', 'itemtypes').order_by('-showcase_priority', 'name')[:4]
     
     # Get recent products (latest 3 by release date)
     recent_products = Products.objects.select_related('brand').prefetch_related('productimages_set').order_by('-releasedate')[:3]
     
     # Get recent components (latest 3)
     recent_components = Components.objects.select_related('brand').order_by('-id')[:3]
+    
+    # Determine quick-compare item type from highest showcase_priority featured component
+    quick_compare_title = None
+    quick_compare_itemtype = None
+    top_featured = Components.objects.filter(is_featured=True).select_related('brand').prefetch_related('itemtypes').order_by('-showcase_priority', 'name').first()
+    if top_featured:
+        quick_compare_itemtype = top_featured.itemtypes.first()
+        if quick_compare_itemtype:
+            quick_compare_title = f"Flagship {quick_compare_itemtype.name}"
+
+    # Get important attributes for the item type (to show labels even if no values)
+    important_attributes = []
+    if quick_compare_itemtype:
+        important_attributes = Attributes.objects.filter(
+            itemtypes=quick_compare_itemtype
+        ).order_by('sortorder', 'name')[:4]
+
+    # Get quick compare components: top 2 featured of that derived item type (ordered by showcase priority)
+    flagship_impact_drivers = Components.objects.filter(
+        is_featured=True,
+        itemtypes=quick_compare_itemtype if quick_compare_itemtype else None
+    ).select_related('brand', 'motortype').prefetch_related(
+        'categories', 'subcategories', 'itemtypes', 'batteryplatforms', 'productlines',
+        Prefetch('componentattributes_set', 
+                queryset=ComponentAttributes.objects.select_related('attribute').order_by('attribute__sortorder', 'attribute__name'))
+    ).order_by('-showcase_priority', 'name')[:2]
     
     context = {
         'total_products': total_products,
@@ -348,6 +374,9 @@ def home(request):
         'flagship_preview': flagship_preview,
         'recent_products': recent_products,
         'recent_components': recent_components,
+        'flagship_impact_drivers': flagship_impact_drivers,
+        'quick_compare_title': quick_compare_title,
+        'important_attributes': important_attributes,
         'has_flagship_products': Components.objects.filter(is_featured=True).exists(),
     }
     
@@ -355,7 +384,20 @@ def home(request):
 
 def about(request):
     """About page with information about the database"""
-    return render(request, 'frontend/about.html')
+    # Compute database statistics for the About page
+    total_products = Products.objects.count()
+    total_components = Components.objects.count()
+    total_brands = Brands.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
+    total_categories = Categories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
+
+    context = {
+        'total_products': total_products,
+        'total_components': total_components,
+        'total_brands': total_brands,
+        'total_categories': total_categories,
+    }
+
+    return render(request, 'frontend/about.html', context)
 
 def contact(request):
     """Contact page with contact information and form"""

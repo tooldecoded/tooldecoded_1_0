@@ -406,11 +406,6 @@
                         Home
                     </a>
                     
-                    <!-- Featured (standalone) -->
-                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
-                        Featured
-                    </a>
-                    
                     <!-- Explore Dropdown -->
                     <div class="relative group">
                         <button class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1 flex items-center">
@@ -430,6 +425,11 @@
                             </div>
                         </div>
                     </div>
+                                        
+                    <!-- Featured (standalone) -->
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
+                        Featured
+                    </a>
                     
                     <!-- Learn (standalone) -->
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
@@ -474,12 +474,7 @@
                     <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Home
                     </a>
-                    
-                    <!-- Featured (standalone) -->
-                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
-                        Featured
-                    </a>
-                    
+                                        
                     <!-- Explore Accordion -->
                     <div class="space-y-1">
                         <button onclick="toggleMobileDropdown('explore')" class="w-full text-left text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg flex items-center justify-between">
@@ -498,6 +493,11 @@
                         </div>
                     </div>
                     
+                    <!-- Featured (standalone) -->
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
+                        Featured
+                    </a>
+
                     <!-- Learn (standalone) -->
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Learn

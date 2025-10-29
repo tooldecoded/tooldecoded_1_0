@@ -224,7 +224,7 @@ function openQuickView(itemId) {
                                 <p class="text-gray-700 line-clamp-3" id="descriptionText">${truncatedDesc}</p>
                                 ${needsExpansion ? `
                                     <button onclick="toggleDescription()" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors mt-1" id="toggleDescriptionBtn">
-                                        Show more
+                                        Expand
                                     </button>
                                 ` : ''}
                             </div>
@@ -258,7 +258,7 @@ function closeQuickView() {
 function toggleComponents() {
     const hiddenComponents = document.querySelectorAll('[data-component-index]');
     const toggleBtn = document.getElementById('toggleComponentsBtn');
-    const isExpanded = toggleBtn.textContent.includes('Show less');
+    const isExpanded = toggleBtn.textContent.includes('Collapse');
     
     hiddenComponents.forEach(component => {
         const index = parseInt(component.dataset.componentIndex);
@@ -276,21 +276,21 @@ function toggleComponents() {
         const hiddenCount = totalComponents - 4;
         toggleBtn.textContent = `Show ${hiddenCount} more components`;
     } else {
-        toggleBtn.textContent = 'Show less';
+        toggleBtn.textContent = 'Collapse';
     }
 }
 
 function toggleDescription() {
     const descriptionText = document.getElementById('descriptionText');
     const toggleBtn = document.getElementById('toggleDescriptionBtn');
-    const isExpanded = toggleBtn.textContent.includes('Show less');
+    const isExpanded = toggleBtn.textContent.includes('Collapse');
     
     if (isExpanded) {
         descriptionText.classList.add('line-clamp-3');
-        toggleBtn.textContent = 'Show more';
+        toggleBtn.textContent = 'Expand';
     } else {
         descriptionText.classList.remove('line-clamp-3');
-        toggleBtn.textContent = 'Show less';
+        toggleBtn.textContent = 'Collapse';
     }
 }
 
@@ -950,11 +950,11 @@ function toggleFilterExpansion(sectionName) {
         if (isExpanded) {
             list.style.maxHeight = '12rem';
             list.style.overflowY = 'auto';
-            toggle.textContent = toggle.textContent.replace('Show less', 'Show more');
+            toggle.textContent = toggle.textContent.replace('Collapse', 'Expand');
         } else {
             list.style.maxHeight = 'none';
             list.style.overflowY = 'visible';
-            toggle.textContent = toggle.textContent.replace('Show more', 'Show less');
+            toggle.textContent = toggle.textContent.replace('Expand', 'Collapse');
         }
     }
 }

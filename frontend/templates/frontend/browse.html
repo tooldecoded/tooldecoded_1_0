@@ -43,7 +43,7 @@
             <!-- Item Type Sidebar (Left) -->
             <div class="lg:w-1/4">
                 <!-- Mobile: Horizontal scroll -->
-                <div class="lg:hidden mb-6">
+                <div class="lg:hidden mb-6 sticky top-16 z-30 bg-gray-50 py-4 -mx-4 px-4">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Item Types</h3>
                     <div class="overflow-x-auto">
                         <nav class="flex space-x-3 pb-2" id="itemtype-nav-mobile">
@@ -62,9 +62,8 @@
                 </div>
                 
                 <!-- Desktop: Vertical sidebar -->
-                <div class="hidden lg:block">
-                    <div class="sticky top-24">
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="hidden lg:block sticky top-20 self-start z-40">
+                    <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Item Types</h3>
                             <nav class="space-y-2" id="itemtype-nav">
                                 {% for itemtype in itemtype_metadata %}
@@ -78,7 +77,6 @@
                                 </a>
                                 {% endfor %}
                             </nav>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -86,7 +84,7 @@
             <!-- Main Content (Right) -->
             <div class="lg:w-3/4">
                     {% for itemtype_name, itemtype_data in organized_products.items %}
-                <section id="{{ itemtype_data.itemtype_slug }}" class="mb-16 scroll-mt-24">
+                <section id="{{ itemtype_data.itemtype_slug }}" class="mb-16 scroll-mt-20">
                     <div class="mb-8">
                         <h2 class="text-3xl font-bold text-gray-900 mb-2">{{ itemtype_name }}</h2>
                         <div class="w-16 h-1 bg-blue-600 rounded"></div>

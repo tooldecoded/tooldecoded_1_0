@@ -15,8 +15,13 @@
                 theme: {
                     extend: {
                         colors: {
-                            'brand-blue': '#1e40af',
-                            'brand-gray': '#6b7280',
+                            'brand-blue': '#0089D9',
+                            'brand-blue-secondary': '#0074D9',
+                            'brand-blue-accent': '#0084E6',
+                            'brand-gray': '#313131',
+                            'brand-gray-light': '#1C1F26',
+                            'brand-gray-bg': '#F5F6F8',
+                            'brand-border': '#E1E4E8',
                             'brand-green': '#059669',
                             'brand-purple': '#7c3aed',
                             'brand-orange': '#ea580c',
@@ -350,7 +355,7 @@
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b sticky top-0 z-50">
+    <header class="bg-[#24272E] text-white sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center py-4">
                 <!-- Logo/Brand - HTML/CSS Version v3 -->
@@ -358,11 +363,11 @@
                     <a href="{% url 'home' %}" class="flex items-center group">
                         <!-- Desktop Logo -->
                         <div class="hidden md:block">
-                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-12 w-auto min-w-[200px]">
+                            <img src="{% static 'frontend/images/logo_darkbg.png' %}" alt="ToolDecoded Logo" class="h-12 w-auto min-w-[200px]">
                         </div>
                         <!-- Mobile Logo -->
                         <div class="md:hidden">
-                            <img src="{% static 'frontend/images/logo_lightbg.png' %}" alt="ToolDecoded Logo" class="h-8 w-auto min-w-[150px]">
+                            <img src="{% static 'frontend/images/logo_darkbg.png' %}" alt="ToolDecoded Logo" class="h-8 w-auto min-w-[150px]">
                         </div>
                     </a>
                 </div>
@@ -373,15 +378,15 @@
                         <div class="relative">
                             <input type="text" 
                                    id="global-search" 
-                                   class="w-full px-4 py-2.5 pl-10 pr-12 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
-                                   placeholder="Search products, components, brands...">
+                                   class="w-full px-4 py-2.5 pl-10 pr-12 text-sm border border-[#E1E4E8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9] transition-all duration-200 bg-white/95 text-[#313131] placeholder-[#505050]/70"
+                                   placeholder="Search tools, kits, batteries…">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-4 w-4 text-[#505050]/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                 </svg>
                             </div>
                             <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <kbd class="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded">⌘K</kbd>
+                                <kbd class="px-2 py-1 text-xs font-semibold text-[#505050]/70">⌘K</kbd>
                             </div>
                         </div>
                         <div id="search-suggestions" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl mt-2 hidden z-50 max-h-96 overflow-y-auto">
@@ -402,24 +407,24 @@
                 <!-- Main Navigation -->
                 <nav class="hidden md:flex space-x-4 xl:space-x-8">
                     <!-- Home (standalone) -->
-                    <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
+                    <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1">
                         Home
                     </a>
                     
                     <!-- Explore Dropdown -->
                     <div class="relative group">
-                        <button class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1 flex items-center">
+                        <button class="text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1 flex items-center">
                             Explore
                             <svg class="ml-1 h-4 w-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-[#E1E4E8] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-2">
-                                <a href="{% url 'index' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                <a href="{% url 'index' %}" class="block px-4 py-2 text-sm text-[#313131] hover:bg-[#F5F6F8] hover:text-[#0089D9] transition-colors">
                                     Products
                                 </a>
-                                <a href="{% url 'components_index' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                <a href="{% url 'components_index' %}" class="block px-4 py-2 text-sm text-[#313131] hover:bg-[#F5F6F8] hover:text-[#0089D9] transition-colors">
                                     Tools & Components
                                 </a>
                             </div>
@@ -427,29 +432,29 @@
                     </div>
                                         
                     <!-- Featured (standalone) -->
-                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1">
                         Featured
                     </a>
 
                     <!-- Learn (standalone) -->
-                    <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
+                    <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1">
                         Learn
                     </a>
                     
                     <!-- About Dropdown -->
                     <div class="relative group">
-                        <button class="text-sm font-medium {% if request.resolver_match.url_name == 'about' or request.resolver_match.url_name == 'contact' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1 flex items-center">
+                        <button class="text-sm font-medium {% if request.resolver_match.url_name == 'about' or request.resolver_match.url_name == 'contact' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1 flex items-center">
                             About
                             <svg class="ml-1 h-4 w-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
-                        <div class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-[#E1E4E8] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-2">
-                                <a href="{% url 'about' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                <a href="{% url 'about' %}" class="block px-4 py-2 text-sm text-[#313131] hover:bg-[#F5F6F8] hover:text-[#0089D9] transition-colors">
                                     About
                                 </a>
-                                <a href="{% url 'contact' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                <a href="{% url 'contact' %}" class="block px-4 py-2 text-sm text-[#313131] hover:bg-[#F5F6F8] hover:text-[#0089D9] transition-colors">
                                     Contact
                                 </a>
                             </div>
@@ -459,7 +464,7 @@
                 
                 <!-- Mobile menu button -->
                 <div class="md:hidden">
-                    <button type="button" class="text-gray-600 hover:text-gray-900 focus:outline-none focus:text-gray-900" onclick="toggleMobileMenu()">
+                    <button type="button" class="text-white hover:text-[#0089D9] focus:outline-none focus:text-[#0089D9]" onclick="toggleMobileMenu()">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
@@ -468,54 +473,55 @@
             </div>
             
             <!-- Mobile Navigation -->
-            <div id="mobile-menu" class="md:hidden hidden border-t border-gray-200 py-4">
+            <div id="mobile-menu" class="md:hidden hidden border-t border-white/20 py-4">
                 <nav class="flex flex-col space-y-1">
                     <!-- Home (standalone) -->
-                    <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
+                    <a href="{% url 'home' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'home' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Home
                     </a>
                                         
                     <!-- Explore Accordion -->
                     <div class="space-y-1">
-                        <button onclick="toggleMobileDropdown('explore')" class="w-full text-left text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg flex items-center justify-between">
+                        <button onclick="toggleMobileDropdown('explore')" class="w-full text-left text-sm font-medium {% if request.resolver_match.url_name == 'components_index' or request.resolver_match.url_name == 'component_detail' or request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'product_detail' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg flex items-center justify-between">
                             <span>Explore</span>
                             <svg id="explore-arrow" class="h-4 w-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
                         <div id="explore-dropdown" class="hidden pl-4 space-y-1">
-                            <a href="{% url 'index' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
+                            <a href="{% url 'index' %}" class="block text-sm text-white hover:text-[#0089D9] hover:bg-white/10 transition-colors py-2 px-4 rounded-lg">
                                 Products
                             </a>
-                            <a href="{% url 'components_index' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
+                            <a href="{% url 'components_index' %}" class="block text-sm text-white hover:text-[#0089D9] hover:bg-white/10 transition-colors py-2 px-4 rounded-lg">
                                 Tools & Components
                             </a>
                         </div>
+                        
                     </div>
                     
                     <!-- Featured (standalone) -->
-                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
+                    <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Featured
                     </a>
 
                     <!-- Learn (standalone) -->
-                    <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg">
+                    <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Learn
                     </a>
                     
                     <!-- About Accordion -->
                     <div class="space-y-1">
-                        <button onclick="toggleMobileDropdown('about')" class="w-full text-left text-sm font-medium {% if request.resolver_match.url_name == 'about' or request.resolver_match.url_name == 'contact' %}text-blue-600 bg-blue-50{% else %}text-gray-600 hover:text-gray-900 hover:bg-gray-50{% endif %} transition-colors py-3 px-4 rounded-lg flex items-center justify-between">
+                        <button onclick="toggleMobileDropdown('about')" class="w-full text-left text-sm font-medium {% if request.resolver_match.url_name == 'about' or request.resolver_match.url_name == 'contact' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg flex items-center justify-between">
                             <span>About</span>
                             <svg id="about-arrow" class="h-4 w-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </button>
                         <div id="about-dropdown" class="hidden pl-4 space-y-1">
-                            <a href="{% url 'about' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
+                            <a href="{% url 'about' %}" class="block text-sm text-white hover:text-[#0089D9] hover:bg-white/10 transition-colors py-2 px-4 rounded-lg">
                                 About
                             </a>
-                            <a href="{% url 'contact' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
+                            <a href="{% url 'contact' %}" class="block text-sm text-white hover:text-[#0089D9] hover:bg-white/10 transition-colors py-2 px-4 rounded-lg">
                                 Contact
                             </a>
                         </div>
@@ -531,7 +537,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white">
+    <footer class="bg-[#24272E] text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
                 <!-- Brand Section -->
@@ -549,23 +555,23 @@
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
                     <div class="grid grid-rows-4 grid-flow-col gap-x-6 gap-y-2">
-                        <div><a href="{% url 'home' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Home</a></div>
-                        <div><a href="{% url 'browse_flagship' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Featured</a></div>
-                        <div><a href="{% url 'index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">All Products</a></div>
-                        <div><a href="{% url 'components_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Tools & Components</a></div>
-                        <div><a href="{% url 'learning_index' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Learn</a></div>
-                        <div><a href="{% url 'about' %}" class="text-gray-300 hover:text-white transition-colors text-sm">About</a></div>
-                        <div><a href="{% url 'contact' %}" class="text-gray-300 hover:text-white transition-colors text-sm">Contact</a></div>
+                        <div><a href="{% url 'home' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">Home</a></div>
+                        <div><a href="{% url 'browse_flagship' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">Featured</a></div>
+                        <div><a href="{% url 'index' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">All Products</a></div>
+                        <div><a href="{% url 'components_index' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">Tools & Components</a></div>
+                        <div><a href="{% url 'learning_index' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">Learn</a></div>
+                        <div><a href="{% url 'about' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">About</a></div>
+                        <div><a href="{% url 'contact' %}" class="text-white/80 hover:text-[#0089D9] transition-colors text-sm">Contact</a></div>
                     </div>
                 </div>
                 
                 <!-- Contact Info -->
                 <div>
                     <h4 class="text-lg font-semibold mb-4">Contact</h4>
-                    <div class="space-y-2 text-sm text-gray-300">
+                    <div class="space-y-2 text-sm text-white/80">
                         <p>For questions about the database or to suggest additions:</p>
-                        <a href="{% url 'contact' %}" class="text-blue-400 hover:text-blue-300 transition-colors">Use our contact form</a>
-                        <p class="text-xs text-gray-400 mt-4">
+                        <a href="{% url 'contact' %}" class="text-[#0089D9] hover:text-[#006FB3] transition-colors">Use our contact form</a>
+                        <p class="text-xs text-white/60 mt-4">
                             Database updated regularly with new products and specifications.
                         </p>
                     </div>
@@ -573,11 +579,11 @@
             </div>
             
             <!-- Bottom Bar -->
-            <div class="border-t border-gray-800 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-gray-400 text-sm">
+            <div class="border-t border-white/10 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-white/60 text-sm">
                     © 2025 ToolDecoded. All rights reserved.
                 </p>
-                <p class="text-gray-400 text-xs mt-2 md:mt-0">
+                <p class="text-white/60 text-xs mt-2 md:mt-0">
                     Product information provided for research and comparison purposes.
                 </p>
             </div>

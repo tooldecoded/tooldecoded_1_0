@@ -1,5 +1,11 @@
 from django.contrib import admin
 from django.db.models import F
+from django.http import JsonResponse
+from django.urls import path
+from django.shortcuts import render
+import requests
+from bs4 import BeautifulSoup
+import json
 from .models import LearningArticle, Tag, SiteSettings
 
 # Register your models here.
@@ -55,6 +61,70 @@ class LearningArticleAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+class ScrapeTestAdmin(admin.ModelAdmin):
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('test-scrape/', self.admin_site.admin_view(self.test_scrape_view), name='test_scrape'),
+        ]
+        return custom_urls + urls
+
+    def test_scrape_view(self, request):
+        if request.method == 'POST':
+            search_term = request.POST.get('search_term', '2903-20')
+            
+            url = f"https://www.homedepot.com/s/{search_term}"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
+                result = {
+                    'status_code': response.status_code,
+                    'response_length': len(response.content),
+                    'success': response.status_code == 200
+                }
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # Check for structured data
+                    script_tag = soup.find('script', {'id': 'thd-helmet__script--browseSearchStructuredData'})
+                    if script_tag:
+                        result['structured_data'] = True
+                        try:
+                            data = json.loads(script_tag.string)
+                            products = data[0].get('mainEntity', {}).get('offers', {}).get('itemOffered', [])
+                            result['products_found'] = len(products)
+                            result['sample_products'] = products[:3]
+                        except:
+                            result['structured_data'] = False
+                    else:
+                        result['structured_data'] = False
+                    
+                    # Check for product elements
+                    product_elements = soup.find_all('div', {'data-testid': 'product-tile'})
+                    result['product_elements'] = len(product_elements)
+                else:
+                    result['error'] = response.text[:500]
+                
+                return JsonResponse(result)
+                
+            except Exception as e:
+                return JsonResponse({'error': str(e), 'success': False})
+        
+        return render(request, 'admin/test_scrape.html')
+
+# Register the test admin
+admin.site.register(ScrapeTestAdmin)
     
     actions = ['reset_order_by_published_date', 'set_custom_order_sequence', 'pin_articles', 'unpin_articles']
     
@@ -122,3 +192,67 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+class ScrapeTestAdmin(admin.ModelAdmin):
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path('test-scrape/', self.admin_site.admin_view(self.test_scrape_view), name='test_scrape'),
+        ]
+        return custom_urls + urls
+
+    def test_scrape_view(self, request):
+        if request.method == 'POST':
+            search_term = request.POST.get('search_term', '2903-20')
+            
+            url = f"https://www.homedepot.com/s/{search_term}"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            }
+            
+            try:
+                response = requests.get(url, headers=headers, timeout=10)
+                result = {
+                    'status_code': response.status_code,
+                    'response_length': len(response.content),
+                    'success': response.status_code == 200
+                }
+                
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.content, 'html.parser')
+                    
+                    # Check for structured data
+                    script_tag = soup.find('script', {'id': 'thd-helmet__script--browseSearchStructuredData'})
+                    if script_tag:
+                        result['structured_data'] = True
+                        try:
+                            data = json.loads(script_tag.string)
+                            products = data[0].get('mainEntity', {}).get('offers', {}).get('itemOffered', [])
+                            result['products_found'] = len(products)
+                            result['sample_products'] = products[:3]
+                        except:
+                            result['structured_data'] = False
+                    else:
+                        result['structured_data'] = False
+                    
+                    # Check for product elements
+                    product_elements = soup.find_all('div', {'data-testid': 'product-tile'})
+                    result['product_elements'] = len(product_elements)
+                else:
+                    result['error'] = response.text[:500]
+                
+                return JsonResponse(result)
+                
+            except Exception as e:
+                return JsonResponse({'error': str(e), 'success': False})
+        
+        return render(request, 'admin/test_scrape.html')
+
+# Register the test admin
+admin.site.register(ScrapeTestAdmin)

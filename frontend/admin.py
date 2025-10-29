@@ -146,21 +146,15 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
     )
 
-# Add test scrape as a custom admin view
-class TestScrapeAdmin(admin.ModelAdmin):
-    def get_urls(self):
-        urls = super().get_urls()
-        custom_urls = [
-            path('test-scrape/', self.admin_site.admin_view(test_scrape_view), name='test_scrape'),
-        ]
-        return custom_urls + urls
+# Add test scrape to admin URLs using a proper approach
+from django.urls import include, path
 
-# Register a dummy model for the test scrape admin
-from django.db import models
+# Store the original get_urls method
+_original_get_urls = admin.site.get_urls
 
-class TestScrapeModel(models.Model):
-    class Meta:
-        verbose_name = "Test Scrape"
-        verbose_name_plural = "Test Scrape"
+def custom_get_urls():
+    return [
+        path('test-scrape/', admin.site.admin_view(test_scrape_view), name='test_scrape'),
+    ] + _original_get_urls()
 
-admin.site.register(TestScrapeModel, TestScrapeAdmin)
+admin.site.get_urls = custom_get_urls

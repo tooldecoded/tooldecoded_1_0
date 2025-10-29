@@ -11,18 +11,37 @@ class Attributes(models.Model):
         ordering = ['name']
         unique_together = ('name', 'unit')
 
-class ItemCategories(models.Model):
+class Features(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField(unique=True)
+    description = models.TextField(blank=True, null=True)
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'Features'
+        ordering = ['sortorder', 'name']
+
+class ComponentFeatures(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    component = models.ForeignKey('Components', on_delete=models.CASCADE)
+    feature = models.ForeignKey('Features', on_delete=models.CASCADE)
+    value = models.TextField(blank=True, null=True)
+    class Meta:
+        db_table = 'ComponentFeatures'
+        ordering = ['component', 'feature']
+        unique_together = ('component', 'feature', 'value')
+
+'''class ItemCategories(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField()
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
+    #parent = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True)
     level = models.IntegerField(blank=True, null=True)
     sortorder = models.IntegerField(blank=True, null=True)
     attributes = models.ManyToManyField('Attributes')
     class Meta:
         db_table = 'ItemCategories'
         ordering = ['level', 'sortorder', 'name']
-        unique_together = ('parent', 'name', 'level')
-
+        unique_together = ('name', 'level')
+'''
 class Categories(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField()
@@ -52,6 +71,14 @@ class ItemTypes(models.Model):
     attributes = models.ManyToManyField('Attributes')
     class Meta:
         db_table = 'ItemTypes'
+        ordering = ['sortorder', 'name']
+
+class MotorTypes(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField(unique=True)
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'MotorTypes'
         ordering = ['sortorder', 'name']
 
 class ListingTypes(models.Model):
@@ -105,7 +132,6 @@ class Products(models.Model):
     description = models.TextField(blank=True, null=True)
     brand = models.ForeignKey('Brands', on_delete=models.CASCADE, blank=True, null=True)
     sku = models.TextField(blank=True, null=True)
-    itemcategories = models.ManyToManyField('ItemCategories')
     itemtypes = models.ManyToManyField('ItemTypes')
     subcategories = models.ManyToManyField('Subcategories')
     categories = models.ManyToManyField('Categories')
@@ -117,6 +143,8 @@ class Products(models.Model):
     status = models.ForeignKey('Statuses', on_delete=models.CASCADE, blank=True, null=True)
     releasedate = models.DateField(blank=True, null=True)
     discontinueddate = models.DateField(blank=True, null=True)
+    motortype = models.ForeignKey('MotorTypes', on_delete=models.SET_NULL, blank=True, null=True)
+    features = models.ManyToManyField('Features')
     class Meta:
         db_table = 'Products'
         ordering = ['name']
@@ -128,14 +156,15 @@ class Components(models.Model):
     description = models.TextField(blank=True, null=True)
     brand = models.ForeignKey('Brands', on_delete=models.CASCADE, blank=True, null=True)
     sku = models.TextField(blank=True, null=True)
-    itemcategories = models.ManyToManyField('ItemCategories')
     itemtypes = models.ManyToManyField('ItemTypes')
     subcategories = models.ManyToManyField('Subcategories')
     categories = models.ManyToManyField('Categories')
     batteryplatforms = models.ManyToManyField('BatteryPlatforms')
     batteryvoltages = models.ManyToManyField('BatteryVoltages')
     productlines = models.ManyToManyField('ProductLines')
+    motortype = models.ForeignKey('MotorTypes', on_delete=models.SET_NULL, blank=True, null=True)
     image = models.TextField(blank=True, null=True)
+    features = models.ManyToManyField('Features')
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
@@ -216,3 +245,17 @@ class ProductLines(models.Model):
         db_table = 'ProductLines'
         ordering = ['name']
         unique_together = ('name', 'brand')
+
+class PriceListings(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    retailer = models.ForeignKey('Retailers', on_delete=models.CASCADE, blank=True, null=True)
+    product = models.ForeignKey('Products', on_delete=models.CASCADE, blank=True, null=True)
+    retailer_sku = models.TextField(blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.TextField(default='USD')
+    url = models.TextField(blank=True, null=True)
+    datepulled = models.DateField(default=datetime.now)
+    class Meta:
+        db_table = 'PriceListings'
+        ordering = ['retailer', 'product', 'datepulled']
+        unique_together = ('retailer', 'product', 'retailer_sku', 'price', 'datepulled')

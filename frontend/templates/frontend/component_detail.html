@@ -78,7 +78,7 @@
                 </svg>
             </li>
             <li>
-                <a href="{% url 'components_index' %}" class="hover:text-blue-600 transition-colors">Components</a>
+                <a href="{% url 'components_index' %}" class="hover:text-blue-600 transition-colors">Tools & Components</a>
             </li>
             {% if component.itemtypes.all %}
                 {% for itemtype in component.itemtypes.all %}
@@ -200,10 +200,19 @@
                         {% endif %}
                 
                 <!-- Key Specifications -->
-                {% if important_attributes %}
+                {% if component.motortype or important_attributes %}
                 <div class="mt-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
                     <div class="space-y-3">
+                        <!-- Motor Type - First Item -->
+                        {% if component.motortype %}
+                            <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                                <span class="text-sm font-medium text-gray-700">Motor Type</span>
+                                <span class="text-sm text-gray-700 font-medium">{{ component.motortype.name }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Other Important Attributes -->
                         {% for attr in important_attributes %}
                             <div class="flex justify-between items-center py-2 border-b border-gray-100">
                                 <span class="text-sm font-medium text-gray-700">
@@ -274,13 +283,23 @@
         <div class="p-8">
             <!-- Specifications Tab -->
             <div id="content-specifications" class="tab-content">
-                {% if important_attributes or additional_attributes %}
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- Important Specifications -->
+                {% if component.motortype or important_attributes or additional_attributes or component_features %}
+                    <div class="space-y-8">
+                        <!-- Key Specifications -->
+                        {% if component.motortype or important_attributes %}
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Key Specifications</h3>
-                            {% if important_attributes %}
+                            {% if component.motortype or important_attributes %}
                                 <div class="space-y-2">
+                                    <!-- Motor Type - First Item -->
+                                    {% if component.motortype %}
+                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
+                                            <span class="text-sm font-medium text-gray-700">Motor Type</span>
+                                            <span class="text-sm text-gray-900 font-semibold">{{ component.motortype.name }}</span>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <!-- Other Important Attributes -->
                                     {% for attr in important_attributes %}
                                         <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
                                             <span class="text-sm font-medium text-gray-700">
@@ -297,28 +316,44 @@
                                 <p class="text-sm text-gray-500">No key specifications available.</p>
                             {% endif %}
                         </div>
+                        {% endif %}
+                        
+                        <!-- Features Section -->
+                        {% if component_features %}
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Features</h3>
+                            <div class="flex flex-wrap gap-2">
+                                {% for comp_feature in component_features %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                        {{ comp_feature.feature.name }}
+                                        {% if comp_feature.value and comp_feature.value != 'Yes' %}
+                                            <span class="ml-1 text-blue-600">({{ comp_feature.value }})</span>
+                                        {% endif %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
                         
                         <!-- Additional Specifications -->
+                        {% if additional_attributes %}
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">Additional Specifications</h3>
-                            {% if additional_attributes %}
-                                <div class="space-y-2">
-                                    {% for attr in additional_attributes %}
-                                        <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
-                                            <span class="text-sm font-medium text-gray-700">
-                                                {{ attr.attribute.name }}
-                                                {% if attr.attribute.unit %}
-                                                    <span class="text-gray-500">({{ attr.attribute.unit }})</span>
-                                                {% endif %}
-                                            </span>
-                                            <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <p class="text-sm text-gray-500">No additional specifications available.</p>
-                            {% endif %}
+                            <div class="space-y-2">
+                                {% for attr in additional_attributes %}
+                                    <div class="flex justify-between items-center py-2 px-3 bg-gray-50 rounded border-b border-gray-200">
+                                        <span class="text-sm font-medium text-gray-700">
+                                            {{ attr.attribute.name }}
+                                            {% if attr.attribute.unit %}
+                                                <span class="text-gray-500">({{ attr.attribute.unit }})</span>
+                                            {% endif %}
+                                        </span>
+                                        <span class="text-sm text-gray-900 font-semibold">{{ attr.value }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
+                        {% endif %}
                     </div>
                 {% else %}
                     <div class="text-center py-12">
@@ -527,7 +562,7 @@
     <!-- Related Components Section -->
     <div class="bg-white rounded-xl shadow-sm border mt-8">
         <div class="p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Components</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Related Tools & Components</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- Similar Components (by category) -->
@@ -536,7 +571,7 @@
                         <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                         </svg>
-                        Similar Components
+                        Similar Tools & Components
                     </h3>
                     <div class="space-y-3">
                         {% for category in component.itemcategories.all %}

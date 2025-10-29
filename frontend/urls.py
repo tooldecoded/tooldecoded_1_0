@@ -4,9 +4,13 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('browse/', views.browse_flagship, name='browse_flagship'),
+    
+    # Live catalog views (unified implementation)
     path('products/', views.index, name='index'),
-    path('product/<uuid:product_id>/', views.product_detail, name='product_detail'),
     path('components/', views.components_index, name='components_index'),
+    
+    # Product detail view
+    path('product/<uuid:product_id>/', views.product_detail, name='product_detail'),
     path('components/<uuid:component_id>/', views.component_detail, name='component_detail'),
     path('learn/', views.learning_index, name='learning_index'),
     path('learn/<slug:slug>/', views.learning_detail, name='learning_detail'),

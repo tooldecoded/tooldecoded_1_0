@@ -1,5 +1,5 @@
 from django.db.models import Q
-from toolanalysis.models import ItemCategories, Categories, Subcategories, ItemTypes
+from toolanalysis.models import Categories, Subcategories, ItemTypes
 
 
 def get_category_hierarchy_filters(queryset, category, subcategory, itemtype, model_type='products'):

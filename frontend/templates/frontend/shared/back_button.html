@@ -1,0 +1,27 @@
+<!-- Back Button Component -->
+<!-- Usage: {% include 'frontend/shared/back_button.html' with back_text='Back to Products' %} -->
+<!-- Usage: {% include 'frontend/shared/back_button.html' with back_text='Back to Search Results' style='simple' %} -->
+
+{% if style == 'simple' %}
+    <!-- Simple back button (used in component_detail.html) -->
+    <div class="mb-4">
+        <a href="javascript:history.back()" class="inline-flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            {{ back_text|default:"Back" }}
+        </a>
+    </div>
+{% else %}
+    <!-- Full container back button (used in product_detail.html) -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-2 py-4">
+            <button onclick="history.back()" class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                {{ back_text|default:"Back" }}
+            </button>
+        </div>
+    </div>
+{% endif %}

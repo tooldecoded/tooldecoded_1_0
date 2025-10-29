@@ -1,0 +1,431 @@
+<!-- Filter Sidebar - Shared partial for product and component catalogs -->
+<div id="filter-sidebar" class="lg:w-1/4 hidden lg:block">
+    <div class="bg-white rounded-lg border border-gray-200 sticky top-48 z-20 self-start max-h-screen overflow-y-auto">
+        <!-- Filter Header -->
+        <div class="px-6 py-4">
+            <div class="flex items-center justify-between pb-2 mb-3 border-b border-blue-500">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 7h16M4 12h10m-6 5h6" />
+                    </svg>
+                    <h3 class="text-sm font-semibold tracking-wider text-gray-900 uppercase">Filter</h3>
+                </div>
+            </div>
+        
+        <!-- Filter Form -->
+        <div class="py-6 px-1">
+        <form id="filter-form" method="get" action="{% if item_type == 'product' %}{% url 'index' %}{% else %}{% url 'components_index' %}{% endif %}" class="space-y-6">
+            <!-- Search -->
+            <input type="text" id="search" name="search" value="{{ current_filters.search }}" 
+                   placeholder="Search {{ item_type }}s..." 
+                   oninput="debounceSearch()"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+            <!-- Category Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('category')">
+                    <h4 class="text-sm font-semibold text-gray-900">Category</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="category-count">{{ selected_category_ids|length }}/{{ categories|length }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="category-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="category-list">
+                        {% for category in categories %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="category[]" value="{{ category.id }}" 
+                                       {% if category.id in selected_category_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ category.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if categories|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('category')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="category-toggle">
+                            Show more ({{ categories|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Subcategory Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('subcategory')">
+                    <h4 class="text-sm font-semibold text-gray-900">Subcategory</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="subcategory-count">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="subcategory-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="subcategory-list">
+                        {% for subcategory in subcategories %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="subcategory[]" value="{{ subcategory.id }}" 
+                                       {% if subcategory.id in selected_subcategory_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ subcategory.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if subcategories|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('subcategory')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="subcategory-toggle">
+                            Show more ({{ subcategories|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Item Type Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('itemtype')">
+                    <h4 class="text-sm font-semibold text-gray-900">Item Type</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="itemtype-count">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="itemtype-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="itemtype-list">
+                        {% for itemtype in itemtypes %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="itemtype[]" value="{{ itemtype.id }}" 
+                                       {% if itemtype.id in selected_itemtype_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ itemtype.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if itemtypes|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('itemtype')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="itemtype-toggle">
+                            Show more ({{ itemtypes|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Motor Type Filter (Components Only) -->
+            {% if item_type == 'component' %}
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('motor_type')">
+                    <h4 class="text-sm font-semibold text-gray-900">Motor Type</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="motor_type-count">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="motor_type-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="motor_type-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="motor_type-list">
+                        {% for motor_type in motor_types %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="motor_type" value="{{ motor_type.id }}" 
+                                       {% if motor_type.id in selected_motor_type_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ motor_type.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if motor_types|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('motor_type')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="motor_type-toggle">
+                            Show more ({{ motor_types|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Brand Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('brand')">
+                    <h4 class="text-sm font-semibold text-gray-900">Brand</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="brand-count">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="brand-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="brand-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="brand-list">
+                        {% for brand in brands %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="brand" value="{{ brand.id }}" 
+                                       {% if brand.id in selected_brand_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ brand.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if brands|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('brand')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="brand-toggle">
+                            Show more ({{ brands|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Voltage Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('voltage')">
+                    <h4 class="text-sm font-semibold text-gray-900">Voltage</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="voltage-count">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="voltage-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="voltage-content">
+                    <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="voltage-list">
+                        {% for voltage in voltages %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
+                                       {% if voltage.id in selected_voltage_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ voltage.value }}V</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if voltages|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('voltage')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="voltage-toggle">
+                            Show more ({{ voltages|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Platform Filter -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('platform')">
+                    <h4 class="text-sm font-semibold text-gray-900">Platform</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="platform-count">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="platform-content">
+                    <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="platform-list">
+                        {% for platform in platforms %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="platform" value="{{ platform.id }}" 
+                                       {% if platform.id in selected_platform_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ platform.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if platforms|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('platform')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="platform-toggle">
+                            Show more ({{ platforms|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Status Filter (Products Only) -->
+            {% if item_type == 'product' %}
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('status')">
+                    <h4 class="text-sm font-semibold text-gray-900">Status</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="status-count">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="status-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="status-content">
+                    <div class="filter-list max-h-48 overflow-y-auto space-y-2" id="status-list">
+                        {% for status in statuses %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="status" value="{{ status.id }}" 
+                                       {% if status.id in selected_status_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ status.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if statuses|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('status')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="status-toggle">
+                            Show more ({{ statuses|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Release Date Range (Products Only) -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('release_date')">
+                    <h4 class="text-sm font-semibold text-gray-900">Release Date</h4>
+                    <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="release_date-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+                <div class="filter-content space-y-2" id="release_date-content">
+                    <div>
+                        <label for="release_date_from" class="block text-xs font-medium text-gray-600 mb-1">From</label>
+                        <input type="date" id="release_date_from" name="release_date_from" 
+                               value="{{ current_filters.release_date_from }}"
+                               onchange="applyFilters()"
+                               class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="release_date_to" class="block text-xs font-medium text-gray-600 mb-1">To</label>
+                        <input type="date" id="release_date_to" name="release_date_to" 
+                               value="{{ current_filters.release_date_to }}"
+                               onchange="applyFilters()"
+                               class="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Product Line Filter (Components Only) -->
+            {% if item_type == 'component' %}
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('product_line')">
+                    <h4 class="text-sm font-semibold text-gray-900">Product Line</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="product_line-count">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="product_line-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2" id="product_line-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="product_line-list">
+                        {% for product_line in product_lines %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="product_line" value="{{ product_line.id }}" 
+                                       {% if product_line.id in selected_product_line_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ product_line.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if product_lines|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('product_line')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="product_line-toggle">
+                            Show more ({{ product_lines|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Features Filter (Components Only) -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('features')">
+                    <h4 class="text-sm font-semibold text-gray-900">Features</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="features-count">{{ filter_counts.features.selected }}/{{ filter_counts.features.total }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="features-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2 hidden" id="features-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="features-list">
+                        {% for feature in features %}
+                            <label class="flex items-center text-sm">
+                                <input type="checkbox" name="features" value="{{ feature.id }}" 
+                                       {% if feature.id in selected_feature_ids %}checked{% endif %}
+                                       onchange="applyFilters()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                <span class="text-gray-700">{{ feature.name }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if features|length > 6 %}
+                        <button type="button" onclick="toggleFilterExpansion('features')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="features-toggle">
+                            Show more ({{ features|length|add:"-6" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attributes Filter (Components Only) -->
+            <div class="filter-section">
+                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('attributes')">
+                    <h4 class="text-sm font-semibold text-gray-900">Specifications</h4>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500" id="attributes-count">{{ selected_attribute_filters|length }}/{{ attributes|length }}</span>
+                        <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 filter-chevron" id="attributes-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="filter-content space-y-2 hidden" id="attributes-content">
+                    <div class="max-h-48 overflow-y-auto space-y-2" id="attributes-list">
+                        {% for attribute in attributes %}
+                            <div class="space-y-2">
+                                <div class="text-xs font-medium text-gray-600">{{ attribute.name }}{% if attribute.unit %} ({{ attribute.unit }}){% endif %}</div>
+                                <div class="space-y-1">
+                                    {% for value in attribute.values %}
+                                        <label class="flex items-center text-sm">
+                                            <input type="checkbox" name="attr_{{ attribute.id }}" value="{{ value }}" 
+                                                   onchange="applyFilters()"
+                                                   class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-2">
+                                            <span class="text-gray-700">{{ value }}</span>
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if attributes|length > 3 %}
+                        <button type="button" onclick="toggleFilterExpansion('attributes')" 
+                                class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium py-2 border-t border-gray-200" 
+                                id="attributes-toggle">
+                            Show more ({{ attributes|length|add:"-3" }} more)
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        </form>
+        </div>
+    </div>
+</div>
+
+

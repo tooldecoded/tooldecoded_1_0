@@ -1,0 +1,97 @@
+<!-- Image Gallery JavaScript Component -->
+<!-- Usage: {% include 'frontend/shared/image_gallery_scripts.html' with item=product %} -->
+<!-- Usage: {% include 'frontend/shared/image_gallery_scripts.html' with item=component %} -->
+
+<script>
+let currentImageIndex = 0;
+let allImages = [];
+
+// Initialize image array
+document.addEventListener('DOMContentLoaded', function() {
+    {% if item.image %}
+        allImages.push('{{ item.image }}');
+    {% endif %}
+    {% if item.productimages_set.all %}
+        {% for image in item.productimages_set.all %}
+            allImages.push('{{ image.image }}');
+        {% endfor %}
+    {% endif %}
+    
+    // Initialize thumbnail highlighting and navigation button visibility
+    updateActiveThumbnail(false);
+    
+});
+
+function changeMainImageByIndex(index) {
+    if (index >= 0 && index < allImages.length) {
+        currentImageIndex = index;
+        document.getElementById('mainImage').src = allImages[currentImageIndex];
+        
+        // Update active thumbnail and navigation buttons (don't scroll since user clicked)
+        updateActiveThumbnail(false);
+    }
+}
+
+function nextImage() {
+    if (allImages.length > 1) {
+        currentImageIndex = (currentImageIndex + 1) % allImages.length;
+        document.getElementById('mainImage').src = allImages[currentImageIndex];
+        updateActiveThumbnail();
+    }
+}
+
+function previousImage() {
+    if (allImages.length > 1) {
+        currentImageIndex = (currentImageIndex - 1 + allImages.length) % allImages.length;
+        document.getElementById('mainImage').src = allImages[currentImageIndex];
+        updateActiveThumbnail();
+    }
+}
+
+function updateActiveThumbnail(scrollIntoView = true) {
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.classList.remove('border-blue-500');
+        thumb.classList.add('border-transparent');
+    });
+    
+    // Find and highlight the current thumbnail by index
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    if (thumbnails[currentImageIndex]) {
+        thumbnails[currentImageIndex].classList.add('border-blue-500');
+        thumbnails[currentImageIndex].classList.remove('border-transparent');
+        
+        // Only scroll into view if requested (for carousel navigation)
+        if (scrollIntoView) {
+            thumbnails[currentImageIndex].scrollIntoView({
+                behavior: 'smooth',
+                block: 'nearest',
+                inline: 'center'
+            });
+        }
+    }
+    
+    // Update navigation button visibility
+    updateNavigationButtons();
+}
+
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    
+    if (prevBtn && nextBtn) {
+        // Hide previous button on first image
+        if (currentImageIndex === 0) {
+            prevBtn.style.display = 'none';
+        } else {
+            prevBtn.style.display = 'block';
+        }
+        
+        // Hide next button on last image
+        if (currentImageIndex === allImages.length - 1) {
+            nextBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'block';
+        }
+    }
+}
+</script>

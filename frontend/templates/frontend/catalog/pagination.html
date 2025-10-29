@@ -1,0 +1,59 @@
+<!-- Pagination - Shared partial for bottom pagination -->
+{% if items.has_other_pages %}
+    <div class="mt-8 flex justify-between items-center">
+        <!-- Viewing info -->
+        <div class="text-sm text-gray-600">
+            Viewing <span class="font-semibold">{{ items.start_index }}-{{ items.end_index }}</span> of <span class="font-semibold">{{ items.paginator.count }}</span>
+        </div>
+        
+        <!-- Pagination controls -->
+        <nav class="flex items-center gap-2">
+            <!-- Previous arrow -->
+            {% if items.has_previous %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ items.previous_page_number }}" 
+                   class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                    <
+                </a>
+            {% else %}
+                <span class="text-gray-300 text-xl"></span>
+            {% endif %}
+
+            <!-- Page numbers -->
+            {% for num in items.paginator.page_range %}
+                {% if items.number == num %}
+                    <span class="font-semibold text-gray-900 border-b-2 border-orange-500 text-md">{{ num }}</span>
+                {% elif num >= items.number|add:'-2' and num <= items.number|add:'2' or items.number <= 3 and num <= 5 %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                        {{ num }}
+                    </a>
+                {% elif num == 1 and items.number > 4 %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                        {{ num }}
+                    </a>
+                    <span class="text-gray-400 text-sm">...</span>
+                {% elif num == items.paginator.num_pages and items.number < items.paginator.num_pages|add:'-3' %}
+                    <span class="text-gray-400 text-sm">...</span>
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
+                       class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-sm">
+                        {{ num }}
+                    </a>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Next arrow -->
+            {% if items.has_next %}
+                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ items.next_page_number }}" 
+                   class="text-gray-500 hover:text-gray-900 transition-colors duration-200 text-xl">
+                    >
+                </a>
+            {% else %}
+                <span class="text-gray-300 text-xl"></span>
+            {% endif %}
+
+        </nav>
+    </div>
+{% endif %}
+
+

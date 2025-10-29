@@ -1,0 +1,963 @@
+<script>
+// Catalog Scripts - Shared JavaScript for product and component catalogs
+// Clean, modular JavaScript - no conflicting event handlers
+
+// Function to calculate luminance and determine appropriate text color
+function calculateTextColor(hexColor) {
+    hexColor = hexColor.replace('#', '');
+    const r = parseInt(hexColor.substr(0, 2), 16);
+    const g = parseInt(hexColor.substr(2, 2), 16);
+    const b = parseInt(hexColor.substr(4, 2), 16);
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance < 0.5 ? 'white' : 'black';
+}
+
+// Function to apply brand color styling
+function applyBrandColorStyling() {
+    document.querySelectorAll('[data-brand-color]').forEach(element => {
+        const brandColor = element.getAttribute('data-brand-color');
+        const brandBg = element.getAttribute('data-brand-bg');
+        if (brandColor && brandBg) {
+            const textColor = calculateTextColor(brandColor);
+            element.style.color = textColor;
+            element.style.backgroundColor = brandBg;
+        }
+    });
+}
+
+// Clean, single DOMContentLoaded handler
+document.addEventListener('DOMContentLoaded', function() {
+    applyBrandColorStyling();
+    // initializeCompareState(); // HIDDEN FOR DEBUGGING
+    initializeFilterState();
+    restoreFilterSidebarState();
+    console.log('Catalog UI initialized cleanly');
+});
+
+// Global function to handle sort change
+function handleSortChange(selectElement) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sortValue = selectElement.value;
+    let sortField, sortDirection;
+    
+    if (sortValue.endsWith('_desc')) {
+        sortField = sortValue.replace('_desc', '');
+        sortDirection = 'desc';
+    } else {
+        sortField = sortValue;
+        sortDirection = 'asc';
+    }
+    
+    urlParams.set('sort', sortField);
+    urlParams.set('sort_direction', sortDirection);
+    urlParams.set('page', '1');
+    
+    window.location.href = '?' + urlParams.toString();
+}
+
+function toggleView(viewType) {
+    const gridView = document.getElementById('grid-view');
+    const listView = document.getElementById('list-view');
+    const itemGrid = document.getElementById('item-grid');
+    
+    if (viewType === 'grid') {
+        gridView.classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+        gridView.classList.remove('text-gray-500');
+        listView.classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+        listView.classList.add('text-gray-500');
+        
+        if (itemGrid) {
+            itemGrid.classList.remove('grid-cols-1');
+            itemGrid.classList.add('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'xl:grid-cols-4');
+        }
+    } else {
+        listView.classList.add('bg-white', 'shadow-sm', 'text-gray-700');
+        listView.classList.remove('text-gray-500');
+        gridView.classList.remove('bg-white', 'shadow-sm', 'text-gray-700');
+        gridView.classList.add('text-gray-500');
+        
+        if (itemGrid) {
+            itemGrid.classList.remove('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'xl:grid-cols-4');
+            itemGrid.classList.add('grid-cols-1');
+        }
+    }
+    
+    localStorage.setItem('viewType', viewType);
+}
+
+function changeResultsPerPage(value) {
+    const url = new URL(window.location);
+    url.searchParams.set('page_size', value);
+    url.searchParams.set('page', '1'); // Reset to first page when changing page size
+    window.location.href = url.toString();
+}
+
+// Quick View Functions
+function openQuickView(itemId) {
+    const modal = document.getElementById('quickViewModal');
+    const content = document.getElementById('quickViewContent');
+    // Determine item type from URL path
+    const itemType = window.location.pathname.includes('components') ? 'component' : 'product';
+    
+    modal.classList.remove('hidden');
+    content.innerHTML = `
+        <div class="flex items-center justify-center p-8">
+            <span class="text-gray-600">Loading...</span>
+        </div>
+    `;
+    
+    fetch(`/api/quick-info/${itemId}/?type=${itemType}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                content.innerHTML = `
+                    <div class="text-center p-8">
+                        <p class="text-red-600">Error loading details</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const description = data.description || '';
+            const truncatedDesc = description.length > 500 ? description.substring(0, 500) + '...' : description;
+            const needsExpansion = description.length > 200;
+            
+            const batteryPlatformsHtml = data.battery_platforms && data.battery_platforms.length > 0 
+                ? data.battery_platforms.map(platform => 
+                    `<span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">${platform}</span>`
+                  ).join('')
+                : '';
+            
+            // Key specifications for components (motor type + key attributes)
+            const keySpecsHtml = itemType === 'component' && (data.motor_type || (data.key_attributes && data.key_attributes.length > 0))
+                ? `<div class="mb-4">
+                     <span class="text-sm font-medium text-gray-700">Key Specifications:</span>
+                     <div class="mt-2 space-y-2">
+                       ${data.motor_type ? `
+                         <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                           <span class="text-sm font-medium text-gray-700">Motor Type</span>
+                           <span class="text-sm text-gray-700 font-medium">${data.motor_type}</span>
+                         </div>
+                       ` : ''}
+                       ${data.key_attributes ? data.key_attributes.map(attr => `
+                         <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                           <span class="text-sm font-medium text-gray-700">
+                             ${attr.name}
+                             ${attr.unit ? `<span class="text-gray-500">(${attr.unit})</span>` : ''}
+                           </span>
+                           <span class="text-sm text-gray-700 font-medium">${attr.value}</span>
+                         </div>
+                       `).join('') : ''}
+                     </div>
+                   </div>`
+                : '';
+            
+            // Features for components
+            const featuresHtml = itemType === 'component' && data.features && data.features.length > 0
+                ? `<div class="mb-4">
+                     <span class="text-sm font-medium text-gray-700">Features:</span>
+                     <div class="mt-2 flex flex-wrap gap-2">
+                       ${data.features.map(feature => 
+                         `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                            ${feature.name}
+                            ${feature.value && feature.value !== 'Yes' ? ` (${feature.value})` : ''}
+                          </span>`
+                       ).join('')}
+                     </div>
+                   </div>`
+                : '';
+            
+            const componentsHtml = itemType === 'product' && data.components && data.components.length > 0
+                ? `<div class="mb-4">
+                     <span class="text-sm font-medium text-gray-700">Components:</span>
+                     <div class="mt-2 border border-gray-200 rounded-lg overflow-hidden">
+                       ${data.components.map((comp, index) => 
+                           `<div class="flex items-center text-sm px-3 py-2 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100 last:border-b-0 ${index >= 4 ? 'hidden' : ''}" data-component-index="${index}">
+                              <span class="text-gray-600 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium mr-3 min-w-0 flex-shrink-0">${comp.quantity}</span>
+                              <div class="flex-1 min-w-0">
+                                ${comp.sku ? `<div class="text-xs text-gray-500 mb-1">${comp.sku} ${comp.name}</div>` : ''}
+                              </div>
+                            </div>`
+                       ).join('')}
+                     </div>
+                     ${data.components.length > 4 ? `
+                       <div class="mt-2 text-center">
+                         <button onclick="toggleComponents()" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors" id="toggleComponentsBtn">
+                           Show ${data.components.length - 4} more components
+                         </button>
+                       </div>
+                     ` : ''}
+                   </div>`
+                : '';
+            
+            content.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/2">
+                        <div class="aspect-square bg-white rounded-lg overflow-hidden border">
+                            ${data.image ? 
+                                `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain">` :
+                                `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                    <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>`
+                            }
+                        </div>
+                    </div>
+                    <div class="md:w-1/2">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    ${data.brand || 'Unknown Brand'}
+                                </span>
+                                ${batteryPlatformsHtml ? `<div class="flex gap-1">${batteryPlatformsHtml}</div>` : ''}
+                            </div>
+                            ${data.sku ? `<span class="text-xs text-gray-500">Model#: ${data.sku}</span>` : ''}
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
+                        ${data.status && data.status !== 'Active' ? `<div class="mb-2"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${data.status === 'Discontinued' ? 'bg-red-100 text-red-800' : data.status === 'Pre-release' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${data.status}</span></div>` : ''}
+                        ${keySpecsHtml}
+                        ${featuresHtml}
+                        ${componentsHtml}
+                        ${truncatedDesc ? `
+                            <div class="mb-4">
+                                <p class="text-gray-700 line-clamp-3" id="descriptionText">${truncatedDesc}</p>
+                                ${needsExpansion ? `
+                                    <button onclick="toggleDescription()" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors mt-1" id="toggleDescriptionBtn">
+                                        Show more
+                                    </button>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        <div class="flex gap-2">
+                            <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
+                                View Full Details
+                            </a>
+                            <button onclick="closeQuickView()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="text-center p-8">
+                    <p class="text-red-600">Error loading details</p>
+                </div>
+            `;
+        });
+}
+
+function closeQuickView() {
+    const modal = document.getElementById('quickViewModal');
+    modal.classList.add('hidden');
+}
+
+function toggleComponents() {
+    const hiddenComponents = document.querySelectorAll('[data-component-index]');
+    const toggleBtn = document.getElementById('toggleComponentsBtn');
+    const isExpanded = toggleBtn.textContent.includes('Show less');
+    
+    hiddenComponents.forEach(component => {
+        const index = parseInt(component.dataset.componentIndex);
+        if (index >= 4) {
+            if (isExpanded) {
+                component.classList.add('hidden');
+            } else {
+                component.classList.remove('hidden');
+            }
+        }
+    });
+    
+    if (isExpanded) {
+        const totalComponents = hiddenComponents.length;
+        const hiddenCount = totalComponents - 4;
+        toggleBtn.textContent = `Show ${hiddenCount} more components`;
+    } else {
+        toggleBtn.textContent = 'Show less';
+    }
+}
+
+function toggleDescription() {
+    const descriptionText = document.getElementById('descriptionText');
+    const toggleBtn = document.getElementById('toggleDescriptionBtn');
+    const isExpanded = toggleBtn.textContent.includes('Show less');
+    
+    if (isExpanded) {
+        descriptionText.classList.add('line-clamp-3');
+        toggleBtn.textContent = 'Show more';
+    } else {
+        descriptionText.classList.remove('line-clamp-3');
+        toggleBtn.textContent = 'Show less';
+    }
+}
+
+// Compare Functions (for components) - HIDDEN FOR DEBUGGING
+/*
+function toggleCompare(checkbox) {
+    const componentId = checkbox.dataset.componentId;
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+    const checkmark = checkboxContainer.querySelector('.checkmark');
+    const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+    
+    if (checkbox.checked) {
+        if (compareList.length >= 4) {
+            showToast('You can compare up to 4 components at once.', 'warning');
+            checkbox.checked = false;
+            return;
+        }
+        if (!compareList.includes(componentId)) {
+            compareList.push(componentId);
+            showToast('Component added to comparison', 'success');
+        }
+        checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+        checkmark.classList.remove('hidden');
+        checkboxContainer.classList.remove('opacity-0');
+        checkboxContainer.classList.add('opacity-100');
+    } else {
+        const index = compareList.indexOf(componentId);
+        if (index > -1) {
+            compareList.splice(index, 1);
+            showToast('Component removed from comparison', 'info');
+        }
+        checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+        checkmark.classList.add('hidden');
+        checkboxContainer.classList.add('opacity-0');
+        checkboxContainer.classList.remove('opacity-100');
+    }
+    
+    localStorage.setItem('compareList', JSON.stringify(compareList));
+    updateCompareButton();
+}
+
+function clearComparison() {
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    
+    compareList.forEach(componentId => {
+        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
+        if (checkbox) {
+            checkbox.checked = false;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            const checkmark = checkboxContainer.querySelector('.checkmark');
+            const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+            
+            checkboxVisual.classList.remove('bg-blue-600', 'border-blue-600');
+            checkmark.classList.add('hidden');
+            checkboxContainer.classList.add('opacity-0');
+            checkboxContainer.classList.remove('opacity-100');
+        }
+    });
+    
+    localStorage.setItem('compareList', JSON.stringify([]));
+    updateCompareButton();
+    showToast('Comparison cleared', 'info');
+}
+
+function updateCompareButton() {
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    const compareButton = document.getElementById('compare-button');
+    const compareCount = document.getElementById('compare-count');
+    
+    if (compareButton && compareCount) {
+        if (compareList.length > 0) {
+            compareCount.textContent = `(${compareList.length})`;
+            compareButton.classList.remove('hidden');
+        } else {
+            compareButton.classList.add('hidden');
+        }
+    }
+}
+
+function openCompareModal() {
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    if (compareList.length === 0) {
+        alert('Please select components to compare.');
+        return;
+    }
+    
+    const compareUrl = `/api/compare-components/?component_ids=${compareList.join(',')}`;
+    window.location.href = compareUrl;
+}
+
+// Initialize compare state
+function initializeCompareState() {
+    const compareList = JSON.parse(localStorage.getItem('compareList') || '[]');
+    compareList.forEach(componentId => {
+        const checkbox = document.querySelector(`input[data-component-id="${componentId}"]`);
+        if (checkbox) {
+            checkbox.checked = true;
+            const checkboxContainer = document.getElementById(`compare-checkbox-${componentId}`);
+            const checkmark = checkboxContainer.querySelector('.checkmark');
+            const checkboxVisual = checkboxContainer.querySelector('.checkbox-visual');
+            
+            checkboxVisual.classList.add('bg-blue-600', 'border-blue-600');
+            checkmark.classList.remove('hidden');
+            checkboxContainer.classList.remove('opacity-0');
+            checkboxContainer.classList.add('opacity-100');
+        }
+    });
+    updateCompareButton();
+}
+*/
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-500' : 
+        type === 'warning' ? 'bg-yellow-500' : 
+        type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Filter Functions
+let searchTimeout;
+let filterController = null;
+let isFilteringInProgress = false;
+
+// Centralized filter state object
+const filterState = {
+    filters: {},
+    isLoading: false,
+    lastRequestId: null,
+    retryCount: 0,
+    maxRetries: 3
+};
+
+function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        applyFilters();
+    }, 500); // Wait 500ms after user stops typing
+}
+
+function showFilterLoadingState() {
+    const loadingOverlay = document.getElementById('filter-loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    } else {
+        // Create loading overlay if it doesn't exist
+        const overlay = document.createElement('div');
+        overlay.id = 'filter-loading-overlay';
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-25 flex items-center justify-center z-50';
+        overlay.innerHTML = `
+            <div class="bg-white rounded-lg p-6 flex items-center gap-3">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <span class="text-gray-700">Applying filters...</span>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+}
+
+function hideFilterLoadingState() {
+    const loadingOverlay = document.getElementById('filter-loading-overlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.add('hidden');
+    }
+}
+
+function applyFilters() {
+    // Cancel any in-flight request
+    if (filterController) {
+        filterController.abort();
+    }
+    
+    // Prevent concurrent requests
+    if (isFilteringInProgress) return;
+    
+    filterController = new AbortController();
+    isFilteringInProgress = true;
+    
+    // Show loading state
+    showFilterLoadingState();
+    
+    const form = document.getElementById('filter-form');
+    const formData = new FormData(form);
+    const url = new URL(window.location);
+    
+    // Clear existing filter parameters
+    const filterParams = ['search', 'brand', 'voltage', 'platform', 'status', 'category', 'subcategory', 'itemtype', 'release_date_from', 'release_date_to', 'product_line', 'listing_type', 'motor_type'];
+    filterParams.forEach(param => url.searchParams.delete(param));
+    
+    // Add current form values
+    for (let [key, value] of formData.entries()) {
+        if (value) {
+            url.searchParams.append(key, value);
+        }
+    }
+    
+    // Handle unchecked checkboxes
+    const allCheckboxes = form.querySelectorAll('input[type="checkbox"]');
+    allCheckboxes.forEach(checkbox => {
+        if (!checkbox.checked) {
+            const paramName = checkbox.name;
+            const paramValue = checkbox.value;
+            const existingValues = url.searchParams.getAll(paramName);
+            url.searchParams.delete(paramName);
+            existingValues.forEach(val => {
+                if (val !== paramValue) {
+                    url.searchParams.append(paramName, val);
+                }
+            });
+        }
+    });
+    
+    // Preserve sort and page params
+    const currentSort = url.searchParams.get('sort');
+    if (currentSort) url.searchParams.set('sort', currentSort);
+    url.searchParams.set('page', '1');
+    
+    // Generate unique request ID
+    const requestId = Date.now() + Math.random();
+    filterState.lastRequestId = requestId;
+    
+    // Fetch new content without reload
+    fetch(url.toString(), { 
+        signal: filterController.signal,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            // Check if this is still the latest request
+            if (filterState.lastRequestId !== requestId) {
+                return; // Ignore stale response
+            }
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Update item grid
+            const newItemGrid = doc.getElementById('item-grid');
+            if (newItemGrid) {
+                const itemGrid = document.getElementById('item-grid');
+                itemGrid.innerHTML = newItemGrid.innerHTML;
+            }
+            
+            // Update results header
+            const newHeader = doc.querySelector('h2[role="status"]');
+            if (newHeader) {
+                const resultsHeader = document.querySelector('h2[role="status"]');
+                resultsHeader.textContent = newHeader.textContent;
+            }
+            
+            // Update pagination
+            const newPagination = doc.querySelector('.mt-8');
+            const currentPagination = document.querySelector('.mt-8');
+            if (newPagination && currentPagination) {
+                currentPagination.innerHTML = newPagination.innerHTML;
+            }
+            
+            // Update all filter UI atomically after successful AJAX completion
+            syncAllFilterUI();
+            
+            // Reset retry count on success
+            filterState.retryCount = 0;
+            
+            // Update URL without reload
+            window.history.pushState({}, '', url.toString());
+        })
+        .catch(error => {
+            hideFilterLoadingState();
+            if (error.name === 'AbortError') {
+                console.log('Filter request cancelled');
+                return; // Expected cancellation
+            }
+            
+            // Implement retry logic with exponential backoff
+            if (filterState.retryCount < filterState.maxRetries) {
+                filterState.retryCount++;
+                const delay = Math.pow(2, filterState.retryCount) * 1000; // 2s, 4s, 8s
+                
+                showToast(`Filter request failed. Retrying in ${delay/1000} seconds...`, 'warning');
+                console.error('Filter error, retrying:', error);
+                
+                setTimeout(() => {
+                    applyFilters();
+                }, delay);
+            } else {
+                showToast('Failed to apply filters after multiple attempts. Please refresh the page.', 'error');
+                console.error('Filter error after retries:', error);
+                filterState.retryCount = 0; // Reset for next attempt
+            }
+        })
+        .finally(() => {
+            isFilteringInProgress = false;
+            filterController = null;
+            hideFilterLoadingState();
+        });
+}
+
+function syncAllFilterUI() {
+    // Only update counts and active filters, don't sync form with URL
+    // The form state should be the source of truth during filtering
+    updateFilterCounts();
+    updateActiveFilters();
+}
+
+function toggleFilterSidebar() {
+    const sidebar = document.getElementById('filter-sidebar');
+    sidebar.classList.toggle('hidden');
+    
+    // Store sidebar state in localStorage for mobile
+    const isVisible = !sidebar.classList.contains('hidden');
+    localStorage.setItem('filterSidebarVisible', isVisible.toString());
+}
+
+function updateActiveFilters() {
+    const container = document.getElementById('active-filter-tags');
+    if (!container) return;
+    
+    const filters = getActiveFilters();
+    container.innerHTML = '';
+    
+    const clearAllLink = document.getElementById('clear-all-link');
+    if (clearAllLink) {
+        clearAllLink.style.display = filters.length > 0 ? 'inline' : 'none';
+    }
+    
+    if (filters.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 italic">No filters applied</p>';
+        return;
+    }
+    
+    filters.forEach(filter => {
+        const tag = document.createElement('div');
+        tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors';
+        tag.onclick = () => removeFilter(filter.type, filter.value);
+        tag.innerHTML = `
+            <span class="truncate">${filter.label}</span>
+            <svg class="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+        `;
+        container.appendChild(tag);
+    });
+    
+    updateFilterCounts();
+}
+
+function updateFilterCounts() {
+    const form = document.getElementById('filter-form');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    
+    // Update all filter counts
+    const countUpdates = {
+        'brand': 'brand',
+        'voltage': 'voltage',
+        'platform': 'platform',
+        'status': 'status',
+        'product_line': 'product_line',
+        'motor_type': 'motor_type',
+        'category': 'category[]',
+        'subcategory': 'subcategory[]',
+        'itemtype': 'itemtype[]'
+    };
+    
+    Object.keys(countUpdates).forEach(elementId => {
+        const paramName = countUpdates[elementId];
+        const count = formData.getAll(paramName).length;
+        const countElement = document.getElementById(`${elementId}-count`);
+        if (countElement) {
+            const totalText = countElement.textContent.split('/')[1];
+            countElement.textContent = `${count}/${totalText}`;
+        }
+    });
+}
+
+function getActiveFilters() {
+    const filters = [];
+    const form = document.getElementById('filter-form');
+    if (!form) return filters;
+    
+    const formData = new FormData(form);
+    
+    // Search filter
+    const search = formData.get('search');
+    if (search && search.trim()) {
+        filters.push({ type: 'search', value: search, label: `"${search}"` });
+    }
+    
+    // Brand filters
+    formData.getAll('brand').forEach(brandId => {
+        const brandName = getBrandName(brandId);
+        if (brandName) filters.push({ type: 'brand', value: brandId, label: brandName });
+    });
+    
+    // Voltage filters
+    formData.getAll('voltage').forEach(voltageId => {
+        const voltageValue = getVoltageValue(voltageId);
+        if (voltageValue) filters.push({ type: 'voltage', value: voltageId, label: `${voltageValue}V` });
+    });
+    
+    // Platform filters
+    formData.getAll('platform').forEach(platformId => {
+        const platformName = getPlatformName(platformId);
+        if (platformName) filters.push({ type: 'platform', value: platformId, label: platformName });
+    });
+    
+    // Status filters
+    formData.getAll('status').forEach(statusId => {
+        const statusName = getStatusName(statusId);
+        if (statusName) filters.push({ type: 'status', value: statusId, label: statusName });
+    });
+    
+    // Motor type filters
+    formData.getAll('motor_type').forEach(motorTypeId => {
+        const motorTypeName = getMotorTypeName(motorTypeId);
+        if (motorTypeName) filters.push({ type: 'motor_type', value: motorTypeId, label: motorTypeName });
+    });
+
+    // Category filters
+    formData.getAll('category[]').forEach(categoryId => {
+        const categoryName = getCategoryName(categoryId);
+        if (categoryName) filters.push({ type: 'category[]', value: categoryId, label: categoryName });
+    });
+    
+    formData.getAll('subcategory[]').forEach(subcategoryId => {
+        const categoryName = getCategoryName(subcategoryId);
+        if (categoryName) filters.push({ type: 'subcategory[]', value: subcategoryId, label: categoryName });
+    });
+    
+    formData.getAll('itemtype[]').forEach(itemtypeId => {
+        const categoryName = getCategoryName(itemtypeId);
+        if (categoryName) filters.push({ type: 'itemtype[]', value: itemtypeId, label: categoryName });
+    });
+    
+    // Date filters
+    const dateFrom = formData.get('release_date_from');
+    if (dateFrom && dateFrom.trim()) filters.push({ type: 'release_date_from', value: dateFrom, label: `From: ${dateFrom}` });
+    
+    const dateTo = formData.get('release_date_to');
+    if (dateTo && dateTo.trim()) filters.push({ type: 'release_date_to', value: dateTo, label: `To: ${dateTo}` });
+    
+    return filters;
+}
+
+function getBrandName(brandId) {
+    const brandInput = document.querySelector(`input[name="brand"][value="${brandId}"]`);
+    return brandInput ? brandInput.nextElementSibling.textContent.trim() : null;
+}
+
+function getVoltageValue(voltageId) {
+    const voltageInput = document.querySelector(`input[name="voltage"][value="${voltageId}"]`);
+    return voltageInput ? voltageInput.nextElementSibling.textContent.replace('V', '').trim() : null;
+}
+
+function getPlatformName(platformId) {
+    const platformInput = document.querySelector(`input[name="platform"][value="${platformId}"]`);
+    return platformInput ? platformInput.nextElementSibling.textContent.trim() : null;
+}
+
+function getStatusName(statusId) {
+    const statusInput = document.querySelector(`input[name="status"][value="${statusId}"]`);
+    return statusInput ? statusInput.nextElementSibling.textContent.trim() : null;
+}
+
+function getMotorTypeName(motorTypeId) {
+    const motorTypeInput = document.querySelector(`input[name="motor_type"][value="${motorTypeId}"]`);
+    return motorTypeInput ? motorTypeInput.nextElementSibling.textContent.trim() : null;
+}
+
+function getCategoryName(categoryId) {
+    const categoryInput = document.querySelector(`input[name="category[]"][value="${categoryId}"], input[name="subcategory[]"][value="${categoryId}"], input[name="itemtype[]"][value="${categoryId}"]`);
+    if (categoryInput) {
+        const label = categoryInput.closest('label');
+        if (label) {
+            const textSpan = label.querySelector('span');
+            return textSpan ? textSpan.textContent.trim() : null;
+        }
+    }
+    return null;
+}
+
+function removeFilter(type, value) {
+    // Update form state
+    if (type === 'search') {
+        const searchInput = document.getElementById('search');
+        if (searchInput) searchInput.value = '';
+    } else if (['brand', 'voltage', 'platform', 'status', 'product_line', 'motor_type'].includes(type)) {
+        const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
+        if (checkbox) checkbox.checked = false;
+    } else if (['category[]', 'subcategory[]', 'itemtype[]'].includes(type)) {
+        const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
+        if (checkbox) checkbox.checked = false;
+    } else if (['release_date_from', 'release_date_to'].includes(type)) {
+        const input = document.querySelector(`input[name="${type}"]`);
+        if (input) input.value = '';
+    }
+    
+    // Apply filters using the centralized function
+    applyFilters();
+}
+
+function clearAllFilters() {
+    const form = document.getElementById('filter-form');
+    if (form) {
+        const searchInput = document.getElementById('search');
+        if (searchInput) searchInput.value = '';
+        
+        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+        
+        const selects = form.querySelectorAll('select');
+        selects.forEach(select => select.value = '');
+        
+        const dateInputs = form.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => input.value = '');
+    }
+    
+    // Apply filters using the centralized function
+    applyFilters();
+}
+
+function restoreFilterSidebarState() {
+    const sidebar = document.getElementById('filter-sidebar');
+    if (sidebar) {
+        const isVisible = localStorage.getItem('filterSidebarVisible') === 'true';
+        if (isVisible) {
+            sidebar.classList.remove('hidden');
+        } else {
+            sidebar.classList.add('hidden');
+        }
+    }
+}
+
+function initializeFilterState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterSections = ['category', 'subcategory', 'itemtype', 'brand', 'voltage', 'platform', 'status', 'release_date', 'product_line', 'features', 'attributes', 'motor_type'];
+    
+    filterSections.forEach(section => {
+        const content = document.getElementById(`${section}-content`);
+        const chevron = document.getElementById(`${section}-chevron`);
+        
+        if (content && chevron) {
+            let hasActiveFilters = false;
+            
+            if (section === 'category' || section === 'subcategory' || section === 'itemtype') {
+                hasActiveFilters = urlParams.getAll(`${section}[]`).length > 0;
+            } else if (section === 'release_date') {
+                hasActiveFilters = urlParams.get('release_date_from') || urlParams.get('release_date_to');
+            } else if (section === 'features') {
+                hasActiveFilters = urlParams.getAll('features').length > 0;
+            } else if (section === 'attributes') {
+                // Check for any attribute filters (attr_*)
+                hasActiveFilters = Array.from(urlParams.keys()).some(key => key.startsWith('attr_'));
+            } else {
+                hasActiveFilters = urlParams.getAll(section).length > 0;
+            }
+            
+            if (hasActiveFilters) {
+                content.style.display = 'block';
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                chevron.style.transform = 'rotate(-90deg)';
+            }
+        }
+    });
+    
+    // Sync form with URL parameters only on initial page load
+    syncFormWithUrlParams();
+    
+    // Initialize all filter UI atomically
+    syncAllFilterUI();
+}
+
+function syncFormWithUrlParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.value = urlParams.get('search') || '';
+    }
+    
+    ['category[]', 'subcategory[]', 'itemtype[]'].forEach(paramName => {
+        const values = urlParams.getAll(paramName);
+        const checkboxes = document.querySelectorAll(`input[name="${paramName}"]`);
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = values.includes(checkbox.value);
+        });
+    });
+    
+    ['brand', 'voltage', 'platform', 'status', 'product_line', 'features', 'motor_type'].forEach(paramName => {
+        const values = urlParams.getAll(paramName);
+        const checkboxes = document.querySelectorAll(`input[name="${paramName}"]`);
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = values.includes(checkbox.value);
+        });
+    });
+    
+    // Handle attribute filters (attr_*)
+    Array.from(urlParams.keys()).forEach(key => {
+        if (key.startsWith('attr_')) {
+            const values = urlParams.getAll(key);
+            const checkboxes = document.querySelectorAll(`input[name="${key}"]`);
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = values.includes(checkbox.value);
+            });
+        }
+    });
+    
+    const dateFromInput = document.getElementById('release_date_from');
+    const dateToInput = document.getElementById('release_date_to');
+    if (dateFromInput) dateFromInput.value = urlParams.get('release_date_from') || '';
+    if (dateToInput) dateToInput.value = urlParams.get('release_date_to') || '';
+}
+
+function toggleFilterSection(sectionName) {
+    const content = document.getElementById(`${sectionName}-content`);
+    const chevron = document.getElementById(`${sectionName}-chevron`);
+    
+    if (content && chevron) {
+        const isCollapsed = content.style.display === 'none';
+        
+        if (isCollapsed) {
+            content.style.display = 'block';
+            chevron.style.transform = 'rotate(0deg)';
+        } else {
+            content.style.display = 'none';
+            chevron.style.transform = 'rotate(-90deg)';
+        }
+    }
+}
+
+function toggleFilterExpansion(sectionName) {
+    const list = document.getElementById(`${sectionName}-list`);
+    const toggle = document.getElementById(`${sectionName}-toggle`);
+    
+    if (list && toggle) {
+        const isExpanded = list.style.maxHeight && list.style.maxHeight !== '12rem';
+        
+        if (isExpanded) {
+            list.style.maxHeight = '12rem';
+            list.style.overflowY = 'auto';
+            toggle.textContent = toggle.textContent.replace('Show less', 'Show more');
+        } else {
+            list.style.maxHeight = 'none';
+            list.style.overflowY = 'visible';
+            toggle.textContent = toggle.textContent.replace('Show more', 'Show less');
+        }
+    }
+}
+</script>
+
+

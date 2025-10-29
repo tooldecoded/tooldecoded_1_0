@@ -416,11 +416,11 @@
                         </button>
                         <div class="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                             <div class="py-2">
-                                <a href="{% url 'components_index' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
-                                    Tools & Components
-                                </a>
                                 <a href="{% url 'index' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
                                     Products
+                                </a>
+                                <a href="{% url 'components_index' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors">
+                                    Tools & Components
                                 </a>
                             </div>
                         </div>
@@ -430,7 +430,7 @@
                     <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Featured
                     </a>
-                    
+
                     <!-- Learn (standalone) -->
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600 hover:text-gray-900{% endif %} transition-colors pb-1">
                         Learn
@@ -484,11 +484,11 @@
                             </svg>
                         </button>
                         <div id="explore-dropdown" class="hidden pl-4 space-y-1">
-                            <a href="{% url 'components_index' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
-                                Tools & Components
-                            </a>
                             <a href="{% url 'index' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
                                 Products
+                            </a>
+                            <a href="{% url 'components_index' %}" class="block text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors py-2 px-4 rounded-lg">
+                                Tools & Components
                             </a>
                         </div>
                     </div>

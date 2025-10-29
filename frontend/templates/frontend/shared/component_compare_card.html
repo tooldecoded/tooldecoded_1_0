@@ -1,6 +1,6 @@
 {% load static %}
 
-<a href="{% url 'component_detail' component_id=component.id %}" class="group block bg-gradient-to-br from-[#F5F6F8] to-[#E8EAED] rounded-2xl border border-[#E1E4E8] p-4 hover:border-[#0089D9] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:ring-offset-2 transition-all duration-200">
+<a href="{% url 'component_detail' component_id=component.id %}" class="group block bg-white rounded-2xl border-2 border-[#E1E4E8] p-4 hover:border-[#0089D9] hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:ring-offset-2 transition-all duration-300 shadow-sm">
     <!-- Header with brand and platform -->
     <div class="mb-4 text-center">
         <div class="text-xs text-[#505050] font-medium">
@@ -23,7 +23,7 @@
     <!-- Image and specs -->
     <div class="flex gap-3">
         <!-- Image section -->
-        <div class="w-2/5 bg-white border border-[#E1E4E8] rounded-xl flex items-center justify-center p-2 group-hover:border-[#0089D9] transition-colors duration-200">
+        <div class="w-2/5 bg-white rounded-xl flex items-center justify-center p-2 group-hover:shadow-md transition-all duration-200">
             {% if component.image %}
                 <img src="{{ component.image }}" alt="{{ component.name }}" class="max-w-full max-h-16 object-contain">
             {% else %}
@@ -47,10 +47,10 @@
                         <span class="text-xs font-bold text-[#313131]">
                             {% for component_attr in component.componentattributes_set.all %}
                                 {% if component_attr.attribute.id == important_attr.id %}
-                                    {{ component_attr.value|default:"?" }}
+                                    {{ component_attr.value|default:"—" }}
                                 {% endif %}
                             {% empty %}
-                                ?
+                                —
                             {% endfor %}
                         </span>
                     </div>

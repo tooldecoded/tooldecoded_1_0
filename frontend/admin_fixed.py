@@ -132,26 +132,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         return not SiteSettings.objects.exists()
     
     def has_delete_permission(self, request, obj=None):
-        # Prevent deletion of the settings instance
         return False
-    
-    fieldsets = (
-        ('Site Configuration', {
-            'fields': ('show_fair_price_feature',),
-            'description': 'Control site-wide features and settings'
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',)
-        }),
-    )
 
 # Add test scrape to admin URLs
-_original_get_urls = admin.site.get_urls
-
-def custom_get_urls():
-    return _original_get_urls() + [
-        path('test-scrape/', admin.site.admin_view(test_scrape_view), name='test_scrape'),
-    ]
-
-admin.site.get_urls = custom_get_urls
+admin.site.get_urls = lambda: admin.site.get_urls() + [
+    path('test-scrape/', admin.site.admin_view(test_scrape_view), name='test_scrape'),
+]

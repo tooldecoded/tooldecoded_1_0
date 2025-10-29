@@ -126,8 +126,6 @@ class ScrapeTestAdmin(admin.ModelAdmin):
 # Register the test admin
 admin.site.register(ScrapeTestAdmin)
     
-    actions = ['reset_order_by_published_date', 'set_custom_order_sequence', 'pin_articles', 'unpin_articles']
-    
     def reset_order_by_published_date(self, request, queryset):
         """Reset articles to be ordered by published date"""
         # Get all articles ordered by published_at desc, then assign custom_order

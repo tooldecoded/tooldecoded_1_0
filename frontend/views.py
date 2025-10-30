@@ -346,7 +346,7 @@ def home(request):
     if top_featured:
         quick_compare_itemtype = top_featured.itemtypes.first()
         if quick_compare_itemtype:
-            quick_compare_title = f"Flagship {quick_compare_itemtype.name}"
+            quick_compare_title = f"Featured {quick_compare_itemtype.name}"
 
     # Get important attributes for the item type (to show labels even if no values)
     important_attributes = []
@@ -356,7 +356,7 @@ def home(request):
         ).order_by('sortorder', 'name')[:4]
 
     # Get quick compare components: top 2 featured of that derived item type (ordered by showcase priority)
-    flagship_impact_drivers = Components.objects.filter(
+    flagship_components = Components.objects.filter(
         is_featured=True,
         itemtypes=quick_compare_itemtype if quick_compare_itemtype else None
     ).select_related('brand', 'motortype').prefetch_related(
@@ -374,7 +374,7 @@ def home(request):
         'flagship_preview': flagship_preview,
         'recent_products': recent_products,
         'recent_components': recent_components,
-        'flagship_impact_drivers': flagship_impact_drivers,
+        'flagship_components': flagship_components,
         'quick_compare_title': quick_compare_title,
         'important_attributes': important_attributes,
         'has_flagship_products': Components.objects.filter(is_featured=True).exists(),

@@ -1,0 +1,150 @@
+{
+  "results": [
+    {
+      "content": "",
+      "created_at": "2025-10-29 23:32:13",
+      "updated_at": "2025-10-29 23:32:31",
+      "page": 1,
+      "url": "https://www.homedepot.com/b/Tools-Power-Tools-Drills-Hammer-Drills/Milwaukee/Milwaukee-M18/N-5yc1vZc8wtZzvZ1z17rdr",
+      "job_id": "7389443979391019009",
+      "is_render_forced": false,
+      "status_code": 613,
+      "type": "raw",
+      "_request": {
+        "cookies": null,
+        "headers": null
+      },
+      "_response": {
+        "cookies": null,
+        "headers": null
+      },
+      "session_info": {
+        "id": null,
+        "expires_at": null,
+        "remaining": null
+      }
+    }
+  ],
+  "job": {
+    "callback_url": null,
+    "client_id": 137377,
+    "context": [
+      {
+        "key": "force_headers",
+        "value": false
+      },
+      {
+        "key": "force_cookies",
+        "value": false
+      },
+      {
+        "key": "hc_policy",
+        "value": true
+      },
+      {
+        "key": "successful_status_codes",
+        "value": []
+      },
+      {
+        "key": "follow_redirects",
+        "value": null
+      },
+      {
+        "key": "cookies",
+        "value": []
+      },
+      {
+        "key": "headers",
+        "value": []
+      },
+      {
+        "key": "session_id",
+        "value": null
+      },
+      {
+        "key": "http_method",
+        "value": "get"
+      },
+      {
+        "key": "content",
+        "value": null
+      },
+      {
+        "key": "store_id",
+        "value": null
+      },
+      {
+        "key": "proxy_location",
+        "value": null
+      },
+      {
+        "key": "delivery_location",
+        "value": null
+      },
+      {
+        "key": "fulfillment_type",
+        "value": null
+      }
+    ],
+    "created_at": "2025-10-29 23:32:13",
+    "domain": "com",
+    "geo_location": null,
+    "id": "7389443979391019009",
+    "limit": 10,
+    "locale": null,
+    "pages": 1,
+    "parse": false,
+    "parser_type": null,
+    "parser_preset": null,
+    "parsing_instructions": null,
+    "browser_instructions": null,
+    "render": null,
+    "xhr": false,
+    "markdown": false,
+    "url": "https://www.homedepot.com/b/Tools-Power-Tools-Drills-Hammer-Drills/Milwaukee/Milwaukee-M18/N-5yc1vZc8wtZzvZ1z17rdr",
+    "query": "",
+    "source": "universal",
+    "start_page": 1,
+    "status": "faulted",
+    "storage_type": null,
+    "storage_url": null,
+    "subdomain": "www",
+    "content_encoding": "utf-8",
+    "updated_at": "2025-10-29 23:32:31",
+    "user_agent_type": "desktop",
+    "session_info": null,
+    "statuses": [],
+    "client_notes": null,
+    "_links": [
+      {
+        "rel": "self",
+        "href": "http://data.oxylabs.io/v1/queries/7389443979391019009",
+        "method": "GET"
+      },
+      {
+        "rel": "results",
+        "href": "http://data.oxylabs.io/v1/queries/7389443979391019009/results",
+        "method": "GET"
+      },
+      {
+        "rel": "results-content",
+        "href_list": [
+          "http://data.oxylabs.io/v1/queries/7389443979391019009/results/1/content"
+        ],
+        "method": "GET"
+      },
+      {
+        "rel": "results-html",
+        "href": "http://data.oxylabs.io/v1/queries/7389443979391019009/results?type=raw",
+        "method": "GET"
+      },
+      {
+        "rel": "results-content-html",
+        "href_list": [
+          "http://data.oxylabs.io/v1/queries/7389443979391019009/results/1/content?type=raw"
+        ],
+        "method": "GET"
+      }
+    ]
+  }
+}

@@ -1,8 +1,57 @@
 <!-- Quick Filter Bar - Shared partial for product and component catalogs -->
 <div class="sticky top-16 z-30 bg-white rounded-2xl shadow-sm border border-[#E1E4E8] mb-6 py-3">
-    <div class="px-6">
-        <!-- 4-Cell Grid Layout -->
-        <div class="grid grid-cols-2 gap-2">
+    <div class="px-4 sm:px-6">
+        <!-- Mobile Layout: Stacked -->
+        <div class="block lg:hidden space-y-4">
+            <!-- Active Filters Section -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                        </svg>
+                        <h2 class="text-base font-semibold text-[#313131]">Active Filters</h2>
+                    </div>
+                    <a href="?" class="text-sm text-[#0089D9] hover:text-[#006FB3] font-medium" id="clear-all-link-mobile" style="display: none;">
+                        Clear All
+                    </a>
+                </div>
+                <!-- Filter Chips -->
+                <div id="active-filter-tags-mobile" class="flex flex-wrap items-center gap-2">
+                    <!-- Active filter tags will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Controls Section -->
+            <div class="flex items-center justify-between gap-3">
+                <!-- Filter Button -->
+                <button id="mobile-filter-toggle" onclick="openMobileFilterDrawer()" class="flex items-center gap-2 px-4 py-3 bg-[#0089D9] text-white rounded-lg text-sm font-medium hover:bg-[#006FB3] transition-colors min-h-[44px]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filters
+                </button>
+                
+                <!-- Sort Dropdown -->
+                <select id="sortSelectMobile" name="sort" class="flex-1 text-base border border-[#E1E4E8] rounded-lg px-3 py-3 min-h-[44px]" onchange="handleSortChange(this)">
+                    <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                    <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
+                    <option value="brand" {% if current_filters.sort == 'brand' %}selected{% endif %}>Brand (A-Z)</option>
+                    <option value="brand_desc" {% if current_filters.sort == 'brand_desc' %}selected{% endif %}>Brand (Z-A)</option>
+                    {% if item_type == 'product' %}
+                    <option value="release_date" {% if current_filters.sort == 'release_date' %}selected{% endif %}>Release Date (Newest)</option>
+                    <option value="release_date_desc" {% if current_filters.sort == 'release_date_desc' %}selected{% endif %}>Release Date (Oldest)</option>
+                    {% endif %}
+                    {% if item_type == 'component' and show_fair_price %}
+                    <option value="fair_price" {% if current_filters.sort == 'fair_price' %}selected{% endif %}>Fair Price (Low-High)</option>
+                    <option value="fair_price_desc" {% if current_filters.sort == 'fair_price_desc' %}selected{% endif %}>Fair Price (High-Low)</option>
+                    {% endif %}
+                </select>
+            </div>
+        </div>
+        
+        <!-- Desktop Layout: 4-Cell Grid -->
+        <div class="hidden lg:grid grid-cols-2 gap-2">
             <!-- Top Left: Active Filters Heading -->
             <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,16 +80,8 @@
                 {% endif %}
                 {% endcomment %}
                 
-                <!-- Filter Toggle Button (Mobile) -->
-                <button id="filter-toggle" onclick="toggleFilterSidebar()" class="lg:hidden flex items-center gap-2 px-3 py-2 bg-[#0089D9] text-white rounded-lg text-sm font-medium hover:bg-[#006FB3] transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                    </svg>
-                    Filters
-                </button>
-                
-                <!-- View Toggle -->
-                <div class="flex items-center bg-gray-100 rounded-lg p-1">
+                <!-- View Toggle (Desktop Only) -->
+                <div class="hidden lg:flex items-center bg-gray-100 rounded-lg p-1">
                     <button id="grid-view" onclick="toggleView('grid')" class="p-2 rounded-md bg-white shadow-sm text-[#505050] hover:text-[#0089D9] transition-colors mobile-button mobile-touch-target ripple">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
@@ -53,7 +94,7 @@
                     </button>
                 </div>
                 
-                <!-- Sort Dropdown -->
+                <!-- Sort Dropdown (Desktop) -->
                 <select id="sortSelect" name="sort" class="text-sm border border-[#E1E4E8] rounded px-2 py-1" onchange="handleSortChange(this)">
                     <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)</option>
                     <option value="name_desc" {% if current_filters.sort == 'name_desc' %}selected{% endif %}>Name (Z-A)</option>
@@ -69,8 +110,8 @@
                     {% endif %}
                 </select>
                 
-                <!-- Results per page -->
-                <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="text-sm border border-[#E1E4E8] rounded px-2 py-1">
+                <!-- Results per page (Desktop Only) -->
+                <select id="results-per-page" onchange="changeResultsPerPage(this.value)" class="hidden lg:block text-sm border border-[#E1E4E8] rounded px-2 py-1">
                     <option value="12" {% if request.GET.page_size == '12' or not request.GET.page_size %}selected{% endif %}>12 per page</option>
                     <option value="24" {% if request.GET.page_size == '24' %}selected{% endif %}>24 per page</option>
                     <option value="48" {% if request.GET.page_size == '48' %}selected{% endif %}>48 per page</option>
@@ -82,55 +123,9 @@
                 <!-- Active filter tags will be populated by JavaScript -->
             </div>
             
-            <!-- Bottom Right: Pagination Controls -->
+            <!-- Bottom Right: Empty space for desktop layout balance -->
             <div class="flex justify-end">
-                {% if items.has_other_pages %}
-                    <nav class="flex items-center gap-2">
-                        <!-- Previous arrow -->
-                        {% if items.has_previous %}
-                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ items.previous_page_number }}" 
-                               class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
-                                <
-                            </a>
-                        {% else %}
-                            <span class="text-[#E1E4E8] text-xl"></span>
-                        {% endif %}
-
-                        <!-- Page numbers -->
-                        {% for num in items.paginator.page_range %}
-                            {% if items.number == num %}
-                                <span class="font-semibold text-[#313131] border-b-2 border-[#0089D9] text-md">{{ num }}</span>
-                            {% elif num >= items.number|add:'-2' and num <= items.number|add:'2' or items.number <= 3 and num <= 5 %}
-                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
-                                    {{ num }}
-                                </a>
-                            {% elif num == 1 and items.number > 4 %}
-                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
-                                    {{ num }}
-                                </a>
-                                <span class="text-[#505050] text-sm">...</span>
-                            {% elif num == items.paginator.num_pages and items.number < items.paginator.num_pages|add:'-3' %}
-                                <span class="text-[#505050] text-sm">...</span>
-                                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ num }}" 
-                                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
-                                    {{ num }}
-                                </a>
-                            {% endif %}
-                        {% endfor %}
-
-                        <!-- Next arrow -->
-                        {% if items.has_next %}
-                            <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}{% if not forloop.last %}&{% endif %}{% endif %}{% endfor %}{% if request.GET.items %}&{% endif %}page={{ items.next_page_number }}" 
-                               class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
-                                >
-                            </a>
-                        {% else %}
-                            <span class="text-[#E1E4E8] text-xl"></span>
-                        {% endif %}
-                    </nav>
-                {% endif %}
+                <!-- Pagination removed - only shown at bottom of page -->
             </div>
         </div>
     </div>

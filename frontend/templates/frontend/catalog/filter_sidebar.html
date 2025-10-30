@@ -1,4 +1,5 @@
 <!-- Filter Sidebar - Shared partial for product and component catalogs -->
+<!-- Desktop Sidebar -->
 <div id="filter-sidebar" class="lg:w-1/4 hidden lg:block">
     <div class="bg-white rounded-2xl border border-[#E1E4E8] sticky top-48 z-20 self-start max-h-screen overflow-y-auto">
         <!-- Filter Header -->
@@ -424,6 +425,299 @@
             {% endif %}
         </div>
         </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mobile Filter Drawer -->
+<div id="mobile-filter-drawer" class="fixed inset-0 z-50 hidden lg:hidden">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300" onclick="closeMobileFilterDrawer()"></div>
+    
+    <!-- Drawer -->
+    <div class="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-xl transform -translate-x-full transition-transform duration-300 ease-in-out" id="mobile-drawer-content">
+        <!-- Drawer Header -->
+        <div class="flex items-center justify-between p-4 border-b border-[#E1E4E8] bg-white sticky top-0 z-10">
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-[#0089D9]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7h16M4 12h10m-6 5h6" />
+                </svg>
+                <h3 class="text-lg font-semibold text-[#313131]">Filters</h3>
+            </div>
+            <button onclick="closeMobileFilterDrawer()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Drawer Content -->
+        <div class="h-full overflow-y-auto pb-20">
+            <div class="p-4">
+                <form id="mobile-filter-form" method="get" action="{% if item_type == 'product' %}{% url 'index' %}{% else %}{% url 'components_index' %}{% endif %}" class="space-y-6">
+                    <!-- Search -->
+                    <div>
+                        <label for="mobile-search" class="block text-sm font-medium text-[#313131] mb-2">Search</label>
+                        <input type="text" id="mobile-search" name="search" value="{{ current_filters.search }}" 
+                               placeholder="Search {{ item_type }}s..." 
+                               oninput="debounceSearch()"
+                               class="w-full px-4 py-3 border border-[#E1E4E8] rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]">
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-category')">
+                            <h4 class="text-base font-semibold text-[#313131]">Category</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-category-count">{{ selected_category_ids|length }}/{{ categories|length }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-category-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-category-list">
+                                {% for category in categories %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="category[]" value="{{ category.id }}" 
+                                               {% if category.id in selected_category_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ category.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subcategory Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-subcategory')">
+                            <h4 class="text-base font-semibold text-[#313131]">Subcategory</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-subcategory-count">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-subcategory-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-subcategory-list">
+                                {% for subcategory in subcategories %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="subcategory[]" value="{{ subcategory.id }}" 
+                                               {% if subcategory.id in selected_subcategory_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ subcategory.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Item Type Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-itemtype')">
+                            <h4 class="text-base font-semibold text-[#313131]">Item Type</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-itemtype-count">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-itemtype-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-itemtype-list">
+                                {% for itemtype in itemtypes %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="itemtype[]" value="{{ itemtype.id }}" 
+                                               {% if itemtype.id in selected_itemtype_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ itemtype.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Motor Type Filter (Components Only) -->
+                    {% if item_type == 'component' %}
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-motor_type')">
+                            <h4 class="text-base font-semibold text-[#313131]">Motor Type</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-motor_type-count">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-motor_type-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-motor_type-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-motor_type-list">
+                                {% for motor_type in motor_types %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="motor_type" value="{{ motor_type.id }}" 
+                                               {% if motor_type.id in selected_motor_type_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ motor_type.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Brand Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-brand')">
+                            <h4 class="text-base font-semibold text-[#313131]">Brand</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-brand-count">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-brand-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-brand-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-brand-list">
+                                {% for brand in brands %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="brand" value="{{ brand.id }}" 
+                                               {% if brand.id in selected_brand_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ brand.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Voltage Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-voltage')">
+                            <h4 class="text-base font-semibold text-[#313131]">Voltage</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-voltage-count">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-voltage-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-voltage-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-voltage-list">
+                                {% for voltage in voltages %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="voltage" value="{{ voltage.id }}" 
+                                               {% if voltage.id in selected_voltage_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ voltage.value }}V</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Platform Filter -->
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-platform')">
+                            <h4 class="text-base font-semibold text-[#313131]">Platform</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-platform-count">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-platform-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-platform-list">
+                                {% for platform in platforms %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="platform" value="{{ platform.id }}" 
+                                               {% if platform.id in selected_platform_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ platform.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter (Products Only) -->
+                    {% if item_type == 'product' %}
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-status')">
+                            <h4 class="text-base font-semibold text-[#313131]">Status</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-status-count">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-status-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-status-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-status-list">
+                                {% for status in statuses %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="status" value="{{ status.id }}" 
+                                               {% if status.id in selected_status_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ status.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Product Line Filter (Components Only) -->
+                    {% if item_type == 'component' %}
+                    <div class="filter-section">
+                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-product_line')">
+                            <h4 class="text-base font-semibold text-[#313131]">Product Line</h4>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-[#505050]" id="mobile-product_line-count">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-product_line-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3" id="mobile-product_line-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-product_line-list">
+                                {% for product_line in product_lines %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="product_line" value="{{ product_line.id }}" 
+                                               {% if product_line.id in selected_product_line_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ product_line.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        
+        <!-- Drawer Footer -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-[#E1E4E8] p-4">
+            <div class="flex gap-3">
+                <button onclick="clearAllFilters()" class="flex-1 px-4 py-3 text-[#505050] border border-[#E1E4E8] rounded-lg hover:bg-gray-50 transition-colors">
+                    Clear All
+                </button>
+                <button onclick="closeMobileFilterDrawer()" class="flex-1 px-4 py-3 bg-[#0089D9] text-white rounded-lg hover:bg-[#006FB3] transition-colors">
+                    Apply Filters
+                </button>
+            </div>
         </div>
     </div>
 </div>

@@ -10,7 +10,7 @@
 </div>
 
 {% if items %}
-    <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div id="item-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {% for item in items %}
             <div class="bg-white rounded-2xl shadow-sm border border-[#E1E4E8] group flex flex-col hover:shadow-lg hover:border-[#0089D9] transition-all duration-300 mobile-card mobile-touch-target">
                 <div class="relative">
@@ -53,9 +53,9 @@
                     </div>
                 </div>
                 
-                <div class="p-5 flex flex-col flex-grow">
+                <div class="p-4 sm:p-5 flex flex-col flex-grow">
                     <div class="mb-3">
-                        <h3 class="font-semibold text-[#313131] line-clamp-2 leading-tight mb-2 group-hover:text-[#0089D9] transition-colors">{{ item.name }}</h3>
+                        <h3 class="font-semibold text-[#313131] line-clamp-2 leading-tight mb-2 group-hover:text-[#0089D9] transition-colors text-sm sm:text-base">{{ item.name }}</h3>
                         {% if item_type == 'product' and item.status.name != 'Active' %}
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                                 {% if item.status.name == 'Discontinued' %}bg-red-100 text-red-800
@@ -95,7 +95,7 @@
                     </div>
 
                     <div class="mt-auto">
-                        <a href="{% if item_type == 'product' %}{% url 'product_detail' item.id %}{% else %}{% url 'component_detail' item.id %}{% endif %}" class="block w-full bg-[#0089D9] text-white py-2.5 px-4 rounded-lg text-sm font-medium hover:bg-[#006FB3] text-center transition-colors group/btn">
+                        <a href="{% if item_type == 'product' %}{% url 'product_detail' item.id %}{% else %}{% url 'component_detail' item.id %}{% endif %}" class="block w-full bg-[#0089D9] text-white py-3 px-4 rounded-lg text-sm font-medium hover:bg-[#006FB3] text-center transition-colors group/btn min-h-[44px] flex items-center justify-center">
                             View Details
                             <svg class="w-4 h-4 inline-block ml-1 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

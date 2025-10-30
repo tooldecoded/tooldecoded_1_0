@@ -481,6 +481,12 @@ function applyFilters() {
     // Show loading state
     showFilterLoadingState();
     
+    // Sync mobile form with main form if mobile drawer is open
+    const mobileDrawer = document.getElementById('mobile-filter-drawer');
+    if (mobileDrawer && !mobileDrawer.classList.contains('hidden')) {
+        syncMainFormWithMobileForm();
+    }
+    
     const form = document.getElementById('filter-form');
     const formData = new FormData(form);
     const url = new URL(window.location);
@@ -620,34 +626,138 @@ function toggleFilterSidebar() {
     localStorage.setItem('filterSidebarVisible', isVisible.toString());
 }
 
+// Mobile Filter Drawer Functions
+function openMobileFilterDrawer() {
+    const drawer = document.getElementById('mobile-filter-drawer');
+    const drawerContent = document.getElementById('mobile-drawer-content');
+    
+    if (drawer && drawerContent) {
+        drawer.classList.remove('hidden');
+        // Trigger reflow to ensure the element is visible before animation
+        drawer.offsetHeight;
+        drawerContent.classList.remove('-translate-x-full');
+        drawerContent.classList.add('translate-x-0');
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+        
+        // Sync mobile form with main form
+        syncMobileFormWithMainForm();
+    }
+}
+
+function closeMobileFilterDrawer() {
+    const drawer = document.getElementById('mobile-filter-drawer');
+    const drawerContent = document.getElementById('mobile-drawer-content');
+    
+    if (drawer && drawerContent) {
+        drawerContent.classList.remove('translate-x-0');
+        drawerContent.classList.add('-translate-x-full');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+        }, 300);
+    }
+}
+
+function syncMobileFormWithMainForm() {
+    const mainForm = document.getElementById('filter-form');
+    const mobileForm = document.getElementById('mobile-filter-form');
+    
+    if (mainForm && mobileForm) {
+        // Copy all form values from main form to mobile form
+        const mainInputs = mainForm.querySelectorAll('input, select');
+        mainInputs.forEach(input => {
+            const mobileInput = mobileForm.querySelector(`[name="${input.name}"][value="${input.value}"]`);
+            if (mobileInput) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    mobileInput.checked = input.checked;
+                } else {
+                    mobileInput.value = input.value;
+                }
+            }
+        });
+        
+        // Also sync search input
+        const mainSearch = document.getElementById('search');
+        const mobileSearch = document.getElementById('mobile-search');
+        if (mainSearch && mobileSearch) {
+            mobileSearch.value = mainSearch.value;
+        }
+    }
+}
+
+function syncMainFormWithMobileForm() {
+    const mainForm = document.getElementById('filter-form');
+    const mobileForm = document.getElementById('mobile-filter-form');
+    
+    if (mainForm && mobileForm) {
+        // Copy all form values from mobile form to main form
+        const mobileInputs = mobileForm.querySelectorAll('input, select');
+        mobileInputs.forEach(input => {
+            const mainInput = mainForm.querySelector(`[name="${input.name}"][value="${input.value}"]`);
+            if (mainInput) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    mainInput.checked = input.checked;
+                } else {
+                    mainInput.value = input.value;
+                }
+            }
+        });
+        
+        // Also sync search input
+        const mainSearch = document.getElementById('search');
+        const mobileSearch = document.getElementById('mobile-search');
+        if (mainSearch && mobileSearch) {
+            mainSearch.value = mobileSearch.value;
+        }
+    }
+}
+
 function updateActiveFilters() {
     const container = document.getElementById('active-filter-tags');
-    if (!container) return;
+    const mobileContainer = document.getElementById('active-filter-tags-mobile');
+    const containers = [container, mobileContainer].filter(Boolean);
+    
+    if (containers.length === 0) return;
     
     const filters = getActiveFilters();
-    container.innerHTML = '';
     
+    containers.forEach(container => {
+        container.innerHTML = '';
+        
+        if (filters.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-500 italic">No filters applied</p>';
+            return;
+        }
+        
+        filters.forEach(filter => {
+            const tag = document.createElement('div');
+            tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-blue-200 transition-colors';
+            tag.onclick = () => removeFilter(filter.type, filter.value);
+            tag.innerHTML = `
+                <span class="truncate">${filter.label}</span>
+                <svg class="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+            `;
+            container.appendChild(tag);
+        });
+    });
+    
+    // Update clear all links
     const clearAllLink = document.getElementById('clear-all-link');
-    if (clearAllLink) {
-        clearAllLink.style.display = filters.length > 0 ? 'inline' : 'none';
-    }
+    const clearAllLinkMobile = document.getElementById('clear-all-link-mobile');
+    const clearAllLinks = [clearAllLink, clearAllLinkMobile].filter(Boolean);
     
-    if (filters.length === 0) {
-        container.innerHTML = '<p class="text-sm text-gray-500 italic">No filters applied</p>';
-        return;
-    }
-    
-    filters.forEach(filter => {
-        const tag = document.createElement('div');
-        tag.className = 'inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-blue-200 transition-colors';
-        tag.onclick = () => removeFilter(filter.type, filter.value);
-        tag.innerHTML = `
-            <span class="truncate">${filter.label}</span>
-            <svg class="w-2.5 h-2.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-            </svg>
-        `;
-        container.appendChild(tag);
+    clearAllLinks.forEach(link => {
+        if (link) {
+            link.style.display = filters.length > 0 ? 'inline' : 'none';
+        }
     });
     
     updateFilterCounts();
@@ -924,20 +1034,28 @@ function syncFormWithUrlParams() {
 }
 
 function toggleFilterSection(sectionName) {
+    // Handle both desktop and mobile filter sections
     const content = document.getElementById(`${sectionName}-content`);
+    const mobileContent = document.getElementById(`mobile-${sectionName}-content`);
     const chevron = document.getElementById(`${sectionName}-chevron`);
+    const mobileChevron = document.getElementById(`mobile-${sectionName}-chevron`);
     
-    if (content && chevron) {
-        const isCollapsed = content.style.display === 'none';
+    const sections = [
+        { content, chevron },
+        { content: mobileContent, chevron: mobileChevron }
+    ].filter(section => section.content && section.chevron);
+    
+    sections.forEach(section => {
+        const isCollapsed = section.content.style.display === 'none';
         
         if (isCollapsed) {
-            content.style.display = 'block';
-            chevron.style.transform = 'rotate(0deg)';
+            section.content.style.display = 'block';
+            section.chevron.style.transform = 'rotate(0deg)';
         } else {
-            content.style.display = 'none';
-            chevron.style.transform = 'rotate(-90deg)';
+            section.content.style.display = 'none';
+            section.chevron.style.transform = 'rotate(-90deg)';
         }
-    }
+    });
 }
 
 function toggleFilterExpansion(sectionName) {

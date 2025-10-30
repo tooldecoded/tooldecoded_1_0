@@ -24,16 +24,18 @@
     .card-hover:hover {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
+    
 </style>
 
 <!-- Hero Section -->
 <section class="relative overflow-hidden bg-white">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-14">
         <div class="grid gap-10 md:grid-cols-2 md:items-center">
             <div>
-                <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#313131]">
-                    Know Exactly What You Are Paying For
-            </h1>
+                <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-[#313131]">
+                    Know <text class="font-extrabold">Exactly</text></h1>
+                <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-[#313131]">
+                    What You Are Paying For</h1>
                 <p class="mt-4 text-lg text-[#505050]">
                     We turn complex bundling and pricing schemes into simple, transparent data you can trust.
                 </p>
@@ -42,41 +44,42 @@
                     <a href="#how-it-works" class="rounded-lg border border-[#0089D9] px-5 py-3 font-semibold text-[#0089D9] hover:bg-[#0089D9] hover:text-white transition">How it works</a>
                 </div>
             </div>
-            <div class="relative rounded-2xl bg-gradient-to-br from-[#7FC9FF] to-[#6BB6FF] p-6 border border-[#0089D9]/30 shadow-sm">
-                <div class="mb-4">
-                    <p class="text-sm text-[#2A2A2A] px-1 font-medium">Quick Compare</p>
-                    <h3 class="text-xl font-semibold text-[#1A1A1A] px-1">{{ quick_compare_title|default:"Flagship Impact Drivers" }}</h3>
+            <div class="mb-4">
+                <div class="rounded-t-2xl bg-[#006FB3] text-white px-5 py-3 flex items-center gap-3">
+                    <span class="text-[11px] uppercase tracking-wider font-semibold opacity-90">Quick Compare</span>
+                    <h3 class="text-lg sm:text-xl font-bold">{{ quick_compare_title|default:"Featured Tools" }}</h3>
                 </div>
-                <div class="grid grid-cols-2 gap-6">
-                    {% if flagship_impact_drivers|length >= 2 %}
-                        {% include 'frontend/shared/component_compare_card.html' with component=flagship_impact_drivers.0 %}
-                        {% include 'frontend/shared/component_compare_card.html' with component=flagship_impact_drivers.1 %}
-                    {% else %}
-                        <div class="rounded-2xl border border-[#E1E4E8] p-4 bg-white">
-                            <p class="font-semibold text-[#505050]">No items available</p>
-                            <p class="mt-2 text-sm text-[#505050]">Mark items as featured and set showcase priority to see comparisons</p>
-                        </div>
-                        <div class="rounded-2xl border border-[#E1E4E8] p-4 bg-white">
-                            <p class="font-semibold text-[#505050]">No items available</p>
-                            <p class="mt-2 text-sm text-[#505050]">Mark items as featured and set showcase priority to see comparisons</p>
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="mt-5 -mr-6" style="margin-right: calc(-1.5rem - 1px);">
-                    <a href="{% url 'index' %}" class="block bg-white text-[#0089D9] hover:text-[#006FB3] hover:bg-gray-50 font-medium px-6 py-1 shadow-sm hover:shadow-md transition-all duration-200 text-right relative" style="width: 45%; margin-left: auto; clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);">View full comparison →</a>
+                <div class="relative rounded-b-2xl bg-gradient-to-br from-[#7FC9FF] to-[#6BB6FF] p-4 md:p-6 border border-[#0089D9]/30 shadow-sm text-[#2A2A2A]">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                        {% if flagship_components|length >= 2 %}
+                            {% include 'frontend/shared/component_compare_card.html' with component=flagship_components.0 %}
+                            {% include 'frontend/shared/component_compare_card.html' with component=flagship_components.1 %}
+                        {% else %}
+                            <div class="rounded-2xl border border-[#E1E4E8] p-4 bg-white">
+                                <p class="font-semibold text-[#505050]">No items available</p>
+                                <p class="mt-2 text-sm text-[#505050]">Mark items as featured and set showcase priority to see comparisons</p>
+                            </div>
+                            <div class="rounded-2xl border border-[#E1E4E8] p-4 bg-white">
+                                <p class="font-semibold text-[#505050]">No items available</p>
+                                <p class="mt-2 text-sm text-[#505050]">Mark items as featured and set showcase priority to see comparisons</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-5 -mr-6" style="margin-right: calc(-1.5rem - 1px);">
+                        <a href="{% url 'index' %}" class="block bg-white text-[#0089D9] hover:text-[#006FB3] hover:bg-gray-50 font-medium px-6 py-1 shadow-sm hover:shadow-md transition-all duration-200 text-right relative w-[75%] md:w-[45%] ml-auto" style="clip-path: polygon(10% 0%, 100% 0%, 100% 100%, 0% 100%);">View full comparison →</a>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
     <!-- Accent band -->
     <div class="h-2 w-full bg-[#0089D9]"></div>
 </section>
 
 <!-- Feature Cards -->
 <section class="bg-[#F5F6F8]" id="how-it-works">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-14">
         <div class="text-center">
             <h2 class="text-3xl font-bold text-[#313131]">Everything you need to choose the right tool</h2>
             <p class="mt-2 text-[#505050]">Built around accurate specs, clean data, and real pricing.</p>

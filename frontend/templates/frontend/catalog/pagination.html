@@ -1,42 +1,42 @@
 <!-- Pagination - Shared partial for bottom pagination -->
 {% if items.has_other_pages %}
-    <div class="mt-8 flex justify-between items-center">
+    <div class="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
         <!-- Viewing info -->
-        <div class="text-sm text-[#505050]">
+        <div class="text-sm text-[#505050] order-2 sm:order-1">
             Viewing <span class="font-semibold">{{ items.start_index }}-{{ items.end_index }}</span> of <span class="font-semibold">{{ items.paginator.count }}</span>
         </div>
         
         <!-- Pagination controls -->
-        <nav class="flex items-center gap-2">
+        <nav class="flex items-center gap-2 order-1 sm:order-2">
             <!-- Previous arrow -->
             {% if items.has_previous %}
                 <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ items.previous_page_number }}" 
-                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
+                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
                     <
                 </a>
             {% else %}
-                <span class="text-[#E1E4E8] text-xl"></span>
+                <span class="text-[#E1E4E8] text-xl min-h-[44px] min-w-[44px] flex items-center justify-center"></span>
             {% endif %}
 
             <!-- Page numbers -->
             {% for num in items.paginator.page_range %}
                 {% if items.number == num %}
-                    <span class="font-semibold text-[#313131] border-b-2 border-[#0089D9] text-md">{{ num }}</span>
+                    <span class="font-semibold text-[#313131] border-b-2 border-[#0089D9] text-md min-h-[44px] min-w-[44px] flex items-center justify-center">{{ num }}</span>
                 {% elif num >= items.number|add:'-2' and num <= items.number|add:'2' or items.number <= 3 and num <= 5 %}
                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
-                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
+                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm min-h-[44px] min-w-[44px] flex items-center justify-center">
                         {{ num }}
                     </a>
                 {% elif num == 1 and items.number > 4 %}
                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
-                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
+                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm min-h-[44px] min-w-[44px] flex items-center justify-center">
                         {{ num }}
                     </a>
-                    <span class="text-[#505050] text-sm">...</span>
+                    <span class="text-[#505050] text-sm min-h-[44px] flex items-center justify-center">...</span>
                 {% elif num == items.paginator.num_pages and items.number < items.paginator.num_pages|add:'-3' %}
-                    <span class="text-[#505050] text-sm">...</span>
+                    <span class="text-[#505050] text-sm min-h-[44px] flex items-center justify-center">...</span>
                     <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" 
-                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm">
+                       class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-sm min-h-[44px] min-w-[44px] flex items-center justify-center">
                         {{ num }}
                     </a>
                 {% endif %}
@@ -45,11 +45,11 @@
             <!-- Next arrow -->
             {% if items.has_next %}
                 <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ items.next_page_number }}" 
-                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl">
+                   class="text-[#505050] hover:text-[#313131] transition-colors duration-200 text-xl min-h-[44px] min-w-[44px] flex items-center justify-center">
                     >
                 </a>
             {% else %}
-                <span class="text-[#E1E4E8] text-xl"></span>
+                <span class="text-[#E1E4E8] text-xl min-h-[44px] min-w-[44px] flex items-center justify-center"></span>
             {% endif %}
 
         </nav>

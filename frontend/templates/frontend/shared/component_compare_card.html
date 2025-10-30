@@ -19,9 +19,9 @@
     <!-- Image and specs -->
     <div class="flex gap-3">
         <!-- Image section -->
-        <div class="w-2/5 bg-white rounded-xl flex items-center justify-center p-1.5 group-hover:shadow-md transition-all duration-200">
+        <div class="w-2/5 bg-white rounded-xl flex items-center justify-center p-1 min-h-24 group-hover:shadow-md transition-all duration-200">
             {% if component.image %}
-                <img src="{{ component.image }}" alt="{{ component.name }}" class="max-w-full max-h-16 object-contain">
+                <img src="{{ component.image }}" alt="{{ component.name }}" class="w-full h-full max-h-24 object-contain">
             {% else %}
                 <div class="w-8 h-8 text-[#505050] group-hover:text-[#0089D9] transition-colors duration-200">
                     <svg fill="currentColor" viewBox="0 0 20 20">

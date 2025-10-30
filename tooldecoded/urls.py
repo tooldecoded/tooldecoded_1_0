@@ -16,9 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.conf import settings
 
 urlpatterns = [
     path("", include("frontend.urls")),
     path("toolanalysis/", include("toolanalysis.urls")),
     path("admin/", admin.site.urls),
 ]
+
+if getattr(settings, "ENABLE_COMPONENTS_BACKOFFICE", False):
+    urlpatterns += [
+        path("components-backoffice/", include("components_backoffice.urls")),
+    ]

@@ -10,7 +10,7 @@ from toolanalysis.models import ProductLines, BatteryPlatforms, BatteryVoltages,
 brand = Brands.objects.get(name='Ryobi')
 batteryplatformoneplus = BatteryPlatforms.objects.get(name='18V ONE+')
 v18 = BatteryVoltages.objects.get(value=18)
-productlines = [['18V ONE+', 'Ryobi 18V ONE+', brand , [batteryplatformoneplus], [v18]]]
+productlines = [['18V ONE+ HP', 'Ryobi 18V ONE+', brand , [batteryplatformoneplus], [v18]]]
 
 
 for p in productlines:

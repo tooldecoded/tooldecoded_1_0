@@ -6,11 +6,6 @@
     <div class="mb-3 text-center">
         <div class="text-xs text-[#505050] font-medium">
             <span class="font-bold text-[#313131]">{{ component.brand.name|upper }}</span>
-            {% with bp=component.batteryplatforms.all|first %}
-                {% if bp %}
-                    {{ bp.name }}
-                {% endif %}
-            {% endwith %}
             {% with pl=component.productlines.all|first %}
                 {% if pl %}
                     {{ pl.name }}{% if component.sku %} {{ component.sku }}{% endif %}

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     #myapps
     'toolanalysis.apps.ToolanalysisConfig',
     'frontend.apps.FrontendConfig',
+    'components_backoffice.apps.ComponentsBackofficeConfig',
 ]
 
 MIDDLEWARE = [
@@ -172,4 +173,14 @@ X_FRAME_OPTIONS = 'DENY'
 
 # If you're behind a proxy (like Railway), add this:
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Components Backoffice feature flag and defaults
+ENABLE_COMPONENTS_BACKOFFICE = True
+
+# Safe defaults and constants
+COMP_BACKOFFICE_MAX_IMPORT_MB = 10
+COMP_BACKOFFICE_MAX_IMPORT_ROWS = 50000
+COMP_BACKOFFICE_PAGE_SIZE = 50
+COMP_BACKOFFICE_MAX_PAGE_SIZE = 200
+COMP_BACKOFFICE_INLINE_RPS = 5
 

@@ -157,11 +157,12 @@ class Components(models.Model):
     features = models.ManyToManyField('Features')
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
     is_featured = models.BooleanField(default=False)
+    standalone_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
     fair_price_narrative = models.JSONField(blank=True, null=True)
     
     # Pricing fields
-    manual_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
+    '''manual_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
         help_text="Manual override price for this component")
     use_manual_price = models.BooleanField(default=False, 
         help_text="Use manual price instead of calculated price")
@@ -175,14 +176,15 @@ class Components(models.Model):
         related_name='components_priced_from', help_text="Specific price listing used")
     manual_override_note = models.TextField(blank=True, help_text="Reason for manual price override")
     price_currency = models.CharField(max_length=3, default='USD')
-    
-    @property
+    '''
+
+    '''@property
     def effective_price(self):
         """Returns the active price: manual if enabled, otherwise calculated"""
         if self.use_manual_price and self.manual_price:
             return self.manual_price
         return self.calculated_price
-    
+    '''
     class Meta:
         db_table = 'Components'
         ordering = ['name']

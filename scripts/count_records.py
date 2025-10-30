@@ -7,7 +7,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tooldecoded.settings')
 django.setup()
 
 from toolanalysis.models import Attributes, Components, ProductComponents, ProductAccessories, ProductSpecifications, ProductImages, ProductLines, Statuses
-from toolanalysis.models import ComponentAttributes, BatteryPlatforms, BatteryVoltages, ListingTypes, Brands, Retailers
+from toolanalysis.models import ComponentAttributes, BatteryPlatforms, BatteryVoltages, ListingTypes, Brands, Retailers, ListingPrices
 import pandas as pd
 
 '''print(f"Attributes: {Attributes.objects.count()}")

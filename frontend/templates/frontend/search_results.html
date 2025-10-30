@@ -1,0 +1,71 @@
+{% extends 'frontend/base.html' %}
+{% block title %}Search: {{ query }} | ToolDecoded{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Search results for "{{ query }}"</h1>
+
+    {% if not query %}
+        <p class="text-gray-600">Type a query in the search bar to see results.</p>
+    {% else %}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-10">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Products</h2>
+                    {% if products %}
+                        <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                            {% for p in products %}
+                                <li class="p-4 hover:bg-gray-50">
+                                    <a href="{% url 'product_detail' p.id %}" class="block">
+                                        <div class="text-sm font-medium text-gray-900">{{ p.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ p.brand.name|default:'' }}{% if p.sku %} • Model#: {{ p.sku }}{% endif %}</div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-600">No products found.</p>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Components</h2>
+                    {% if components %}
+                        <ul class="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
+                            {% for c in components %}
+                                <li class="p-4 hover:bg-gray-50">
+                                    <a href="{% url 'component_detail' c.id %}" class="block">
+                                        <div class="text-sm font-medium text-gray-900">{{ c.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ c.brand.name|default:'' }}{% if c.sku %} • Model#: {{ c.sku }}{% endif %}</div>
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-600">No components found.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <aside class="space-y-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-800 mb-3">Brands</h2>
+                    {% if brands %}
+                        <ul class="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                            {% for b in brands %}
+                                <li class="p-3 hover:bg-gray-50">
+                                    <a href="{% url 'index' %}?brand={{ b.id }}" class="text-sm text-blue-700 hover:underline">{{ b.name }}</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-600">No brands found.</p>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+

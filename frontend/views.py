@@ -114,7 +114,8 @@ def components_index(request):
                 'id': attr_id,
                 'name': attr_data['attribute__name'],
                 'unit': attr_data['attribute__unit'],
-                'values': []
+                'values': [],
+                'selected_values': filters['attribute_filters'].get(attr_id, [])
             }
         if attr_data['value']:
             attributes_dict[attr_id]['values'].append(attr_data['value'])
@@ -223,6 +224,43 @@ def product_detail(request, product_id):
         'component_products': component_products,
         'current_filters': current_filters,
     }
+
+    # Build breadcrumb parts from first item type's fullname (Category/Subcategory/ItemType)
+    try:
+        first_itemtype = product.itemtypes.first()
+        breadcrumb_parts = []
+        if first_itemtype and first_itemtype.fullname:
+            segments = [seg.strip() for seg in first_itemtype.fullname.split('/') if seg.strip()]
+            # Resolve Category (first segment)
+            if len(segments) >= 1:
+                cat = Categories.objects.filter(name=segments[0]).order_by('name').first()
+                if cat:
+                    breadcrumb_parts.append({
+                        'label': segments[0],
+                        'url': f"{ request.build_absolute_uri('/products/') }?category[]={cat.id}",
+                    })
+                else:
+                    breadcrumb_parts.append({ 'label': segments[0], 'url': request.build_absolute_uri('/products/') })
+            # Resolve Subcategory (first two segments combined)
+            if len(segments) >= 2:
+                fullname = f"{segments[0]}/{segments[1]}"
+                subcat = Subcategories.objects.filter(fullname=fullname).order_by('name').first()
+                if subcat:
+                    breadcrumb_parts.append({
+                        'label': segments[1],
+                        'url': f"{ request.build_absolute_uri('/products/') }?subcategory[]={subcat.id}",
+                    })
+                else:
+                    breadcrumb_parts.append({ 'label': segments[1], 'url': request.build_absolute_uri('/products/') })
+            # ItemType (link by id)
+            if len(segments) >= 3 or first_itemtype:
+                breadcrumb_parts.append({
+                    'label': first_itemtype.name,
+                    'url': f"{ request.build_absolute_uri('/products/') }?itemtype[]={first_itemtype.id}",
+                })
+        context['breadcrumb_parts'] = breadcrumb_parts
+    except Exception:
+        context['breadcrumb_parts'] = []
     
     return render(request, 'frontend/product_detail.html', context)
 
@@ -262,6 +300,43 @@ def component_detail(request, component_id):
         'product_components': product_components,
         'show_fair_price': site_settings.show_fair_price_feature,
     }
+
+    # Build breadcrumb parts from first item type's fullname for components
+    try:
+        first_itemtype = component.itemtypes.first()
+        breadcrumb_parts = []
+        if first_itemtype and first_itemtype.fullname:
+            segments = [seg.strip() for seg in first_itemtype.fullname.split('/') if seg.strip()]
+            # Resolve Category
+            if len(segments) >= 1:
+                cat = Categories.objects.filter(name=segments[0]).order_by('name').first()
+                if cat:
+                    breadcrumb_parts.append({
+                        'label': segments[0],
+                        'url': f"{ request.build_absolute_uri('/components/') }?category[]={cat.id}",
+                    })
+                else:
+                    breadcrumb_parts.append({ 'label': segments[0], 'url': request.build_absolute_uri('/components/') })
+            # Resolve Subcategory
+            if len(segments) >= 2:
+                fullname = f"{segments[0]}/{segments[1]}"
+                subcat = Subcategories.objects.filter(fullname=fullname).order_by('name').first()
+                if subcat:
+                    breadcrumb_parts.append({
+                        'label': segments[1],
+                        'url': f"{ request.build_absolute_uri('/components/') }?subcategory[]={subcat.id}",
+                    })
+                else:
+                    breadcrumb_parts.append({ 'label': segments[1], 'url': request.build_absolute_uri('/components/') })
+            # ItemType
+            if len(segments) >= 3 or first_itemtype:
+                breadcrumb_parts.append({
+                    'label': first_itemtype.name,
+                    'url': f"{ request.build_absolute_uri('/components/') }?itemtype[]={first_itemtype.id}",
+                })
+        context['breadcrumb_parts'] = breadcrumb_parts
+    except Exception:
+        context['breadcrumb_parts'] = []
     
     return render(request, 'frontend/component_detail.html', context)
 
@@ -381,6 +456,35 @@ def home(request):
     }
     
     return render(request, 'frontend/home.html', context)
+
+def search_results(request):
+    """Global search results page for products, components, and brands."""
+    query = request.GET.get('q', '').strip()
+    products = []
+    components = []
+    brands = []
+
+    if query:
+        products = Products.objects.filter(
+            Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
+        ).select_related('brand').order_by('name')[:50]
+
+        components = Components.objects.filter(
+            Q(name__icontains=query) | Q(sku__icontains=query) | Q(description__icontains=query)
+        ).select_related('brand').order_by('name')[:50]
+
+        brands = Brands.objects.filter(
+            Q(name__icontains=query)
+        ).order_by('name')[:50]
+
+    context = {
+        'query': query,
+        'products': products,
+        'components': components,
+        'brands': brands,
+    }
+
+    return render(request, 'frontend/search_results.html', context)
 
 def about(request):
     """About page with information about the database"""

@@ -26,5 +26,8 @@ urlpatterns = [
 
 if getattr(settings, "ENABLE_COMPONENTS_BACKOFFICE", False):
     urlpatterns += [
-        path("components-backoffice/", include("components_backoffice.urls")),
+        path(
+            "components-backoffice/",
+            include("components_backoffice.urls_editor", namespace="components_backoffice"),
+        ),
     ]

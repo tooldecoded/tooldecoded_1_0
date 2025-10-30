@@ -423,6 +423,8 @@ function showToast(message, type = 'info') {
 let searchTimeout;
 let filterController = null;
 let isFilteringInProgress = false;
+let pendingFilterRun = false;
+let skipMobileSync = false;
 
 // Centralized filter state object
 const filterState = {
@@ -473,7 +475,10 @@ function applyFilters() {
     }
     
     // Prevent concurrent requests
-    if (isFilteringInProgress) return;
+    if (isFilteringInProgress) {
+        pendingFilterRun = true;
+        return;
+    }
     
     filterController = new AbortController();
     isFilteringInProgress = true;
@@ -483,17 +488,29 @@ function applyFilters() {
     
     // Sync mobile form with main form if mobile drawer is open
     const mobileDrawer = document.getElementById('mobile-filter-drawer');
-    if (mobileDrawer && !mobileDrawer.classList.contains('hidden')) {
-        syncMainFormWithMobileForm();
+    if (!skipMobileSync) {
+        if (mobileDrawer && !mobileDrawer.classList.contains('hidden')) {
+            syncMainFormWithMobileForm();
+        }
+    } else {
+        skipMobileSync = false;
     }
     
     const form = document.getElementById('filter-form');
     const formData = new FormData(form);
     const url = new URL(window.location);
     
-    // Clear existing filter parameters
-    const filterParams = ['search', 'brand', 'voltage', 'platform', 'status', 'category', 'subcategory', 'itemtype', 'release_date_from', 'release_date_to', 'product_line', 'listing_type', 'motor_type'];
+    // Clear existing filter parameters (use correct names for multi-select hierarchy)
+    const filterParams = ['search', 'brand', 'voltage', 'platform', 'status', 'category[]', 'subcategory[]', 'itemtype[]', 'release_date_from', 'release_date_to', 'product_line', 'listing_type', 'motor_type', 'features'];
     filterParams.forEach(param => url.searchParams.delete(param));
+    // Clear dynamic prefixes and legacy singular params
+    const clearPrefixes = ['attr_', 'feature_'];
+    Array.from(url.searchParams.keys()).forEach(key => {
+        if (clearPrefixes.some(p => key.startsWith(p))) {
+            url.searchParams.delete(key);
+        }
+    });
+    ['category','subcategory','itemtype','category_level3'].forEach(param => url.searchParams.delete(param));
     
     // Add current form values
     for (let [key, value] of formData.entries()) {
@@ -502,25 +519,13 @@ function applyFilters() {
         }
     }
     
-    // Handle unchecked checkboxes
-    const allCheckboxes = form.querySelectorAll('input[type="checkbox"]');
-    allCheckboxes.forEach(checkbox => {
-        if (!checkbox.checked) {
-            const paramName = checkbox.name;
-            const paramValue = checkbox.value;
-            const existingValues = url.searchParams.getAll(paramName);
-            url.searchParams.delete(paramName);
-            existingValues.forEach(val => {
-                if (val !== paramValue) {
-                    url.searchParams.append(paramName, val);
-                }
-            });
-        }
-    });
+    // Note: FormData already excludes unchecked checkboxes; no additional handling needed
     
-    // Preserve sort and page params
-    const currentSort = url.searchParams.get('sort');
+    // Preserve sort, sort_direction and page params
+    const currentSort = new URL(window.location).searchParams.get('sort');
+    const currentSortDir = new URL(window.location).searchParams.get('sort_direction');
     if (currentSort) url.searchParams.set('sort', currentSort);
+    if (currentSortDir) url.searchParams.set('sort_direction', currentSortDir);
     url.searchParams.set('page', '1');
     
     // Generate unique request ID
@@ -570,6 +575,44 @@ function applyFilters() {
                 currentPagination.innerHTML = newPagination.innerHTML;
             }
             
+            // Replace filter option lists from refreshed HTML so options reflect valid choices
+            const swapList = (id) => {
+                const newEl = doc.getElementById(id);
+                const curEl = document.getElementById(id);
+                if (newEl && curEl) {
+                    curEl.innerHTML = newEl.innerHTML;
+                }
+            };
+
+            [
+                // Desktop lists
+                'category-list','subcategory-list','itemtype-list',
+                'brand-list','voltage-list','platform-list',
+                'status-list','product_line-list','features-list','attributes-list',
+                // Mobile lists
+                'mobile-category-list','mobile-subcategory-list','mobile-itemtype-list',
+                'mobile-brand-list','mobile-voltage-list','mobile-platform-list',
+                'mobile-status-list','mobile-product_line-list','mobile-features-list','mobile-attributes-list'
+            ].forEach(swapList);
+
+            const copyCountText = (id) => {
+                const newCount = doc.getElementById(id);
+                const currentCount = document.getElementById(id);
+                if (newCount && currentCount) {
+                    currentCount.textContent = newCount.textContent;
+                }
+            };
+
+            [
+                'category-count','subcategory-count','itemtype-count','brand-count','voltage-count','platform-count',
+                'status-count','product_line-count','motor_type-count','features-count','attributes-count',
+                'mobile-category-count','mobile-subcategory-count','mobile-itemtype-count','mobile-brand-count',
+                'mobile-voltage-count','mobile-platform-count','mobile-status-count','mobile-product_line-count',
+                'mobile-motor_type-count','mobile-features-count','mobile-attributes-count'
+            ].forEach(copyCountText);
+
+            applyBrandColorStyling();
+
             // Update all filter UI atomically after successful AJAX completion
             syncAllFilterUI();
             
@@ -586,20 +629,19 @@ function applyFilters() {
                 return; // Expected cancellation
             }
             
-            // Implement retry logic with exponential backoff
+            // Implement retry logic with exponential backoff, then hard fallback
             if (filterState.retryCount < filterState.maxRetries) {
                 filterState.retryCount++;
                 const delay = Math.pow(2, filterState.retryCount) * 1000; // 2s, 4s, 8s
-                
                 showToast(`Filter request failed. Retrying in ${delay/1000} seconds...`, 'warning');
                 console.error('Filter error, retrying:', error);
-                
                 setTimeout(() => {
                     applyFilters();
                 }, delay);
             } else {
-                showToast('Failed to apply filters after multiple attempts. Please refresh the page.', 'error');
-                console.error('Filter error after retries:', error);
+                // Final fallback: navigate to the filtered URL to ensure functionality
+                console.error('Filter error after retries, navigating to URL:', url.toString());
+                window.location.href = url.toString();
                 filterState.retryCount = 0; // Reset for next attempt
             }
         })
@@ -607,6 +649,10 @@ function applyFilters() {
             isFilteringInProgress = false;
             filterController = null;
             hideFilterLoadingState();
+            if (pendingFilterRun) {
+                pendingFilterRun = false;
+                applyFilters();
+            }
         });
 }
 
@@ -615,6 +661,13 @@ function syncAllFilterUI() {
     // The form state should be the source of truth during filtering
     updateFilterCounts();
     updateActiveFilters();
+}
+
+function escapeCssValue(value) {
+    if (window.CSS && typeof CSS.escape === 'function') {
+        return CSS.escape(value);
+    }
+    return String(value).replace(/["'\\]/g, '\\$&');
 }
 
 function toggleFilterSidebar() {
@@ -777,6 +830,7 @@ function updateFilterCounts() {
         'status': 'status',
         'product_line': 'product_line',
         'motor_type': 'motor_type',
+        'features': 'features',
         'category': 'category[]',
         'subcategory': 'subcategory[]',
         'itemtype': 'itemtype[]'
@@ -787,10 +841,24 @@ function updateFilterCounts() {
         const count = formData.getAll(paramName).length;
         const countElement = document.getElementById(`${elementId}-count`);
         if (countElement) {
-            const totalText = countElement.textContent.split('/')[1];
-            countElement.textContent = `${count}/${totalText}`;
+            const parts = countElement.textContent.split('/');
+            if (parts.length === 2) {
+                const totalText = parts[1];
+                countElement.textContent = `${count}/${totalText}`;
+            }
         }
     });
+
+    const attributeKeys = Array.from(new Set(Array.from(formData.keys()).filter(key => key.startsWith('attr_'))));
+    const selectedAttributes = attributeKeys.filter(key => formData.getAll(key).length > 0);
+    const attributesCountElement = document.getElementById('attributes-count');
+    if (attributesCountElement) {
+        const parts = attributesCountElement.textContent.split('/');
+        if (parts.length === 2) {
+            const totalText = parts[1];
+            attributesCountElement.textContent = `${selectedAttributes.length}/${totalText}`;
+        }
+    }
 }
 
 function getActiveFilters() {
@@ -836,6 +904,18 @@ function getActiveFilters() {
         if (motorTypeName) filters.push({ type: 'motor_type', value: motorTypeId, label: motorTypeName });
     });
 
+    // Product line filters
+    formData.getAll('product_line').forEach(productLineId => {
+        const productLineName = getProductLineName(productLineId);
+        if (productLineName) filters.push({ type: 'product_line', value: productLineId, label: productLineName });
+    });
+
+    // Feature filters
+    formData.getAll('features').forEach(featureId => {
+        const featureName = getFeatureName(featureId);
+        if (featureName) filters.push({ type: 'features', value: featureId, label: featureName });
+    });
+
     // Category filters
     formData.getAll('category[]').forEach(categoryId => {
         const categoryName = getCategoryName(categoryId);
@@ -850,6 +930,18 @@ function getActiveFilters() {
     formData.getAll('itemtype[]').forEach(itemtypeId => {
         const categoryName = getCategoryName(itemtypeId);
         if (categoryName) filters.push({ type: 'itemtype[]', value: itemtypeId, label: categoryName });
+    });
+
+    // Attribute filters (attr_* keys)
+    const attributeKeys = Array.from(new Set(Array.from(formData.keys()).filter(key => key.startsWith('attr_'))));
+    attributeKeys.forEach(key => {
+        const attributeId = key.replace('attr_', '');
+        formData.getAll(key).forEach(value => {
+            const attributeLabel = getAttributeLabel(attributeId, value);
+            if (attributeLabel) {
+                filters.push({ type: key, value, label: attributeLabel });
+            }
+        });
     });
     
     // Date filters
@@ -887,6 +979,18 @@ function getMotorTypeName(motorTypeId) {
     return motorTypeInput ? motorTypeInput.nextElementSibling.textContent.trim() : null;
 }
 
+function getProductLineName(productLineId) {
+    const selector = `input[name="product_line"][value="${escapeCssValue(productLineId)}"]`;
+    const productLineInput = document.querySelector(selector);
+    return productLineInput ? productLineInput.nextElementSibling.textContent.trim() : null;
+}
+
+function getFeatureName(featureId) {
+    const selector = `input[name="features"][value="${escapeCssValue(featureId)}"]`;
+    const featureInput = document.querySelector(selector);
+    return featureInput ? featureInput.nextElementSibling.textContent.trim() : null;
+}
+
 function getCategoryName(categoryId) {
     const categoryInput = document.querySelector(`input[name="category[]"][value="${categoryId}"], input[name="subcategory[]"][value="${categoryId}"], input[name="itemtype[]"][value="${categoryId}"]`);
     if (categoryInput) {
@@ -899,20 +1003,43 @@ function getCategoryName(categoryId) {
     return null;
 }
 
+function getAttributeLabel(attributeId, value) {
+    const selector = `input[name="attr_${attributeId}"][value="${escapeCssValue(value)}"]`;
+    const attributeInput = document.querySelector(selector);
+    if (!attributeInput) {
+        return null;
+    }
+
+    const attributeContainer = attributeInput.closest('.space-y-2');
+    if (!attributeContainer) {
+        return null;
+    }
+
+    const attributeNameElement = attributeContainer.querySelector('.text-xs');
+    const attributeName = attributeNameElement ? attributeNameElement.textContent.trim() : 'Specification';
+    const valueElement = attributeInput.nextElementSibling;
+    const valueLabel = valueElement ? valueElement.textContent.trim() : value;
+
+    return `${attributeName}: ${valueLabel}`;
+}
+
 function removeFilter(type, value) {
     // Update form state
     if (type === 'search') {
         const searchInput = document.getElementById('search');
         if (searchInput) searchInput.value = '';
-    } else if (['brand', 'voltage', 'platform', 'status', 'product_line', 'motor_type'].includes(type)) {
-        const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
+    } else if (['brand', 'voltage', 'platform', 'status', 'product_line', 'motor_type', 'features'].includes(type)) {
+        const checkbox = document.querySelector(`input[name="${type}"][value="${escapeCssValue(value)}"]`);
         if (checkbox) checkbox.checked = false;
     } else if (['category[]', 'subcategory[]', 'itemtype[]'].includes(type)) {
-        const checkbox = document.querySelector(`input[name="${type}"][value="${value}"]`);
+        const checkbox = document.querySelector(`input[name="${type}"][value="${escapeCssValue(value)}"]`);
         if (checkbox) checkbox.checked = false;
     } else if (['release_date_from', 'release_date_to'].includes(type)) {
         const input = document.querySelector(`input[name="${type}"]`);
         if (input) input.value = '';
+    } else if (type.startsWith('attr_')) {
+        const checkbox = document.querySelector(`input[name="${type}"][value="${escapeCssValue(value)}"]`);
+        if (checkbox) checkbox.checked = false;
     }
     
     // Apply filters using the centralized function
@@ -921,19 +1048,47 @@ function removeFilter(type, value) {
 
 function clearAllFilters() {
     const form = document.getElementById('filter-form');
+    const mobileForm = document.getElementById('mobile-filter-form');
+
+    const resetFormControls = (targetForm) => {
+        if (!targetForm) return;
+
+        const checkboxes = targetForm.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+
+        const dateInputs = targetForm.querySelectorAll('input[type="date"]');
+        dateInputs.forEach(input => {
+            input.value = '';
+        });
+
+        const textInputs = targetForm.querySelectorAll('input[type="text"], input[type="search"]');
+        textInputs.forEach(input => {
+            input.value = '';
+        });
+
+        const selects = targetForm.querySelectorAll('select');
+        selects.forEach(select => {
+            if (select.multiple) {
+                Array.from(select.options).forEach(option => {
+                    option.selected = false;
+                });
+            } else {
+                select.selectedIndex = 0;
+            }
+        });
+    };
+
     if (form) {
-        const searchInput = document.getElementById('search');
-        if (searchInput) searchInput.value = '';
-        
-        const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-        checkboxes.forEach(checkbox => checkbox.checked = false);
-        
-        const selects = form.querySelectorAll('select');
-        selects.forEach(select => select.value = '');
-        
-        const dateInputs = form.querySelectorAll('input[type="date"]');
-        dateInputs.forEach(input => input.value = '');
+        resetFormControls(form);
     }
+
+    if (mobileForm) {
+        resetFormControls(mobileForm);
+    }
+
+    skipMobileSync = true;
     
     // Apply filters using the centralized function
     applyFilters();
@@ -956,33 +1111,44 @@ function initializeFilterState() {
     const filterSections = ['category', 'subcategory', 'itemtype', 'brand', 'voltage', 'platform', 'status', 'release_date', 'product_line', 'features', 'attributes', 'motor_type'];
     
     filterSections.forEach(section => {
-        const content = document.getElementById(`${section}-content`);
-        const chevron = document.getElementById(`${section}-chevron`);
-        
-        if (content && chevron) {
-            let hasActiveFilters = false;
-            
-            if (section === 'category' || section === 'subcategory' || section === 'itemtype') {
-                hasActiveFilters = urlParams.getAll(`${section}[]`).length > 0;
-            } else if (section === 'release_date') {
-                hasActiveFilters = urlParams.get('release_date_from') || urlParams.get('release_date_to');
-            } else if (section === 'features') {
-                hasActiveFilters = urlParams.getAll('features').length > 0;
-            } else if (section === 'attributes') {
-                // Check for any attribute filters (attr_*)
-                hasActiveFilters = Array.from(urlParams.keys()).some(key => key.startsWith('attr_'));
-            } else {
-                hasActiveFilters = urlParams.getAll(section).length > 0;
+        const targets = [
+            {
+                content: document.getElementById(`${section}-content`),
+                chevron: document.getElementById(`${section}-chevron`)
+            },
+            {
+                content: document.getElementById(`mobile-${section}-content`),
+                chevron: document.getElementById(`mobile-${section}-chevron`)
             }
-            
-            if (hasActiveFilters) {
+        ].filter(target => target.content && target.chevron);
+
+        if (targets.length === 0) {
+            return;
+        }
+
+        let hasActiveFilters = false;
+
+        if (section === 'category' || section === 'subcategory' || section === 'itemtype') {
+            hasActiveFilters = urlParams.getAll(`${section}[]`).length > 0;
+        } else if (section === 'release_date') {
+            hasActiveFilters = urlParams.get('release_date_from') || urlParams.get('release_date_to');
+        } else if (section === 'features') {
+            hasActiveFilters = urlParams.getAll('features').length > 0;
+        } else if (section === 'attributes') {
+            hasActiveFilters = Array.from(urlParams.keys()).some(key => key.startsWith('attr_'));
+        } else {
+            hasActiveFilters = urlParams.getAll(section).length > 0;
+        }
+
+        targets.forEach(({ content, chevron }) => {
+            if (hasActiveFilters || section === 'category') {
                 content.style.display = 'block';
                 chevron.style.transform = 'rotate(0deg)';
             } else {
                 content.style.display = 'none';
                 chevron.style.transform = 'rotate(-90deg)';
             }
-        }
+        });
     });
     
     // Sync form with URL parameters only on initial page load

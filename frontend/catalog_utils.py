@@ -30,7 +30,7 @@ def parse_filter_params(request):
         'release_date_to': request.GET.get('release_date_to', ''),
     }
     
-    # Parse multi-select values for categories
+    # Parse multi-select values for categories (bracketed primary)
     filters['category_ids'] = request.GET.getlist('category[]')
     filters['subcategory_ids'] = request.GET.getlist('subcategory[]')
     filters['itemtype_ids'] = request.GET.getlist('itemtype[]')
@@ -44,7 +44,20 @@ def parse_filter_params(request):
     filters['listing_type_ids'] = request.GET.getlist('listing_type')
     filters['motor_type_ids'] = request.GET.getlist('motor_type')
     
-    # Handle comma-separated values if no individual values
+    # Handle legacy/singular params and CSV forms for hierarchy if bracketed absent
+    def _csv(value):
+        return [x.strip() for x in value.split(',') if x and x.strip()] if value else []
+
+    if not filters['category_ids']:
+        filters['category_ids'] = request.GET.getlist('category') or _csv(request.GET.get('category', ''))
+    if not filters['subcategory_ids']:
+        filters['subcategory_ids'] = request.GET.getlist('subcategory') or _csv(request.GET.get('subcategory', ''))
+    if not filters['itemtype_ids']:
+        # Map legacy category_level3 (treated as item type) if present
+        legacy_lvl3 = request.GET.getlist('category_level3') or _csv(request.GET.get('category_level3', ''))
+        filters['itemtype_ids'] = request.GET.getlist('itemtype') or _csv(request.GET.get('itemtype', '')) or legacy_lvl3
+
+    # Handle comma-separated values if no individual values for non-hierarchy filters
     if not filters['brand_ids'] and request.GET.get('brand'):
         filters['brand_ids'] = [x.strip() for x in request.GET.get('brand').split(',')]
     if not filters['voltage_ids'] and request.GET.get('voltage'):
@@ -61,6 +74,9 @@ def parse_filter_params(request):
         filters['motor_type_ids'] = [x.strip() for x in request.GET.get('motor_type').split(',')]
     
     # Convert string IDs to UUIDs
+    filters['category_ids'] = _convert_to_uuids(filters['category_ids'])
+    filters['subcategory_ids'] = _convert_to_uuids(filters['subcategory_ids'])
+    filters['itemtype_ids'] = _convert_to_uuids(filters['itemtype_ids'])
     filters['brand_ids'] = _convert_to_uuids(filters['brand_ids'])
     filters['voltage_ids'] = _convert_to_uuids(filters['voltage_ids'])
     filters['platform_ids'] = _convert_to_uuids(filters['platform_ids'])
@@ -192,7 +208,9 @@ def build_filter_query(model_class, filters):
         
         # Apply Features filtering (new system)
         if filters.get('feature_ids'):
-            queryset = queryset.filter(features__id__in=filters['feature_ids']).distinct()
+            for feature_id in filters['feature_ids']:
+                queryset = queryset.filter(features__id=feature_id)
+            queryset = queryset.distinct()
     
     return queryset
 
@@ -313,9 +331,10 @@ def get_filter_options(filters, model_class):
         ).distinct().order_by('name')
         
         # Features filter options (Components only)
-        features_base = _build_base_queryset(model_class, filters, exclude=['feature_ids'])
+        features_base = _build_base_queryset(model_class, filters)
         filter_options['features'] = Features.objects.filter(
-            componentfeatures__component__in=features_base
+            Q(componentfeatures__component__in=features_base) |
+            Q(id__in=filters.get('feature_ids', []))
         ).distinct().order_by('sortorder', 'name')
     
     return filter_options

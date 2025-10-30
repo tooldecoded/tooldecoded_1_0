@@ -404,6 +404,7 @@
                                     {% for value in attribute.values %}
                                         <label class="flex items-center text-sm">
                                             <input type="checkbox" name="attr_{{ attribute.id }}" value="{{ value }}" 
+                                                   {% if value in attribute.selected_values %}checked{% endif %}
                                                    onchange="applyFilters()"
                                                    class="rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-2">
                                             <span class="text-[#505050]">{{ value }}</span>

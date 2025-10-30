@@ -1,0 +1,714 @@
+{% extends 'components_backoffice/base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <h2 class="text-2xl font-semibold text-gray-900 mb-4">{% if is_create %}Create Component{% else %}Edit Component{% endif %}</h2>
+
+{% if not is_create %}
+  <form method="get" class="mb-4 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-700 mb-1">Brand</label>
+      <select name="select_brand" class="bo-select min-w-[12rem]">
+        <option value="">All</option>
+        {% for b in brands %}
+          <option value="{{ b.name }}" {% if select_brand and select_brand|lower == b.name|lower %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex flex-col">
+      <label class="text-sm font-medium text-gray-700 mb-1">Search</label>
+      <input type="text" name="select_q" value="{{ select_q }}" placeholder="Search name" class="w-64 max-w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+    <div class="flex items-center">
+      <button type="submit" name="autojump" value="1" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700">Filter</button>
+    </div>
+    <div class="flex flex-col md:ml-4 flex-1 min-w-[18rem]">
+      <label class="text-sm font-medium text-gray-700 mb-1">Go to</label>
+      <select id="component-jump" class="bo-select w-full min-w-[18rem]">
+        {% for c in selector_components %}
+          {% url 'components_backoffice:component_detail' brand_slug=c.brand.name|slugify sku_or_nk=c.sku as comp_url %}
+          <option value="{{ comp_url }}?select_brand={{ select_brand|default_if_none:''|urlencode }}&select_q={{ select_q|default_if_none:''|urlencode }}" {% if c.id == component.id %}selected{% endif %}>
+            {{ c.brand.name }} — {{ c.sku }} — {{ c.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+  <script>
+    (function(){
+      var jump = document.getElementById('component-jump');
+      if (jump) {
+        jump.addEventListener('change', function(){
+          if (jump.value) { window.location.href = jump.value; }
+        });
+        // Auto-jump to first option after filtering
+        try {
+          var usp = new URLSearchParams(window.location.search || '');
+          if (usp.has('autojump')){
+            var first = jump.options && jump.options.length ? jump.options[0].value : '';
+            if (first && first !== window.location.pathname + window.location.search){
+              var url = new URL(first, window.location.origin);
+              url.searchParams.delete('autojump');
+              window.location.replace(url.pathname + (url.search || ''));
+            }
+          }
+        } catch(e) {}
+      }
+    })();
+  </script>
+
+{% if not is_create %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Data bootstrap from server (read from JSON script tags)
+  var allAttributes = [];
+  var compAttributes = [];
+  var allFeatures = [];
+  var compFeatureRows = [];
+  try {
+    var allEl = document.getElementById('all-attributes-json');
+    var compEl = document.getElementById('comp-attributes-json');
+    var allFeatEl = document.getElementById('all-features-json');
+    var compFeatEl = document.getElementById('comp-features-json');
+    if (allEl) { allAttributes = JSON.parse(allEl.textContent || '[]'); }
+    if (compEl) { compAttributes = JSON.parse(compEl.textContent || '[]'); }
+    if (allFeatEl) { allFeatures = JSON.parse(allFeatEl.textContent || '[]'); }
+    if (compFeatEl) { compFeatureRows = JSON.parse(compFeatEl.textContent || '[]'); }
+  } catch (e) { /* ignore */ }
+
+  // No feature values; features are M2M only
+
+  // Capture initial attributes map before any UI mutations so deletes can be detected
+  var initialAttributesMap = {};
+  try {
+    (compAttributes || []).forEach(function(c){
+      if (c && c.compAttrId) {
+        initialAttributesMap[String(c.attrId)] = {
+          compAttrId: String(c.compAttrId),
+          value: (c.value == null ? '' : String(c.value)),
+          isNull: !!c.isNull
+        };
+      }
+    });
+  } catch(e) {}
+
+  var availableSel = document.getElementById('attr-available');
+  var appliedBox = document.getElementById('attr-applied');
+  var valueInput = document.getElementById('attr-value');
+  var status = document.getElementById('attr-status');
+  var saveStatus = document.getElementById('bo-save-status') || status;
+  if (!availableSel || !appliedBox) return;
+
+  // All changes defer to Save. No immediate POST calls here.
+
+  // Highlight IDs from server (attributes associated with component's itemtypes)
+  var highlightIds = [];
+  try {
+    var hiEl = document.getElementById('highlight-attributes-json');
+    if (hiEl) { highlightIds = JSON.parse(hiEl.textContent || '[]'); }
+  } catch (e) { /* ignore */ }
+
+  function inApplied(attrId){ return compAttributes.some(function(c){ return c.attrId === attrId; }); }
+
+  function refillAvailable(){
+    availableSel.innerHTML = '';
+    allAttributes.forEach(function(a){
+      if (!inApplied(a.id)){
+        var opt = document.createElement('option');
+        opt.value = String(a.id);
+        var isHL = highlightIds.indexOf(String(a.id)) !== -1;
+        opt.text = a.name + (a.unit ? ' ('+a.unit+')' : '');
+        if (isHL) {
+          opt.style.backgroundColor = '#FEF9C3'; // yellow-100
+          opt.style.fontWeight = '600';
+        }
+        availableSel.appendChild(opt);
+      }
+    });
+  }
+
+  function labelFor(item){
+    var base = item.name + (item.unit ? ' ('+item.unit+')' : '');
+    var val = item.value == null ? '' : String(item.value);
+    return base + (val !== '' ? ' • ' + val : '');
+  }
+
+  function refillApplied(){
+    appliedBox.innerHTML = '';
+    compAttributes.forEach(function(item){
+      var opt = document.createElement('option');
+      opt.value = String(item.attrId);
+      opt.text = labelFor(item);
+      // simple highlight style via emoji prefix not desired, leaving plain text; background not supported per-option across browsers
+      appliedBox.appendChild(opt);
+    });
+  }
+
+  function getSelectedAvailableIds(){ return Array.from(availableSel.selectedOptions).map(function(o){ return o.value; }); }
+  function getCheckedAppliedIds(){ return Array.from(appliedBox.selectedOptions).map(function(o){ return o.value; }); }
+
+  function addSelected(){
+    var ids = getSelectedAvailableIds();
+    ids.forEach(function(id){
+      var a = allAttributes.find(function(x){ return x.id === id; });
+      if (a && !inApplied(a.id)){
+        compAttributes.push({compAttrId: null, attrId: a.id, name: a.name, unit: a.unit, value: ''});
+      }
+    });
+    refillAvailable();
+    refillApplied();
+  }
+  function addAll(){
+    allAttributes.forEach(function(a){ if (!inApplied(a.id)) compAttributes.push({compAttrId: null, attrId: a.id, name: a.name, unit: a.unit, value: ''}); });
+    refillAvailable();
+    refillApplied();
+  }
+  function removeSelected(){
+    var ids = getCheckedAppliedIds();
+    compAttributes = compAttributes.filter(function(c){ return ids.indexOf(String(c.attrId)) === -1; });
+    refillAvailable();
+    refillApplied();
+    valueInput && (valueInput.value = '');
+  }
+  function removeAll(){
+    compAttributes = [];
+    refillAvailable();
+    refillApplied();
+  }
+
+  document.getElementById('attr-add')?.addEventListener('click', addSelected);
+  document.getElementById('attr-add-all')?.addEventListener('click', addAll);
+  document.getElementById('attr-remove')?.addEventListener('click', removeSelected);
+  document.getElementById('attr-remove-all')?.addEventListener('click', removeAll);
+  document.getElementById('attr-add-highlighted')?.addEventListener('click', function(){
+    allAttributes.forEach(function(a){
+      var isHL = highlightIds.indexOf(String(a.id)) !== -1;
+      if (isHL && !inApplied(a.id)){
+        compAttributes.push({compAttrId: null, attrId: a.id, name: a.name, unit: a.unit, value: ''});
+      }
+    });
+    refillAvailable();
+    refillApplied();
+  });
+
+  // Reset selection when clicking outside the attribute dual-list
+  var duallist = document.getElementById('attr-duallist');
+  document.addEventListener('click', function(e){
+    if (!duallist) return;
+    if (!duallist.contains(e.target)){
+      if (availableSel) availableSel.selectedIndex = -1;
+      if (appliedBox) appliedBox.selectedIndex = -1;
+      if (valueInput) valueInput.value = '';
+    }
+  });
+
+  // When selecting an applied attribute, populate the value box
+  if (appliedBox && valueInput){
+    appliedBox.addEventListener('change', function(){
+      var sel = appliedBox.selectedOptions[0];
+      if (!sel){ valueInput.value=''; return; }
+      var id = sel.value;
+      var item = compAttributes.find(function(x){ return String(x.attrId) === String(id); });
+      valueInput.value = item ? (item.value || '') : '';
+    });
+    valueInput.addEventListener('input', function(){
+      var sel = appliedBox.selectedOptions[0];
+      if (!sel) return;
+      var id = sel.value;
+      var item = compAttributes.find(function(x){ return String(x.attrId) === String(id); });
+      if (!item) return;
+      item.value = valueInput.value;
+      // update option label
+      sel.text = labelFor(item);
+    });
+  }
+
+  refillAvailable();
+  refillApplied();
+
+  // --- Features manual list (no highlights) ---
+  var featAvail = document.getElementById('feat-available');
+  var featApplied = document.getElementById('feat-applied');
+  var featValue = document.getElementById('feat-value');
+  var featStatus = document.getElementById('feat-status');
+
+  var featuresList = (compFeatureRows || []).map(function(cf){
+    return { compFeatId: String(cf.compFeatId || cf.compFeatId || cf.compFeatId), featureId: String(cf.featureId), name: cf.name, value: (cf.value == null ? '' : String(cf.value)) };
+  });
+  function featureInApplied(fid){ return featuresList.some(function(f){ return String(f.featureId) === String(fid); }); }
+  function featLabelFor(item){ var base = item.name; var val = item.value == null ? '' : String(item.value); return base + (val !== '' ? ' • ' + val : ''); }
+  function featRefillAvailable(){ if (!featAvail) return; featAvail.innerHTML=''; (allFeatures||[]).forEach(function(f){ if (!featureInApplied(f.id)){ var opt=document.createElement('option'); opt.value=String(f.id); opt.text=f.name; featAvail.appendChild(opt);} }); }
+  function featRefillApplied(){ if (!featApplied) return; featApplied.innerHTML=''; featuresList.forEach(function(item){ var opt=document.createElement('option'); opt.value=String(item.featureId); opt.text=featLabelFor(item); featApplied.appendChild(opt); }); }
+  function getSelectedFeatAvailIds(){ return Array.from((featAvail||{}).selectedOptions||[]).map(function(o){ return o.value; }); }
+  function getSelectedFeatAppliedIds(){ return Array.from((featApplied||{}).selectedOptions||[]).map(function(o){ return o.value; }); }
+  function featAddSelected(){ var ids=getSelectedFeatAvailIds(); ids.forEach(function(id){ var f=(allFeatures||[]).find(function(x){ return String(x.id)===String(id); }); if (f && !featureInApplied(f.id)){ featuresList.push({ compFeatId: null, featureId: String(f.id), name: f.name, value: '' }); } }); featRefillAvailable(); featRefillApplied(); }
+  function featAddAll(){ (allFeatures||[]).forEach(function(f){ if(!featureInApplied(f.id)){ featuresList.push({ compFeatId: null, featureId: String(f.id), name: f.name, value: '' }); } }); featRefillAvailable(); featRefillApplied(); }
+  function featRemoveSelected(){ var ids=getSelectedFeatAppliedIds(); featuresList = featuresList.filter(function(f){ return ids.indexOf(String(f.featureId))===-1; }); featRefillAvailable(); featRefillApplied(); if (featValue) featValue.value=''; }
+  function featRemoveAll(){ featuresList = []; featRefillAvailable(); featRefillApplied(); if (featValue) featValue.value=''; }
+  document.getElementById('feat-add')?.addEventListener('click', featAddSelected);
+  document.getElementById('feat-add-all')?.addEventListener('click', featAddAll);
+  document.getElementById('feat-remove')?.addEventListener('click', featRemoveSelected);
+  document.getElementById('feat-remove-all')?.addEventListener('click', featRemoveAll);
+  if (featApplied && featValue){
+    featApplied.addEventListener('change', function(){ var sel=featApplied.selectedOptions[0]; if(!sel){ featValue.value=''; return;} var id=sel.value; var item=featuresList.find(function(x){ return String(x.featureId)===String(id); }); featValue.value = item ? (item.value||'') : ''; });
+    featValue.addEventListener('input', function(){ var sel=featApplied.selectedOptions[0]; if(!sel) return; var id=sel.value; var item=featuresList.find(function(x){ return String(x.featureId)===String(id); }); if(!item) return; item.value = featValue.value; sel.text = featLabelFor(item); });
+  }
+  featRefillAvailable();
+  featRefillApplied();
+
+  // Integrate attribute sync with main form submission
+  var formEl = document.querySelector('form[method="post"]');
+  if (formEl && !formEl.dataset.attrSyncBound) {
+    formEl.addEventListener('submit', async function(e){
+      // Run attribute diffs first, then submit the form
+      try {
+        saveStatus.textContent = 'Saving…';
+        // Build current map from compAttributes array (source of truth)
+        var currentMap = {};
+        compAttributes.forEach(function(item){
+          currentMap[String(item.attrId)] = { value: (item.value == null ? '' : String(item.value)) };
+        });
+
+        // Use the immutable initial snapshot captured on load
+        var initialMap = initialAttributesMap || {};
+
+        var csrftoken = (document.querySelector('input[name="csrfmiddlewaretoken"]')||{}).value;
+        async function postAction(payload){
+          var formData = new FormData();
+          Object.keys(payload).forEach(function(k){ formData.append(k, payload[k]); });
+          var res = await fetch(window.location.href, { method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: formData, credentials: 'same-origin' });
+          return res.ok;
+        }
+
+        // Deletes
+        for (var aid in initialMap){
+          if (!currentMap[aid]){
+            await postAction({ action: 'attr_delete', comp_attr_id: String(initialMap[aid].compAttrId) });
+          }
+        }
+        // Adds/Updates
+        for (var aid2 in currentMap){
+          var cur = currentMap[aid2];
+          if (!initialMap[aid2]){
+            var valTrim = (cur.value == null ? '' : String(cur.value)).trim();
+            if (valTrim === ''){
+              await postAction({ action: 'attr_add', attribute_id: String(aid2) });
+            } else {
+              await postAction({ action: 'attr_add', attribute_id: String(aid2), value: valTrim });
+            }
+          } else {
+            var init = initialMap[aid2];
+            var before = (init.value == null ? '' : String(init.value));
+            var after = (cur.value == null ? '' : String(cur.value));
+            var afterTrim = after.trim();
+            // If initial was NULL and current is blank, skip to avoid turning NULL into empty string
+            if (init.isNull && afterTrim === ''){
+              continue;
+            }
+            if (before !== after){
+              await postAction({ action: 'attr_update', comp_attr_id: String(init.compAttrId), value: afterTrim });
+            }
+          }
+        }
+        // Features manual list diff
+        var initialFeaturesMap = {};
+        try {
+          (compFeatureRows || []).forEach(function(cf){ initialFeaturesMap[String(cf.featureId)] = { compFeatId: String(cf.compFeatId), value: (cf.value == null ? '' : String(cf.value)) }; });
+        } catch(e) {}
+        var currentFeaturesMap = {};
+        featuresList.forEach(function(item){ currentFeaturesMap[String(item.featureId)] = { value: (item.value == null ? '' : String(item.value)) }; });
+        // Deletes
+        for (var fid in initialFeaturesMap){ if (!currentFeaturesMap[fid]){ await postAction({ action: 'feat_delete', comp_feat_id: String(initialFeaturesMap[fid].compFeatId) }); } }
+        // Adds/Updates
+        for (var fid2 in currentFeaturesMap){ var curF=currentFeaturesMap[fid2]; if (!initialFeaturesMap[fid2]){ var v=(curF.value==null?'':String(curF.value)).trim(); await postAction({ action: 'feat_add', feature_id: String(fid2), value: v }); } else { var before=(initialFeaturesMap[fid2].value==null?'':String(initialFeaturesMap[fid2].value)); var after=(curF.value==null?'':String(curF.value)); var afterTrim=after.trim(); if (before!==after){ await postAction({ action: 'feat_update', comp_feat_id: String(initialFeaturesMap[fid2].compFeatId), value: afterTrim }); } } }
+
+        // After attribute/feature ops, decide how to submit main form
+        var isReset = !!(e.submitter && e.submitter.name === 'reset');
+        if (!isReset) {
+          // AJAX-submit the main form to avoid page jump
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            // Ensure dual-list selections are reflected into original hidden selects before serializing
+            try {
+              var allDuallist = formEl.querySelectorAll('select.bo-multiselect[data-enhanced="duallist"]');
+              allDuallist.forEach(function(orig){
+                var wrap = orig.previousElementSibling; // wrapper inserted right before
+                if (!wrap) { return; }
+                var selects = wrap.querySelectorAll('select');
+                var chosenSelect = selects[selects.length-1];
+                var chosenValues = Array.from(chosenSelect.options).map(function(o){ return o.value; });
+                for (var i = 0; i < orig.options.length; i++) {
+                  var o = orig.options[i];
+                  o.selected = chosenValues.indexOf(o.value) !== -1;
+                }
+              });
+            } catch(e) {}
+            var fd = new FormData(formEl);
+            var res2 = await fetch(window.location.href, { method: 'POST', headers: {'X-CSRFToken': csrftoken}, body: fd, credentials: 'same-origin', redirect: 'follow' });
+            // Do not reload; keep scroll position and UI state
+            saveStatus.textContent = (res2 && (res2.ok || (res2.status >= 300 && res2.status < 400))) ? 'Saved' : 'Saved';
+          } catch (err2) {
+            saveStatus.textContent = 'Save failed';
+          }
+        } else {
+          saveStatus.textContent = '';
+        }
+      } catch (err) {
+        saveStatus.textContent = 'Save failed';
+      }
+      // if reset, let the form submit proceed (navigation)
+    }, true);
+    formEl.dataset.attrSyncBound = '1';
+  }
+});
+  </script>
+{% endif %}
+{% endif %}
+
+{# --- Attributes section moved up for better UX --- #}
+{# Attributes UI moved below features within the form #}
+
+<form method="post" class="mt-6">
+  {% csrf_token %}
+
+  <div class="bo-actions sticky flex gap-2 items-center bg-white border-b border-gray-200 py-2 z-10">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700">Save</button>
+    <button type="submit" name="reset" value="1" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">Reset</button>
+    {% if not is_create and component %}
+      <a href="{% url 'components_backoffice:component_delete' brand_slug=component.brand.name|slugify sku_or_nk=component.sku %}" class="ml-4 inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md shadow hover:bg-red-700">Delete…</a>
+    {% endif %}
+    <span id="bo-save-status" class="ml-3 text-sm text-gray-600"></span>
+  </div>
+
+  {% if not is_create and component %}
+  <div class="mt-3 flex flex-wrap items-center gap-2">
+    <label for="component-id" class="text-sm font-medium text-gray-800">Component ID</label>
+    <input id="component-id" type="text" readonly value="{{ component.id }}" class="w-80 max-w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-800" />
+    <button type="button" id="copy-component-id" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">Copy</button>
+    <span id="copy-component-id-status" class="text-xs text-gray-500"></span>
+  </div>
+  <script>
+    (function(){
+      var btn = document.getElementById('copy-component-id');
+      var input = document.getElementById('component-id');
+      var status = document.getElementById('copy-component-id-status');
+      if (!btn || !input) return;
+      btn.addEventListener('click', async function(){
+        try {
+          var text = input.value || '';
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            input.select();
+            document.execCommand('copy');
+            input.blur();
+          }
+          if (status) { status.textContent = 'Copied'; setTimeout(function(){ status.textContent = ''; }, 1200); }
+        } catch (e) {
+          if (status) { status.textContent = 'Copy failed'; setTimeout(function(){ status.textContent = ''; }, 1500); }
+        }
+      });
+    })();
+  </script>
+  {% endif %}
+
+  <div class="bo-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bo-form bo-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+      {% for field in form.visible_fields %}
+        {% with widget_classes=field.field.widget.attrs.class %}
+        <div class="bo-field{% if field.field.widget.input_type == 'checkbox' %} bo-field--checkbox{% endif %}{% if widget_classes and 'bo-textarea' in widget_classes %} bo-field--wide md:col-span-2{% endif %}{% if widget_classes and 'bo-multiselect' in widget_classes %} bo-field--wide md:col-span-2{% endif %}{% if field.name == 'image' %} bo-field--wide md:col-span-2{% endif %}">
+          <label class="bo-label text-sm font-medium text-gray-800" for="{{ field.id_for_label }}">
+            {{ field.label }}{% if field.field.required %} <span class="bo-required" title="Required">*</span>{% endif %}
+          </label>
+          <div class="bo-control">
+            {% if field.name == 'image' %}
+              {{ field }}
+              <div class="mt-2 flex items-start gap-3">
+                <img id="component-image-preview" src="{{ field.value|default_if_none:'' }}" alt="Preview" class="max-h-48 max-w-full border border-gray-200 rounded bg-white" style="display: {% if field.value %}block{% else %}none{% endif %};" />
+                <div class="flex items-center gap-2">
+                  <button type="button" id="component-image-refresh" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">Refresh preview</button>
+                  <span id="component-image-status" class="text-xs text-gray-500"></span>
+                </div>
+              </div>
+              <script>
+                (function(){
+                  var input = document.getElementById('{{ field.id_for_label }}');
+                  var img = document.getElementById('component-image-preview');
+                  var btn = document.getElementById('component-image-refresh');
+                  var status = document.getElementById('component-image-status');
+                  if (!input || !img || !btn) return;
+                  // Enhance field appearance without calling as_widget in template
+                  try {
+                    if (input.classList) { input.classList.add('w-full'); }
+                    if (!input.placeholder) { input.setAttribute('placeholder', 'Image URL'); }
+                  } catch(e) {}
+                  function refresh(){
+                    var v = input.value || '';
+                    if (v.trim() === '') { img.style.display = 'none'; img.removeAttribute('src'); if(status){status.textContent='';} return; }
+                    img.onload = function(){ if(status){ status.textContent = 'Updated'; setTimeout(function(){ status.textContent = ''; }, 1000); } };
+                    img.onerror = function(){ if(status){ status.textContent = 'Failed to load'; setTimeout(function(){ status.textContent = ''; }, 1500); } };
+                    img.src = v;
+                    img.style.display = 'block';
+                  }
+                  btn.addEventListener('click', refresh);
+                })();
+              </script>
+            {% else %}
+              {{ field }}
+            {% endif %}
+          </div>
+          {% if field.help_text %}
+            <div class="bo-help text-gray-500 text-sm">{{ field.help_text|safe }}</div>
+          {% endif %}
+          {% if field.errors %}
+            <div class="bo-error text-sm">{{ field.errors }}</div>
+          {% endif %}
+        </div>
+        {% endwith %}
+        {% if field.name == 'features' and not is_create %}
+        <div class="bo-field bo-field--wide md:col-span-2" id="features-section">
+          <label class="bo-label text-sm font-medium text-gray-800">Features</label>
+          <!-- Manual ComponentFeatures editor directly below features selector -->
+          <div class="bo-field bo-field--wide md:col-span-2 mt-2">
+            <label class="bo-label text-sm font-medium text-gray-800">Features (manual values)</label>
+            <script id="all-features-json" type="application/json">[{% for f in all_features %}{% if not forloop.first %},{% endif %}{"id": "{{ f.id }}", "name": "{{ f.name|escapejs }}"}{% endfor %}]</script>
+            <script id="comp-features-json" type="application/json">[{% for cf in comp_features %}{% if not forloop.first %},{% endif %}{"compFeatId": "{{ cf.id }}", "featureId": "{{ cf.feature.id }}", "name": "{{ cf.feature.name|escapejs }}", "value": "{{ cf.value|default_if_none:''|escapejs }}"}{% endfor %}]</script>
+            <div id="feat-duallist" class="flex flex-col gap-3">
+              <div class="flex flex-col md:flex-row gap-3 items-stretch">
+                <div class="flex-1 min-w-[22rem]">
+                  <label class="text-sm font-medium text-gray-700 mb-1 block">Available</label>
+                  <select id="feat-available" multiple size="12" class="w-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white"></select>
+                </div>
+                <div class="flex md:flex-col gap-2 justify-center items-center">
+                  <button type="button" id="feat-add" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&gt;</button>
+                  <button type="button" id="feat-add-all" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&gt;&gt;</button>
+                  <button type="button" id="feat-remove" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&lt;</button>
+                  <button type="button" id="feat-remove-all" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&lt;&lt;</button>
+                </div>
+                <div class="flex-1 min-w-[22rem]">
+                  <label class="text-sm font-medium text-gray-700 mb-1 block">Applied (Name • Value)</label>
+                  <select id="feat-applied" size="12" class="w-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white"></select>
+                </div>
+                <div class="flex-1 min-w-[18rem]">
+                  <label class="text-sm font-medium text-gray-700 mb-1 block">Value</label>
+                  <input id="feat-value" type="text" placeholder="Value" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="feat-status" class="text-sm text-gray-500"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Attributes section below features/value editors -->
+          <label class="bo-label text-sm font-medium text-gray-800 mt-6">Attributes</label>
+          <script id="all-attributes-json" type="application/json">[{% for a in all_attributes %}{% if not forloop.first %},{% endif %}{"id": "{{ a.id }}", "name": "{{ a.name|escapejs }}", "unit": "{{ a.unit|default_if_none:''|escapejs }}"}{% endfor %}]</script>
+          <script id="comp-attributes-json" type="application/json">[{% for ca in comp_attributes %}{% if not forloop.first %},{% endif %}{"compAttrId": "{{ ca.id }}", "attrId": "{{ ca.attribute.id }}", "name": "{{ ca.attribute.name|escapejs }}", "unit": "{{ ca.attribute.unit|default_if_none:''|escapejs }}", "value": "{{ ca.value|default_if_none:''|escapejs }}", "isNull": {% if ca.value is None %}true{% else %}false{% endif %}}{% endfor %}]</script>
+          <script id="highlight-attributes-json" type="application/json">[{% for hid in highlight_attribute_ids %}{% if not forloop.first %},{% endif %}"{{ hid }}"{% endfor %}]</script>
+          <div id="attr-duallist" class="flex flex-col gap-3">
+            <div class="flex flex-col md:flex-row gap-3 items-stretch">
+              <div class="flex-1 min-w-[22rem]">
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Available</label>
+                <select id="attr-available" multiple size="12" class="w-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white"></select>
+              </div>
+              <div class="flex md:flex-col gap-2 justify-center items-center">
+                <button type="button" id="attr-add" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&gt;</button>
+                <button type="button" id="attr-add-all" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&gt;&gt;</button>
+                <button type="button" id="attr-remove" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&lt;</button>
+                <button type="button" id="attr-remove-all" class="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">&lt;&lt;</button>
+                <div class="pt-1">
+                  <button type="button" id="attr-add-highlighted" title="Add all highlighted attributes" class="inline-flex items-center px-3 py-2 border border-yellow-300 bg-yellow-100 text-yellow-900 text-sm font-medium rounded-md shadow hover:bg-yellow-200">>></button>
+                </div>
+              </div>
+              <div class="flex-1 min-w-[22rem]">
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Applied (Name • Value)</label>
+                <select id="attr-applied" size="12" class="w-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white"></select>
+              </div>
+              <div class="flex-1 min-w-[18rem]">
+                <label class="text-sm font-medium text-gray-700 mb-1 block">Value</label>
+                <input id="attr-value" type="text" placeholder="Value" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="attr-status" class="text-sm text-gray-500"></span>
+            </div>
+          </div>
+
+          
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="mt-4 flex items-center gap-2">
+    <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md shadow hover:bg-blue-700">Save</button>
+    <button type="submit" name="reset" value="1" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200">Reset</button>
+    {% if not is_create and component %}
+      <a href="{% url 'components_backoffice:component_delete' brand_slug=component.brand.name|slugify sku_or_nk=component.sku %}" class="ml-4 inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md shadow hover:bg-red-700">Delete…</a>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+  (function(){
+    // Enhance multiselects with dual-list UI
+    document.querySelectorAll('select.bo-multiselect').forEach(function(sel){
+      if (sel.dataset.enhanced === 'duallist') { return; }
+      // Build dual list UI
+      var wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col md:flex-row gap-3 items-stretch';
+
+      var leftWrap = document.createElement('div');
+      leftWrap.className = 'flex-1 min-w-[22rem]';
+      var rightWrap = document.createElement('div');
+      rightWrap.className = 'flex-1 min-w-[22rem]';
+      var btnWrap = document.createElement('div');
+      btnWrap.className = 'flex md:flex-col gap-2 justify-center items-center';
+
+      var available = document.createElement('select');
+      available.multiple = true; available.size = sel.size || 10;
+      available.className = 'w-full h-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white';
+
+      var chosen = document.createElement('select');
+      chosen.multiple = true; chosen.size = sel.size || 10;
+      chosen.className = 'w-full h-full min-h-[18rem] border border-gray-300 rounded-lg p-2 bg-white';
+
+      // Buttons
+      function mkBtn(txt, title){
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = txt; b.title = title || '';
+        b.className = 'inline-flex items-center px-3 py-2 bg-gray-100 text-gray-800 text-sm font-medium rounded-md shadow hover:bg-gray-200';
+        return b;
+      }
+      var btnAdd = mkBtn('>','Move selected to applied');
+      var btnAddAll = mkBtn('>>','Move all to applied');
+      var btnRemove = mkBtn('<','Remove selected from applied');
+      var btnRemoveAll = mkBtn('<<','Remove all from applied');
+
+      btnWrap.appendChild(btnAdd);
+      btnWrap.appendChild(btnAddAll);
+      btnWrap.appendChild(btnRemove);
+      btnWrap.appendChild(btnRemoveAll);
+
+      leftWrap.appendChild(available);
+      rightWrap.appendChild(chosen);
+
+      // Insert wrapper before original select
+      sel.parentNode.insertBefore(wrapper, sel);
+      wrapper.appendChild(leftWrap);
+      wrapper.appendChild(btnWrap);
+      wrapper.appendChild(rightWrap);
+
+      // Hide original select, mark enhanced
+      sel.style.display = 'none';
+      sel.dataset.enhanced = 'duallist';
+
+      // Populate lists
+      var allOptions = Array.from(sel.options).map(function(o){
+        return {value: o.value, text: o.text, selected: o.selected};
+      });
+
+      function refill(){
+        available.innerHTML = '';
+        chosen.innerHTML = '';
+        allOptions.forEach(function(o){
+          var opt = document.createElement('option');
+          opt.value = o.value; 
+          var textLabel = o.text;
+          
+          opt.text = textLabel;
+          if (o.selected) { chosen.appendChild(opt); } else { available.appendChild(opt); }
+        });
+      }
+      refill();
+
+      function moveSelected(from, to, selectFlag){
+        var moved = Array.from(from.selectedOptions);
+        moved.forEach(function(opt){
+          var found = allOptions.find(function(o){ return o.value === opt.value; });
+          if (found) { found.selected = !!selectFlag; }
+        });
+        refill();
+      }
+      function moveAll(from, to, selectFlag){
+        var moved = Array.from(from.options);
+        moved.forEach(function(opt){
+          var found = allOptions.find(function(o){ return o.value === opt.value; });
+          if (found) { found.selected = !!selectFlag; }
+        });
+        refill();
+      }
+
+      btnAdd.addEventListener('click', function(){ moveSelected(available, chosen, true); });
+      btnAddAll.addEventListener('click', function(){ moveAll(available, chosen, true); });
+      btnRemove.addEventListener('click', function(){ moveSelected(chosen, available, false); });
+      btnRemoveAll.addEventListener('click', function(){ moveAll(chosen, available, false); });
+
+      // Double-click convenience
+      available.addEventListener('dblclick', function(){ moveSelected(available, chosen, true); });
+      chosen.addEventListener('dblclick', function(){ moveSelected(chosen, available, false); });
+
+      // No feature value input; plain dual-list only
+
+      // Sync back to hidden original select before form submit
+      var form = sel.closest('form');
+      if (form && !form.dataset.duallistSyncBound) {
+        form.addEventListener('submit', function(){
+          var allDuallist = form.querySelectorAll('select.bo-multiselect[data-enhanced="duallist"]');
+          allDuallist.forEach(function(orig){
+            // Build a Set of chosen values from the next wrapper
+            var wrap = orig.previousElementSibling; // wrapper inserted right before
+            if (!wrap) { return; }
+            var right = wrap.querySelector('select');
+            var selects = wrap.querySelectorAll('select');
+            var chosenSelect = selects[selects.length-1];
+            var chosenValues = Array.from(chosenSelect.options).map(function(o){ return o.value; });
+            // Reflect into original select
+            for (var i = 0; i < orig.options.length; i++) {
+              var o = orig.options[i];
+              o.selected = chosenValues.indexOf(o.value) !== -1;
+            }
+          });
+        });
+        form.dataset.duallistSyncBound = '1';
+      }
+    });
+  })();
+</script>
+
+{% if not is_create and audits %}
+  <h3 class="text-xl font-semibold text-gray-900 mt-8 mb-3">Recent Changes</h3>
+  <table class="min-w-full divide-y divide-gray-200 overflow-hidden rounded-lg border border-gray-200">
+    <thead>
+      <tr class="bg-gray-50">
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">When</th>
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">User</th>
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Field</th>
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Old</th>
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">New</th>
+        <th class="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">Source</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in audits %}
+        <tr class="odd:bg-white even:bg-gray-50">
+          <td class="px-4 py-2 text-sm text-gray-900">{{ a.created_at }}</td>
+          <td class="px-4 py-2 text-sm text-gray-900">{{ a.user }}</td>
+          <td class="px-4 py-2 text-sm text-gray-900">{{ a.field }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ a.old_value }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ a.new_value }}</td>
+          <td class="px-4 py-2 text-sm text-gray-700">{{ a.source }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
+
+{% endblock %}
+
+</div>
+
+

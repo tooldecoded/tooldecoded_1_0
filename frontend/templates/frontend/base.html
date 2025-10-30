@@ -376,10 +376,13 @@
                 <div class="hidden xl:flex flex-1 max-w-lg mx-8">
                     <div class="relative w-full">
                         <div class="relative">
-                            <input type="text" 
-                                   id="global-search" 
-                                   class="w-full px-4 py-2.5 pl-10 pr-12 text-sm border border-[#E1E4E8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9] transition-all duration-200 bg-white/95 text-[#313131] placeholder-[#505050]/70"
-                                   placeholder="Search tools, kits, batteries…">
+                            <form action="{% url 'search_results' %}" method="get" onsubmit="return handleGlobalSearchSubmit(event)">
+                                <input type="text" 
+                                       id="global-search" 
+                                       name="q"
+                                       class="w-full px-4 py-2.5 pl-10 pr-12 text-sm border border-[#E1E4E8] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9] transition-all duration-200 bg-white/95 text-[#313131] placeholder-[#505050]/70"
+                                       placeholder="Search tools, kits, batteries…">
+                            </form>
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-4 w-4 text-[#505050]/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -1294,7 +1297,7 @@
                     html += '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
                     html += 'Recent Searches</div>';
                     recentSearches.forEach(search => {
-                        html += `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer rounded-lg flex items-center group transition-colors" onclick="smartSearch.selectSuggestion('${search}')">`;
+                        html += `<div class="px-3 py-2 hover:bg-blue-50 cursor-pointer rounded-lg flex items-center group transition-colors" onclick="smartSearch.selectSuggestion(${JSON.stringify(search)})">`;
                         html += `<svg class="w-4 h-4 text-gray-400 mr-3 group-hover:text-blue-500" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
                         html += `<span class="text-sm text-gray-700 group-hover:text-blue-700">${search}</span></div>`;
                     });
@@ -1315,7 +1318,8 @@
                         }
                         html += `${type}s</div>`;
                         grouped[type].forEach(item => {
-                            html += `<div class="px-3 py-2.5 hover:bg-blue-50 cursor-pointer rounded-lg flex items-center group transition-colors" onclick="smartSearch.selectSuggestion('${item.text}', '${item.url}')">`;
+                            html += `<a href="${item.url}" data-suggestion class="block px-3 py-2.5 hover:bg-blue-50 rounded-lg group transition-colors">`;
+                            html += `<div class="flex items-center">`;
                             html += `<div class="flex-1">`;
                             html += `<div class="text-sm font-medium text-gray-900 group-hover:text-blue-700">${item.text}</div>`;
                             if (item.brand) {
@@ -1327,6 +1331,7 @@
                             html += `</div>`;
                             html += `<span class="text-xs text-gray-400 group-hover:text-blue-500 ml-2 px-2 py-1 bg-gray-100 group-hover:bg-blue-100 rounded-full">${type}</span>`;
                             html += `</div>`;
+                            html += `</a>`;
                         });
                         html += '</div>';
                     }
@@ -1349,7 +1354,7 @@
             }
             
             handleKeydown(e) {
-                const suggestions = this.suggestionsContainer.querySelectorAll('[onclick]');
+                const suggestions = this.suggestionsContainer.querySelectorAll('[data-suggestion]');
                 const current = this.suggestionsContainer.querySelector('.bg-blue-50');
                 let index = -1;
                 
@@ -1366,11 +1371,14 @@
                     index = Math.max(index - 1, -1);
                     this.highlightSuggestion(suggestions, index);
                 } else if (e.key === 'Enter') {
-                    e.preventDefault();
                     if (current) {
+                        e.preventDefault();
                         current.click();
                     } else if (this.searchInput.value.trim()) {
-                        this.searchInput.form.submit();
+                        // allow form submit to results page
+                        return;
+                    } else {
+                        e.preventDefault();
                     }
                 } else if (e.key === 'Escape') {
                     this.hideSuggestions();
@@ -1427,7 +1435,8 @@
                         }
                         html += `${type}s</div>`;
                         grouped[type].forEach(item => {
-                            html += `<div class="px-3 py-2.5 hover:bg-blue-50 cursor-pointer rounded-lg flex items-center group transition-colors" onclick="smartSearch.selectModalSuggestion('${item.text}', '${item.url}')">`;
+                            html += `<a href="${item.url}" data-suggestion class="block px-3 py-2.5 hover:bg-blue-50 rounded-lg group transition-colors">`;
+                            html += `<div class="flex items-center">`;
                             html += `<div class="flex-1">`;
                             html += `<div class="text-sm font-medium text-gray-900 group-hover:text-blue-700">${item.text}</div>`;
                             if (item.brand) {
@@ -1439,6 +1448,7 @@
                             html += `</div>`;
                             html += `<span class="text-xs text-gray-400 group-hover:text-blue-500 ml-2 px-2 py-1 bg-gray-100 group-hover:bg-blue-100 rounded-full">${type}</span>`;
                             html += `</div>`;
+                            html += `</a>`;
                         });
                         html += '</div>';
                     }
@@ -1469,7 +1479,7 @@
             }
 
             handleModalKeydown(e) {
-                const suggestions = this.modalSuggestionsContainer.querySelectorAll('[onclick]');
+                const suggestions = this.modalSuggestionsContainer.querySelectorAll('[data-suggestion]');
                 const current = this.modalSuggestionsContainer.querySelector('.bg-blue-50');
                 let index = -1;
                 
@@ -1486,12 +1496,14 @@
                     index = Math.max(index - 1, -1);
                     this.highlightSuggestion(suggestions, index);
                 } else if (e.key === 'Enter') {
-                    e.preventDefault();
                     if (current) {
+                        e.preventDefault();
                         current.click();
                     } else if (this.modalSearchInput.value.trim()) {
-                        // Perform search
-                        this.performModalSearch(this.modalSearchInput.value);
+                        // Navigate to full results page
+                        window.location.href = `/search/?q=${encodeURIComponent(this.modalSearchInput.value.trim())}`;
+                    } else {
+                        e.preventDefault();
                     }
                 } else if (e.key === 'Escape') {
                     closeSearchModal();
@@ -1520,10 +1532,18 @@
         }
         
         // Initialize smart search when DOM is loaded
-        let smartSearch;
         document.addEventListener('DOMContentLoaded', function() {
-            smartSearch = new SmartSearch();
+            window.smartSearch = new SmartSearch();
         });
+        
+        function handleGlobalSearchSubmit(e) {
+            const input = document.getElementById('global-search');
+            if (!input || !input.value.trim()) {
+                e.preventDefault();
+                return false;
+            }
+            return true;
+        }
     </script>
 
     <script>

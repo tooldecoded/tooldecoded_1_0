@@ -21,29 +21,16 @@
                 <li>
                     <a href="{% url 'index' %}" class="text-[#505050] hover:text-[#505050] transition-colors">Products</a>
                 </li>
-                {% if product.itemtypes.all %}
-                    {% for itemtype in product.itemtypes.all %}
-                        {% if itemtype.fullname %}
-                            {% for breadcrumb_part in itemtype.fullname|split:"/" %}
-                                <li>
-                                    <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </li>
-                                <li>
-                                    <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-[#505050] hover:text-[#505050] transition-colors">{{ breadcrumb_part }}</a>
-                                </li>
-                            {% endfor %}
-                        {% else %}
-                            <li>
-                                <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                </svg>
-                            </li>
-                            <li>
-                                <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="text-[#505050] hover:text-[#505050] transition-colors">{{ itemtype.name }}</a>
-                            </li>
-                        {% endif %}
+                {% if breadcrumb_parts %}
+                    {% for crumb in breadcrumb_parts %}
+                        <li>
+                            <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </li>
+                        <li>
+                            <a href="{{ crumb.url }}" class="text-[#505050] hover:text-[#505050] transition-colors">{{ crumb.label }}</a>
+                        </li>
                     {% endfor %}
                 {% endif %}
                 <li>
@@ -172,13 +159,13 @@
                             <div class="mb-3">
                                 <span class="text-sm text-[#505050]">Categories: </span>
                                 {% for category in product.categories.all %}
-                                    <a href="{% url 'index' %}?category={{ category.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ category.name }}</a>
+                                    <a href="{% url 'index' %}?category%5B%5D={{ category.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ category.name }}</a>
                                 {% endfor %}
                                 {% for subcategory in product.subcategories.all %}
-                                    <a href="{% url 'index' %}?subcategory={{ subcategory.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ subcategory.name }}</a>
+                                    <a href="{% url 'index' %}?subcategory%5B%5D={{ subcategory.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ subcategory.name }}</a>
                                 {% endfor %}
                                 {% for itemtype in product.itemtypes.all %}
-                                    <a href="{% url 'index' %}?itemtype={{ itemtype.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ itemtype.name }}</a>
+                                    <a href="{% url 'index' %}?itemtype%5B%5D={{ itemtype.id }}" class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 mr-1 hover:bg-purple-200 transition-colors">{{ itemtype.name }}</a>
                                 {% endfor %}
                             </div>
                             {% endif %}

@@ -100,6 +100,8 @@ DATABASES = {
         'HOST': tmpPostgres.hostname,
         'PORT': 5432,
         'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
+        # Avoid psycopg server-side cursor "portal does not exist" errors on Windows/dev
+        'DISABLE_SERVER_SIDE_CURSORS': True,
     }
 }
 

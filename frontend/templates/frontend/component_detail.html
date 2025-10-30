@@ -80,29 +80,16 @@
             <li>
                 <a href="{% url 'components_index' %}" class="hover:text-[#0089D9] transition-colors">Tools & Components</a>
             </li>
-            {% if component.itemtypes.all %}
-                {% for itemtype in component.itemtypes.all %}
-                    {% if itemtype.fullname %}
-                        {% for breadcrumb_part in itemtype.fullname|split:"/" %}
-                            <li>
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                                </svg>
-                            </li>
-                            <li>
-                                <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-[#0089D9] transition-colors">{{ breadcrumb_part }}</a>
-                            </li>
-                        {% endfor %}
-                    {% else %}
-                        <li>
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                        </li>
-                        <li>
-                            <a href="{% url 'components_index' %}?itemtype={{ itemtype.id }}" class="hover:text-[#0089D9] transition-colors">{{ itemtype.name }}</a>
-                        </li>
-                    {% endif %}
+            {% if breadcrumb_parts %}
+                {% for crumb in breadcrumb_parts %}
+                    <li>
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    </li>
+                    <li>
+                        <a href="{{ crumb.url }}" class="hover:text-[#0089D9] transition-colors">{{ crumb.label }}</a>
+                    </li>
                 {% endfor %}
             {% endif %}
             <li>
@@ -161,10 +148,12 @@
                 <!-- Component Name and Brand -->
                 <div>
                         {% if component.brand %}
-                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-[#006FB3] mb-3">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold text-white mb-3"
+                              data-brand-color="{{ component.brand.color|default:'#6b7280' }}"
+                              data-brand-bg="{{ component.brand.color|default:'#6b7280' }}">
                             {{ component.brand.name }}
-                        </div>
-                    {% endif %}
+                        </span>
+                        {% endif %}
                     <h1 class="text-4xl font-bold text-[#313131] mb-2">{{ component.name }}</h1>
                     {% if component.sku %}
                         <p class="text-lg text-[#505050]">{{ component.sku }}</p>
@@ -919,5 +908,7 @@ function addLoadingState(element) {
 }
 
     </script>
+
+    {% include 'frontend/catalog/catalog_scripts.html' %}
 </div>
 {% endblock %}

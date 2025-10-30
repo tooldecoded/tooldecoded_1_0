@@ -1,0 +1,15 @@
+{% extends 'components_backoffice/base.html' %}
+
+{% block content %}
+<h2>Delete Component</h2>
+<p>Are you sure you want to delete <strong>{{ component.brand.name }} / {{ component.sku }} – {{ component.name }}</strong>?</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" style="color:#b00;">Yes, delete</button>
+  <a href="{% url 'components_backoffice:component_detail' brand_slug=component.brand.name|slugify sku_or_nk=component.sku %}" style="margin-left:1rem;">Cancel</a>
+  </form>
+
+{% endblock %}
+
+

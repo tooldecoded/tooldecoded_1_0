@@ -30,7 +30,7 @@ class ComponentFeatures(models.Model):
     class Meta:
         db_table = 'ComponentFeatures'
         ordering = ['component', 'feature']
-        unique_together = ('component', 'feature', 'value')
+        unique_together = ('component', 'feature')
 
 class Categories(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
@@ -161,30 +161,6 @@ class Components(models.Model):
     showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
     fair_price_narrative = models.JSONField(blank=True, null=True)
     
-    # Pricing fields
-    '''manual_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, 
-        help_text="Manual override price for this component")
-    use_manual_price = models.BooleanField(default=False, 
-        help_text="Use manual price instead of calculated price")
-    calculated_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True,
-        help_text="Automatically calculated price from PriceListings")
-    last_calculated_date = models.DateTimeField(null=True, blank=True,
-        help_text="When the calculated price was last updated")
-    price_source_product = models.ForeignKey('Products', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='components_priced_from', help_text="Standalone product used for pricing")
-    price_source_pricelisting = models.ForeignKey('PriceListings', on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='components_priced_from', help_text="Specific price listing used")
-    manual_override_note = models.TextField(blank=True, help_text="Reason for manual price override")
-    price_currency = models.CharField(max_length=3, default='USD')
-    '''
-
-    '''@property
-    def effective_price(self):
-        """Returns the active price: manual if enabled, otherwise calculated"""
-        if self.use_manual_price and self.manual_price:
-            return self.manual_price
-        return self.calculated_price
-    '''
     class Meta:
         db_table = 'Components'
         ordering = ['name']

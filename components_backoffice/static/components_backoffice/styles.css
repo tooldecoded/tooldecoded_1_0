@@ -5,4 +5,73 @@ table { width: 100%; border-collapse: collapse; }
 th { text-align: left; }
 td, th { border: 1px solid #ddd; }
 
+.bo-input, .bo-textarea, .bo-select, .bo-multiselect { width: 100%; box-sizing: border-box; }
+.bo-textarea { min-height: 90px; }
+.bo-actions { display: flex; gap: .5rem; align-items: center; }
+.bo-actions.sticky { position: sticky; top: 0; background: #fff; padding: .5rem 0; border-bottom: 1px solid #eee; z-index: 10; }
+.bo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.bo-help { color: #666; font-size: .85rem; }
+.bo-fieldfilter { margin: .25rem 0 .5rem; }
+
+/* Form layout */
+.bo-form { width: 100%; }
+.bo-field { display: flex; flex-direction: column; gap: .35rem; }
+.bo-field--checkbox { flex-direction: row; align-items: center; gap: .5rem; }
+.bo-field--wide { grid-column: 1 / -1; }
+
+.bo-label { font-weight: 600; color: #222; }
+.bo-required { color: #c00; }
+
+/* Controls */
+.bo-control input[type="text"],
+.bo-control input[type="number"],
+.bo-control input[type="url"],
+.bo-control select,
+.bo-control textarea,
+.bo-input, .bo-textarea, .bo-select, .bo-multiselect {
+  padding: .5rem .6rem;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background: #fff;
+  color: #111;
+}
+
+.bo-control select.bo-multiselect { padding: .4rem; }
+
+.bo-control :focus { outline: 2px solid #4c9ffe33; border-color: #4c9ffe; box-shadow: 0 0 0 3px #4c9ffe22; }
+
+/* Make dropdowns look like dropdowns */
+select.bo-select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  background-size: 1rem;
+  padding-right: 2.25rem;
+}
+
+select.bo-select:hover { border-color: #c9c9c9; }
+select.bo-select:focus { border-color: #2563eb; outline: 2px solid #3b82f633; box-shadow: 0 0 0 3px #3b82f622; }
+
+/* Multiselect: no chevron, but consistent chrome */
+select.bo-multiselect {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: .75rem;
+  min-height: 8rem;
+}
+
+/* Errors */
+.errorlist { margin: 0; padding-left: 1rem; color: #b00020; }
+.errorlist li { margin: 0; }
+.bo-error { color: #b00020; font-size: .9rem; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .bo-grid { grid-template-columns: 1fr; }
+}
+
 

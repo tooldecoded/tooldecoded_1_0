@@ -186,6 +186,18 @@
                         </div>
                     </div>
                 </div>
+                {% if prices_complete and total_component_value %}
+                <div class="mt-4">
+                    <div class="bg-white rounded-2xl shadow-sm border p-4 sticky top-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-xs font-semibold text-[#505050] tracking-wide">TOTAL COMPONENT VALUE</div>
+                            </div>
+                            <div class="text-2xl font-bold text-[#313131]">{{ total_component_value|usd }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -214,6 +226,7 @@
                                 <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
                                 <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
                                 <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model#</option>
+                                <option value="ext_value" {% if current_filters.sort == 'ext_value' %}selected{% endif %}>Ext. Value</option>
                             </select>
                             <button type="button" id="componentSortDirectionToggle" class="p-1 text-[#505050] hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,6 +301,23 @@
                                                         {% endif %}
                                                     </button>
                                                 </th>
+                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
+                                                    <button onclick="sortComponents('ext_value')" class="flex items-center space-x-1 hover:text-[#0089D9]">
+                                                        <span>Ext. Value</span>
+                                                        {% if current_filters.sort == 'ext_value' %}
+                                                            {% if current_filters.sort_direction == 'desc' %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                                                </svg>
+                                                            {% else %}
+                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                                                                </svg>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </button>
+                                                </th>
+                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">Price</th>
                                                 {% for column in group_data.columns %}
                                                     <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
                                                         {{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}
@@ -316,6 +346,24 @@
                                                     </div>
                                                 </td>
                                                 <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ pc.component.sku|default:"" }}</td>
+                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
+                                                    {% with price_info=component_prices|lookup:pc.component.id %}
+                                                        {% if price_info and price_info.ext_value %}
+                                                            {{ price_info.ext_value|usd }}
+                                                        {% else %}
+                                                            &mdash;
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </td>
+                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
+                                                    {% with price_info=component_prices|lookup:pc.component.id %}
+                                                        {% if price_info and price_info.price %}
+                                                            {{ price_info.price|usd }}
+                                                        {% else %}
+                                                            &mdash;
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                </td>
                                                 {% for column in group_data.columns %}
                                                     <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
                                                         {% for attr in pc.component.componentattributes_set.all %}
@@ -333,6 +381,14 @@
                             </div>
                         {% endif %}
                     {% endfor %}
+                    {% if prices_complete and total_component_value %}
+                    <div class="mt-4">
+                        <div class="w-full flex items-center justify-between bg-[#F5F6F8] border border-[#E1E4E8] rounded-lg px-4 py-3">
+                            <span class="text-sm font-semibold text-[#505050]">Total Component Value</span>
+                            <span class="text-lg font-bold text-[#313131]">{{ total_component_value|usd }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             

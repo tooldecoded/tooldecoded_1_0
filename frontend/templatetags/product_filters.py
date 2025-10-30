@@ -1,4 +1,5 @@
 from django import template
+from decimal import Decimal, InvalidOperation
 
 register = template.Library()
 
@@ -16,3 +17,15 @@ def lookup(dictionary, key):
     if dictionary and key in dictionary:
         return dictionary[key]
     return None
+
+@register.filter
+def usd(value):
+    """Format a numeric value as USD ($1,234.56); return '—' if None/blank"""
+    if value is None or value == "":
+        return "—"
+    try:
+        # Coerce to Decimal for stable money formatting
+        amount = value if isinstance(value, Decimal) else Decimal(str(value))
+        return f"${amount:,.2f}"
+    except (InvalidOperation, ValueError, TypeError):
+        return "—"

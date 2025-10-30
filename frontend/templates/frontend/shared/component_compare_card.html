@@ -33,10 +33,21 @@
         
         <!-- Specs section -->
         <div class="w-3/5 space-y-2">
-            {% if component.motortype %}
-                <div class="font-semibold text-[#313131] text-sm mb-2">{{ component.motortype.name }}</div>
-            {% endif %}
             <div class="space-y-1.5">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-[#505050] font-medium">Brushless</span>
+                    <span class="text-xs font-bold text-[#313131]">
+                        {% if component.motortype and component.motortype.name %}
+                            {% if component.motortype.name|lower == 'brushless' %}
+                                Yes
+                            {% else %}
+                                No
+                            {% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </div>
                 {% for important_attr in important_attributes %}
                     <div class="flex justify-between items-center">
                         <span class="text-xs text-[#505050] font-medium">{{ important_attr.name }}</span>
@@ -54,7 +65,6 @@
             </div>
         </div>
     </div>
-    
     <!-- Hover indicator -->
     <div class="mt-3 flex justify-center">
         <div class="w-8 h-0.5 bg-[#0089D9] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>

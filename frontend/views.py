@@ -187,6 +187,39 @@ def product_detail(request, product_id):
         'component__itemtypes'
     ).all()
     
+    # Pricing computation (standalone_price only) and extended values
+    component_prices = {}
+    prices_complete = True
+    total_component_value = None
+    for pc in product_components:
+        unit_price = pc.component.standalone_price
+        ext_value = unit_price * pc.quantity if unit_price is not None else None
+        component_prices[pc.component.id] = {
+            'price': unit_price,
+            'ext_value': ext_value,
+        }
+        if ext_value is None:
+            prices_complete = False
+    if prices_complete:
+        total_component_value = sum((component_prices[pc.component.id]['ext_value'] for pc in product_components), 0)
+    
+    # Sorting controls
+    sort = request.GET.get('sort', 'name')
+    sort_direction = request.GET.get('sort_direction', 'asc')
+    reverse_sort = (sort_direction == 'desc')
+    
+    def sort_key(pc):
+        if sort == 'quantity':
+            return pc.quantity
+        if sort == 'sku':
+            return (pc.component.sku or '').lower()
+        if sort == 'ext_value':
+            val = component_prices.get(pc.component.id, {}).get('ext_value')
+            # Place None last regardless of direction
+            return (val is None, val or 0)
+        # default name
+        return pc.component.name.lower()
+    
     # Group components by their item types for the comparison table
     component_groups = {}
     for pc in product_components:
@@ -207,15 +240,18 @@ def product_detail(request, product_id):
                     'columns': list(itemtype_attributes)
                 }
             
-            # Add component data - simplified structure
             component_groups[itemtype_name]['components'].append(pc)
+    
+    # Apply sorting within each group
+    for group_name, group_data in component_groups.items():
+        group_data['components'].sort(key=sort_key, reverse=reverse_sort)
     
     # Get component product images (if any) - placeholder for now
     component_products = {}
     
     current_filters = {
-        'sort': 'name',
-        'sort_direction': 'asc'
+        'sort': sort,
+        'sort_direction': sort_direction
     }
     
     context = {
@@ -223,6 +259,9 @@ def product_detail(request, product_id):
         'component_groups': component_groups,
         'component_products': component_products,
         'current_filters': current_filters,
+        'component_prices': component_prices,
+        'prices_complete': prices_complete,
+        'total_component_value': total_component_value,
     }
 
     # Build breadcrumb parts from first item type's fullname (Category/Subcategory/ItemType)

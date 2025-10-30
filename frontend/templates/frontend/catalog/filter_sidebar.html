@@ -25,10 +25,11 @@
 
             <!-- Category Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('category')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('category')">
                     <h4 class="text-sm font-semibold text-[#313131]">Category</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="category-count">{{ selected_category_ids|length }}/{{ categories|length }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="category" aria-label="Clear category filters" onclick="clearFilterGroup('category')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="category-count" data-filter-section="category">{{ selected_category_ids|length }}/{{ categories|length }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -58,10 +59,11 @@
 
             <!-- Subcategory Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('subcategory')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('subcategory')">
                     <h4 class="text-sm font-semibold text-[#313131]">Subcategory</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="subcategory-count">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="subcategory" aria-label="Clear subcategory filters" onclick="clearFilterGroup('subcategory')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="subcategory-count" data-filter-section="subcategory">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -91,10 +93,11 @@
 
             <!-- Item Type Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('itemtype')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('itemtype')">
                     <h4 class="text-sm font-semibold text-[#313131]">Item Type</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="itemtype-count">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="itemtype" aria-label="Clear item type filters" onclick="clearFilterGroup('itemtype')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="itemtype-count" data-filter-section="itemtype">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -125,10 +128,11 @@
             <!-- Motor Type Filter (Components Only) -->
             {% if item_type == 'component' %}
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('motor_type')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('motor_type')">
                     <h4 class="text-sm font-semibold text-[#313131]">Motor Type</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="motor_type-count">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="motor_type" aria-label="Clear motor type filters" onclick="clearFilterGroup('motor_type')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="motor_type-count" data-filter-section="motor_type">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="motor_type-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -159,10 +163,11 @@
 
             <!-- Brand Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('brand')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('brand')">
                     <h4 class="text-sm font-semibold text-[#313131]">Brand</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="brand-count">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="brand" aria-label="Clear brand filters" onclick="clearFilterGroup('brand')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="brand-count" data-filter-section="brand">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="brand-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -192,10 +197,11 @@
 
             <!-- Voltage Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('voltage')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('voltage')">
                     <h4 class="text-sm font-semibold text-[#313131]">Voltage</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="voltage-count">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="voltage" aria-label="Clear voltage filters" onclick="clearFilterGroup('voltage')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="voltage-count" data-filter-section="voltage">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="voltage-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -225,10 +231,11 @@
 
             <!-- Platform Filter -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('platform')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('platform')">
                     <h4 class="text-sm font-semibold text-[#313131]">Platform</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="platform-count">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="platform" aria-label="Clear platform filters" onclick="clearFilterGroup('platform')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="platform-count" data-filter-section="platform">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -259,10 +266,11 @@
             <!-- Status Filter (Products Only) -->
             {% if item_type == 'product' %}
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('status')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('status')">
                     <h4 class="text-sm font-semibold text-[#313131]">Status</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="status-count">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="status" aria-label="Clear status filters" onclick="clearFilterGroup('status')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="status-count" data-filter-section="status">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="status-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -320,10 +328,11 @@
             <!-- Product Line Filter (Components Only) -->
             {% if item_type == 'component' %}
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('product_line')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('product_line')">
                     <h4 class="text-sm font-semibold text-[#313131]">Product Line</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="product_line-count">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="product_line" aria-label="Clear product line filters" onclick="clearFilterGroup('product_line')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="product_line-count" data-filter-section="product_line">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="product_line-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -353,10 +362,11 @@
 
             <!-- Features Filter (Components Only) -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('features')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('features')">
                     <h4 class="text-sm font-semibold text-[#313131]">Features</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="features-count">{{ filter_counts.features.selected }}/{{ filter_counts.features.total }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="features" aria-label="Clear feature filters" onclick="clearFilterGroup('features')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="features-count" data-filter-section="features">{{ filter_counts.features.selected }}/{{ filter_counts.features.total }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="features-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -386,10 +396,11 @@
 
             <!-- Attributes Filter (Components Only) -->
             <div class="filter-section">
-                <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('attributes')">
+                <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('attributes')">
                     <h4 class="text-sm font-semibold text-[#313131]">Specifications</h4>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-[#505050]" id="attributes-count">{{ selected_attribute_filters|length }}/{{ attributes|length }}</span>
+                        <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-xs font-semibold" data-filter-clear="attributes" aria-label="Clear specification filters" onclick="clearFilterGroup('attributes')">&times;</button>
+                        <span class="text-xs text-[#505050]" id="attributes-count" data-filter-section="attributes">{{ selected_attribute_filters|length }}/{{ attributes|length }}</span>
                         <svg class="w-4 h-4 text-[#505050] transition-transform duration-200 filter-chevron" id="attributes-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
@@ -468,10 +479,11 @@
 
                     <!-- Category Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-category')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-category')">
                             <h4 class="text-base font-semibold text-[#313131]">Category</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-category-count">{{ selected_category_ids|length }}/{{ categories|length }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-category" aria-label="Clear category filters" onclick="clearFilterGroup('category')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-category-count" data-filter-section="category">{{ selected_category_ids|length }}/{{ categories|length }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-category-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -494,10 +506,11 @@
 
                     <!-- Subcategory Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-subcategory')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-subcategory')">
                             <h4 class="text-base font-semibold text-[#313131]">Subcategory</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-subcategory-count">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-subcategory" aria-label="Clear subcategory filters" onclick="clearFilterGroup('subcategory')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-subcategory-count" data-filter-section="subcategory">{{ selected_subcategory_ids|length }}/{{ subcategories|length }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-subcategory-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -520,10 +533,11 @@
 
                     <!-- Item Type Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-itemtype')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-itemtype')">
                             <h4 class="text-base font-semibold text-[#313131]">Item Type</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-itemtype-count">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-itemtype" aria-label="Clear item type filters" onclick="clearFilterGroup('itemtype')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-itemtype-count" data-filter-section="itemtype">{{ selected_itemtype_ids|length }}/{{ itemtypes|length }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-itemtype-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -547,10 +561,11 @@
                     <!-- Motor Type Filter (Components Only) -->
                     {% if item_type == 'component' %}
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-motor_type')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-motor_type')">
                             <h4 class="text-base font-semibold text-[#313131]">Motor Type</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-motor_type-count">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-motor_type" aria-label="Clear motor type filters" onclick="clearFilterGroup('motor_type')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-motor_type-count" data-filter-section="motor_type">{{ filter_counts.motor_types.selected }}/{{ filter_counts.motor_types.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-motor_type-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -574,10 +589,11 @@
 
                     <!-- Brand Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-brand')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-brand')">
                             <h4 class="text-base font-semibold text-[#313131]">Brand</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-brand-count">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-brand" aria-label="Clear brand filters" onclick="clearFilterGroup('brand')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-brand-count" data-filter-section="brand">{{ filter_counts.brands.selected }}/{{ filter_counts.brands.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-brand-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -600,10 +616,11 @@
 
                     <!-- Voltage Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-voltage')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-voltage')">
                             <h4 class="text-base font-semibold text-[#313131]">Voltage</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-voltage-count">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-voltage" aria-label="Clear voltage filters" onclick="clearFilterGroup('voltage')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-voltage-count" data-filter-section="voltage">{{ filter_counts.voltages.selected }}/{{ filter_counts.voltages.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-voltage-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -626,10 +643,11 @@
 
                     <!-- Platform Filter -->
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-platform')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-platform')">
                             <h4 class="text-base font-semibold text-[#313131]">Platform</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-platform-count">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-platform" aria-label="Clear platform filters" onclick="clearFilterGroup('platform')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-platform-count" data-filter-section="platform">{{ filter_counts.platforms.selected }}/{{ filter_counts.platforms.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-platform-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -653,10 +671,11 @@
                     <!-- Status Filter (Products Only) -->
                     {% if item_type == 'product' %}
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-status')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-status')">
                             <h4 class="text-base font-semibold text-[#313131]">Status</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-status-count">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-status" aria-label="Clear status filters" onclick="clearFilterGroup('status')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-status-count" data-filter-section="status">{{ filter_counts.statuses.selected }}/{{ filter_counts.statuses.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-status-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -681,10 +700,11 @@
                     <!-- Product Line Filter (Components Only) -->
                     {% if item_type == 'component' %}
                     <div class="filter-section">
-                        <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-product_line')">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-product_line')">
                             <h4 class="text-base font-semibold text-[#313131]">Product Line</h4>
                             <div class="flex items-center gap-2">
-                                <span class="text-sm text-[#505050]" id="mobile-product_line-count">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-product_line" aria-label="Clear product line filters" onclick="clearFilterGroup('product_line')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-product_line-count" data-filter-section="product_line">{{ filter_counts.product_lines.selected }}/{{ filter_counts.product_lines.total }}</span>
                                 <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-product_line-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
@@ -705,6 +725,67 @@
                         </div>
                     </div>
                     {% endif %}
+
+                    <!-- Features Filter (Components Only) -->
+                    <div class="filter-section">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-features')">
+                            <h4 class="text-base font-semibold text-[#313131]">Features</h4>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-features" aria-label="Clear feature filters" onclick="clearFilterGroup('features')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-features-count" data-filter-section="features">{{ filter_counts.features.selected }}/{{ filter_counts.features.total }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-features-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3 hidden" id="mobile-features-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-features-list">
+                                {% for feature in features %}
+                                    <label class="flex items-center text-base py-2">
+                                        <input type="checkbox" name="features" value="{{ feature.id }}" 
+                                               {% if feature.id in selected_feature_ids %}checked{% endif %}
+                                               onchange="applyFilters()"
+                                               class="w-5 h-5 rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-3">
+                                        <span class="text-[#505050]">{{ feature.name }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attributes Filter (Components Only) -->
+                    <div class="filter-section">
+                        <div class="filter-toggle flex items-center justify-between mb-3 cursor-pointer" onclick="toggleFilterSection('mobile-attributes')">
+                            <h4 class="text-base font-semibold text-[#313131]">Specifications</h4>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="hidden text-[#0089D9] hover:text-[#006FB3] text-sm font-semibold" data-filter-clear="mobile-attributes" aria-label="Clear specification filters" onclick="clearFilterGroup('attributes')">&times;</button>
+                                <span class="text-sm text-[#505050]" id="mobile-attributes-count" data-filter-section="attributes">{{ selected_attribute_filters|length }}/{{ attributes|length }}</span>
+                                <svg class="w-5 h-5 text-[#505050] transition-transform duration-200 filter-chevron" id="mobile-attributes-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="filter-content space-y-3 hidden" id="mobile-attributes-content">
+                            <div class="max-h-64 overflow-y-auto space-y-3" id="mobile-attributes-list">
+                                {% for attribute in attributes %}
+                                    <div class="space-y-2">
+                                        <div class="text-xs font-medium text-[#505050]">{{ attribute.name }}{% if attribute.unit %} ({{ attribute.unit }}){% endif %}</div>
+                                        <div class="space-y-1">
+                                            {% for value in attribute.values %}
+                                                <label class="flex items-center text-sm">
+                                                    <input type="checkbox" name="attr_{{ attribute.id }}" value="{{ value }}" 
+                                                           {% if value in attribute.selected_values %}checked{% endif %}
+                                                           onchange="applyFilters()"
+                                                           class="rounded border-[#E1E4E8] text-[#0089D9] focus:ring-[#0089D9] mr-2">
+                                                    <span class="text-[#505050]">{{ value }}</span>
+                                                </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>

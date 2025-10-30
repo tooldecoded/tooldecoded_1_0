@@ -426,6 +426,20 @@ let isFilteringInProgress = false;
 let pendingFilterRun = false;
 let skipMobileSync = false;
 
+const filterGroupConfig = {
+    category: { selectors: ['category[]'] },
+    subcategory: { selectors: ['subcategory[]'] },
+    itemtype: { selectors: ['itemtype[]'] },
+    brand: { selectors: ['brand'] },
+    voltage: { selectors: ['voltage'] },
+    platform: { selectors: ['platform'] },
+    status: { selectors: ['status'] },
+    product_line: { selectors: ['product_line'] },
+    motor_type: { selectors: ['motor_type'] },
+    features: { selectors: ['features'] },
+    attributes: { selectors: ['attr_'], isPrefix: true }
+};
+
 // Centralized filter state object
 const filterState = {
     filters: {},
@@ -784,7 +798,10 @@ function updateActiveFilters() {
         container.innerHTML = '';
         
         if (filters.length === 0) {
-            container.innerHTML = '<p class="text-sm text-gray-500 italic">No filters applied</p>';
+            const placeholder = document.createElement('div');
+            placeholder.className = 'inline-flex items-center px-2 py-1 text-xs text-gray-500 italic';
+            placeholder.textContent = 'No filters applied';
+            container.appendChild(placeholder);
             return;
         }
         
@@ -847,6 +864,14 @@ function updateFilterCounts() {
                 countElement.textContent = `${count}/${totalText}`;
             }
         }
+
+        const allButtons = [
+            ...document.querySelectorAll(`[data-filter-clear="${elementId}"]`),
+            ...document.querySelectorAll(`[data-filter-clear="mobile-${elementId}"]`)
+        ];
+        allButtons.forEach(button => {
+            button.classList.toggle('hidden', count === 0);
+        });
     });
 
     const attributeKeys = Array.from(new Set(Array.from(formData.keys()).filter(key => key.startsWith('attr_'))));
@@ -859,6 +884,10 @@ function updateFilterCounts() {
             attributesCountElement.textContent = `${selectedAttributes.length}/${totalText}`;
         }
     }
+
+    document.querySelectorAll('[data-filter-clear="attributes"], [data-filter-clear="mobile-attributes"]').forEach(button => {
+        button.classList.toggle('hidden', selectedAttributes.length === 0);
+    });
 }
 
 function getActiveFilters() {
@@ -1043,6 +1072,43 @@ function removeFilter(type, value) {
     }
     
     // Apply filters using the centralized function
+    applyFilters();
+}
+
+function clearFilterGroup(groupKey) {
+    const config = filterGroupConfig[groupKey];
+    if (!config) return;
+
+    const forms = [document.getElementById('filter-form'), document.getElementById('mobile-filter-form')];
+
+    const clearInForm = (targetForm) => {
+        if (!targetForm) return;
+        config.selectors.forEach(selectorName => {
+            if (config.isPrefix) {
+                const inputs = targetForm.querySelectorAll(`input[name^="${selectorName}"]`);
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+            } else {
+                const inputs = targetForm.querySelectorAll(`input[name="${selectorName}"]`);
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox' || input.type === 'radio') {
+                        input.checked = false;
+                    } else {
+                        input.value = '';
+                    }
+                });
+            }
+        });
+    };
+
+    forms.forEach(clearInForm);
+
+    skipMobileSync = true;
     applyFilters();
 }
 

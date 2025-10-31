@@ -186,263 +186,307 @@
                         </div>
                     </div>
                 </div>
-                {% if prices_complete and total_component_value %}
-                <div class="mt-4">
-                    <div class="bg-white rounded-2xl shadow-sm border p-4 sticky top-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-xs font-semibold text-[#505050] tracking-wide">TOTAL COMPONENT VALUE</div>
-                            </div>
-                            <div class="text-2xl font-bold text-[#313131]">{{ total_component_value|usd }}</div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Components Table Section - max-w-7xl for consistency -->
+    <!-- Components & Pricing -->
     {% if product.productcomponents_set.all %}
-    <div class="max-w-7xl mx-auto px-2 pb-6">
-        <div class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
-            <!-- Components Table - full width -->
-            <div>
-                <button type="button" class="w-full flex items-center justify-between text-left" onclick="toggleComponentsSection()" 
-                        aria-expanded="true" aria-controls="components-content" aria-labelledby="components-header"
-                        onkeydown="handleComponentsKeydown(event)" tabindex="0">
-                    <h2 id="components-header" class="text-xl font-bold text-[#313131]">COMPONENTS</h2>
-                    <svg class="w-5 h-5 transform transition-transform" id="components-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                </button>
-                <div id="components-content" class="mt-4 space-y-6">
-                    <!-- Sort Controls -->
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Tools & Components</h3>
-                        <div class="flex items-center space-x-2">
-                            <label for="componentSortSelect" class="text-sm font-medium text-[#505050]">Sort by:</label>
-                            <select id="componentSortSelect" name="sort" class="custom-select" onchange="handleComponentSortChange(this)">
-                                <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
-                                <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
-                                <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model#</option>
-                                <option value="ext_value" {% if current_filters.sort == 'ext_value' %}selected{% endif %}>Ext. Value</option>
-                            </select>
-                            <button type="button" id="componentSortDirectionToggle" class="p-1 text-[#505050] hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    {% if current_filters.sort_direction == 'desc' %}
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    {% else %}
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+    <div class="max-w-7xl mx-auto px-2 pb-6 space-y-6">
+        <section id="component-value-summary" class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-[#313131]">Component Value Summary</h2>
+                    <p class="text-sm text-[#505050]">
+                        {{ component_count }} components • {{ total_component_quantity }} total pieces{% if component_group_count > 1 %} • {{ component_group_count }} groups{% endif %}
+                    </p>
+                </div>
+                <div class="flex flex-col gap-2 items-start md:items-end">
+                    {% if show_total_component_value %}
+                    <div class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Total Component Value</div>
+                    <div class="text-3xl font-bold text-[#0089D9]">{{ total_component_value|usd }}</div>
+                    {% elif has_component_prices %}
+                    <div class="text-sm text-[#505050] text-left md:text-right max-w-xs">Partial pricing shown below. Components without pricing are displayed as &mdash;.</div>
+                    {% else %}
+                    <div class="text-sm text-[#505050] text-left md:text-right max-w-xs">Standalone component pricing is not yet available for this product.</div>
+                    {% endif %}
+                    <a href="#component-breakdown" class="inline-flex items-center gap-2 rounded-full border border-[#0089D9] px-4 py-2 text-sm font-semibold text-[#0089D9] hover:bg-[#E6F6FF] transition-colors">
+                        View detailed breakdown
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            {% if component_group_links %}
+            <div class="flex flex-wrap gap-2">
+                {% for group in component_group_links %}
+                <a href="#{{ group.anchor }}" class="inline-flex items-center gap-2 rounded-full bg-[#F5F6F8] px-3 py-1 text-xs font-semibold text-[#505050] hover:bg-[#E1E4E8] transition-colors">
+                    {{ group.name }}
+                    <span class="text-[#8A8A8A]">({{ group.component_count }})</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if has_component_prices %}
+            <div class="overflow-hidden rounded-2xl border border-[#E1E4E8]">
+                <div class="overflow-x-auto">
+                    {% if component_summary_rows %}
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#F5F6F8] text-xs font-semibold uppercase tracking-wide text-[#505050]">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 text-left w-16">Qty</th>
+                                <th scope="col" class="px-3 py-2 text-left">Component</th>
+                                <th scope="col" class="px-3 py-2 text-left">Unit Price</th>
+                                <th scope="col" class="px-3 py-2 text-left">Ext. Value</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
+                            {% for row in component_summary_rows %}
+                            <tr>
+                                <td class="px-3 py-2 font-semibold">{{ row.quantity }}</td>
+                                <td class="px-3 py-2">
+                                    <a href="{% url 'component_detail' row.component_id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ row.name }}</a>
+                                    <div class="text-xs text-[#505050]">
+                                        {% if row.brand %}{{ row.brand }}{% endif %}
+                                        {% if row.sku %}{% if row.brand %} • {% endif %}Model# {{ row.sku }}{% endif %}
+                                    </div>
+                                    {% if row.group_anchor %}
+                                    <a href="#{{ row.group_anchor }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#0089D9] hover:text-[#006FB3]">
+                                        Jump to details
+                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </a>
                                     {% endif %}
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    {% for group_name, group_data in component_groups.items %}
-                        {% if group_data.components %}
-                            <div>
-                                {% if component_groups|length > 1 %}
-                                    <h3 class="text-lg font-semibold text-gray-800 mb-3">
-                                        {{ group_name }}
-                                    </h3>
-                                {% endif %}
-                                
-                                <div class="overflow-x-auto">
-                                    <table class="w-full border-collapse border border-[#E1E4E8] text-sm">
-                                        <thead>
-                                            <tr class="bg-[#F5F6F8]">
-                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs w-10">
-                                                    <button onclick="sortComponents('quantity')" class="flex items-center space-x-1 hover:text-[#0089D9]">
-                                                        <span>Qty</span>
-                                                        {% if current_filters.sort == 'quantity' %}
-                                                            {% if current_filters.sort_direction == 'desc' %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                </svg>
-                                                            {% else %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                </svg>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </button>
-                                                </th>
-                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
-                                                    <button onclick="sortComponents('name')" class="flex items-center space-x-1 hover:text-[#0089D9]">
-                                                        <span>Name</span>
-                                                        {% if current_filters.sort == 'name' %}
-                                                            {% if current_filters.sort_direction == 'desc' %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                </svg>
-                                                            {% else %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                </svg>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </button>
-                                                </th>
-                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
-                                                    <button onclick="sortComponents('sku')" class="flex items-center space-x-1 hover:text-[#0089D9]">
-                                                        <span>Model#</span>
-                                                        {% if current_filters.sort == 'sku' %}
-                                                            {% if current_filters.sort_direction == 'desc' %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                </svg>
-                                                            {% else %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                </svg>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </button>
-                                                </th>
-                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
-                                                    <button onclick="sortComponents('ext_value')" class="flex items-center space-x-1 hover:text-[#0089D9]">
-                                                        <span>Ext. Value</span>
-                                                        {% if current_filters.sort == 'ext_value' %}
-                                                            {% if current_filters.sort_direction == 'desc' %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                                                </svg>
-                                                            {% else %}
-                                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                                                </svg>
-                                                            {% endif %}
-                                                        {% endif %}
-                                                    </button>
-                                                </th>
-                                                <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">Price</th>
-                                                {% for column in group_data.columns %}
-                                                    <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">
-                                                        {{ column.name }}{% if column.unit %} ({{ column.unit }}){% endif %}
-                                                    </th>
-                                                {% endfor %}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for pc in group_data.components %}
-                                            <tr>
-                                                <td class="border border-[#E1E4E8] px-2 py-1 text-md w-10">{{ pc.quantity }}</td>
-                                                <td class="border border-[#E1E4E8] px-2 py-1 text-md">
-                                                    <div class="flex items-center gap-2">
-                                                        {% if pc.component.image %}
-                                                            <a href="{% url 'component_detail' pc.component.id %}">
-                                                                <img src="{{ pc.component.image }}" alt="{{ pc.component.name }}" class="w-8 h-8 object-contain bg-white">
-                                                            </a>
-                                                        {% elif component_products|lookup:pc.component.id %}
-                                                            <a href="{% url 'component_detail' pc.component.id %}">
-                                                                <img src="{{ component_products|lookup:pc.component.id }}" alt="{{ pc.component.name }}" class="w-8 h-8 object-contain bg-white">
-                                                            </a>
-                                                        {% endif %}
-                                                        <a href="{% url 'component_detail' pc.component.id %}" class="text-[#0089D9] hover:text-[#006FB3] font-medium">
-                                                            {{ pc.component.name }}
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ pc.component.sku|default:"" }}</td>
-                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
-                                                    {% with price_info=component_prices|lookup:pc.component.id %}
-                                                        {% if price_info and price_info.ext_value %}
-                                                            {{ price_info.ext_value|usd }}
-                                                        {% else %}
-                                                            &mdash;
-                                                        {% endif %}
-                                                    {% endwith %}
-                                                </td>
-                                                <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
-                                                    {% with price_info=component_prices|lookup:pc.component.id %}
-                                                        {% if price_info and price_info.price %}
-                                                            {{ price_info.price|usd }}
-                                                        {% else %}
-                                                            &mdash;
-                                                        {% endif %}
-                                                    {% endwith %}
-                                                </td>
-                                                {% for column in group_data.columns %}
-                                                    <td class="border border-[#E1E4E8] px-2 py-1 text-xs">
-                                                        {% for attr in pc.component.componentattributes_set.all %}
-                                                            {% if attr.attribute.id == column.id %}
-                                                                {{ attr.value|default:"" }}
-                                                            {% endif %}
-                                                        {% endfor %}
-                                                    </td>
-                                                {% endfor %}
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                    {% if prices_complete and total_component_value %}
-                    <div class="mt-4">
-                        <div class="w-full flex items-center justify-between bg-[#F5F6F8] border border-[#E1E4E8] rounded-lg px-4 py-3">
-                            <span class="text-sm font-semibold text-[#505050]">Total Component Value</span>
-                            <span class="text-lg font-bold text-[#313131]">{{ total_component_value|usd }}</span>
-                        </div>
-                    </div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if row.has_price %}
+                                        {{ row.unit_price|usd }}
+                                    {% else %}
+                                        &mdash;
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if row.has_ext_value %}
+                                        {{ row.ext_value|usd }}
+                                    {% else %}
+                                        &mdash;
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="px-4 py-6 text-sm text-[#505050]">No components found for this product.</div>
                     {% endif %}
                 </div>
             </div>
-            
-            <!-- Product Description and Accessories - side by side -->
-            <div class="grid grid-cols-2 gap-6">
-                <!-- Product Description - 1/2 width -->
-                {% if product.description %}
-                <div class="col-span-1">
-                    <h3 class="text-lg font-semibold text-[#313131] mb-3">PRODUCT DESCRIPTION</h3>
-                    <div class="text-sm text-[#505050] leading-relaxed">
-                        {{ product.description }}
+            {% else %}
+            <div class="rounded-xl border border-dashed border-[#E1E4E8] bg-[#F8F9FB] px-4 py-6 text-sm text-[#505050]">
+                Standalone component pricing is not yet available for this product. Explore the detailed specs below.
+            </div>
+            {% endif %}
+
+            {% if has_component_prices and not prices_complete %}
+            <div class="flex items-start gap-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+                <svg class="mt-1 h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 5a7 7 0 100 14 7 7 0 000-14z"></path>
+                </svg>
+                <div>
+                    <p class="font-semibold">Component pricing in progress</p>
+                    <p class="text-xs md:text-sm">Some components do not yet have standalone pricing, so totals include only priced items.</p>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+
+        <section id="component-breakdown" class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-[#313131]">Detailed Component Breakdown</h2>
+                    <p class="text-sm text-[#505050]">
+                        {{ component_count }} components • {{ total_component_quantity }} total pieces{% if component_group_count > 1 %} across {{ component_group_count }} groups{% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label for="componentSortSelect" class="text-sm font-medium text-[#505050]">Sort by:</label>
+                    <select id="componentSortSelect" name="sort" class="custom-select" onchange="handleComponentSortChange(this)">
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
+                        <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
+                        <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model#</option>
+                        <option value="ext_value" {% if current_filters.sort == 'ext_value' %}selected{% endif %}>Ext. Value</option>
+                    </select>
+                    <button type="button" id="componentSortDirectionToggle" class="p-1 text-[#505050] hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            {% if current_filters.sort_direction == 'desc' %}
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            {% else %}
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                            {% endif %}
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            {% for group_name, group_data in component_groups.items %}
+                {% if group_data.components %}
+                <section id="{{ group_data.anchor }}" class="space-y-4">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="space-y-1">
+                            {% if component_group_count > 1 %}
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-lg font-semibold text-[#313131]">{{ group_name }}</h3>
+                                <span class="inline-flex items-center rounded-full bg-[#F5F6F8] px-3 py-1 text-xs font-semibold text-[#505050]">{{ group_data.component_count }} components</span>
+                            </div>
+                            {% else %}
+                            <h3 class="text-lg font-semibold text-[#313131]">Included Components</h3>
+                            {% endif %}
+                            <p class="text-xs text-[#505050]">{{ group_data.total_quantity }} total pieces</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            {% if group_data.prices_complete and group_data.has_price_data %}
+                            <span class="inline-flex items-center rounded-full border border-[#E1E4E8] bg-[#F5F6F8] px-3 py-1 text-sm font-semibold text-[#313131]">
+                                Group value: {{ group_data.total_value|usd }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        {% for pc in group_data.components %}
+                        {% with price_info=component_prices|lookup:pc.component.id %}
+                        <article class="rounded-2xl border border-[#E1E4E8] bg-white p-4 shadow-sm transition-colors hover:border-[#0089D9]">
+                            <div class="flex items-start justify-between gap-4">
+                                <span class="inline-flex items-center rounded-full bg-[#EDF8FF] px-3 py-1 text-xs font-semibold text-[#0089D9]">Qty {{ pc.quantity }}</span>
+                                <div class="text-right">
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-[#505050]">Unit Price</div>
+                                    {% if price_info and price_info.has_price %}
+                                        <div class="text-sm font-semibold text-[#313131]">{{ price_info.price|usd }}</div>
+                                    {% else %}
+                                        <div class="text-sm font-semibold text-[#B0B0B0]">&mdash;</div>
+                                    {% endif %}
+                                    <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#505050]">Ext. Value</div>
+                                    {% if price_info and price_info.has_ext_value %}
+                                        <div class="text-sm font-bold text-[#0089D9]">{{ price_info.ext_value|usd }}</div>
+                                    {% else %}
+                                        <div class="text-sm font-semibold text-[#B0B0B0]">&mdash;</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex items-start gap-4">
+                                <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-[#E1E4E8] bg-white">
+                                    {% if pc.component.image %}
+                                        <img src="{{ pc.component.image }}" alt="{{ pc.component.name }}" class="h-full w-full object-contain">
+                                    {% elif component_products|lookup:pc.component.id %}
+                                        <img src="{{ component_products|lookup:pc.component.id }}" alt="{{ pc.component.name }}" class="h-full w-full object-contain">
+                                    {% else %}
+                                        <svg class="h-10 w-10 text-[#C5C7CE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l9-4 9 4-9 4-9-4zm0 6l9 4 9-4"></path>
+                                        </svg>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <a href="{% url 'component_detail' pc.component.id %}" class="text-base font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ pc.component.name }}</a>
+                                    {% if pc.component.brand %}
+                                    <div class="mt-1 text-xs text-[#505050]">{{ pc.component.brand.name }}</div>
+                                    {% endif %}
+                                    {% if pc.component.sku %}
+                                    <div class="mt-1 text-xs uppercase tracking-wide text-[#8A8A8A]">Model# {{ pc.component.sku }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {% if group_data.columns %}
+                            <dl class="mt-4 grid grid-cols-1 gap-y-2 text-xs text-[#505050] sm:grid-cols-2">
+                                {% for column in group_data.columns %}
+                                <div>
+                                    <dt class="font-semibold text-[#313131]">{{ column.name }}{% if column.unit %}<span class="ml-1 text-[10px] uppercase text-[#8A8A8A]">({{ column.unit }})</span>{% endif %}</dt>
+                                    <dd class="mt-0.5 text-[#505050]">
+                                        {% with value=pc.attribute_map|lookup:column.id %}
+                                            {% if value %}
+                                                {{ value }}
+                                            {% else %}
+                                                &mdash;
+                                            {% endif %}
+                                        {% endwith %}
+                                    </dd>
+                                </div>
+                                {% endfor %}
+                            </dl>
+                            {% endif %}
+
+                            <div class="mt-4 flex items-center justify-between border-t border-dashed border-[#E1E4E8] pt-4 text-xs text-[#505050]">
+                                <span>Component data via ToolDecoded</span>
+                                <a href="{% url 'component_detail' pc.component.id %}" class="inline-flex items-center font-semibold text-[#0089D9] hover:text-[#006FB3]">
+                                    View component
+                                    <svg class="ml-1 h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </a>
+                            </div>
+                        </article>
+                        {% endwith %}
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+            {% endfor %}
+        </section>
+
+        <div class="grid grid-cols-2 gap-6">
+            <!-- Product Description - 1/2 width -->
+            {% if product.description %}
+            <div class="col-span-1">
+                <h3 class="text-lg font-semibold text-[#313131] mb-3">PRODUCT DESCRIPTION</h3>
+                <div class="text-sm text-[#505050] leading-relaxed">
+                    {{ product.description }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Accessories and Key Features - 1/2 width, stacked vertically -->
+            <div class="col-span-1 space-y-6">
+                <!-- Accessories Table -->
+                {% if product.productaccessories_set.all %}
+                <div>
+                    <h2 class="text-xl font-bold text-[#313131] mb-4">ACCESSORIES</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-[#E1E4E8] text-sm">
+                            <thead>
+                                <tr class="bg-[#F5F6F8]">
+                                    <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
+                                    <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">Name</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for accessory in product.productaccessories_set.all %}
+                                <tr>
+                                    <td class="border border-[#E1E4E8] px-2 py-1 text-xs w-10">{{ accessory.quantity }}</td>
+                                    <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ accessory.name }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endif %}
-                
-                <!-- Accessories and Key Features - 1/2 width, stacked vertically -->
-                <div class="col-span-1 space-y-6">
-                    <!-- Accessories Table -->
-                    {% if product.productaccessories_set.all %}
-                    <div>
-                        <h2 class="text-xl font-bold text-[#313131] mb-4">ACCESSORIES</h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full border-collapse border border-[#E1E4E8] text-sm">
-                                <thead>
-                                    <tr class="bg-[#F5F6F8]">
-                                        <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs w-10">Qty</th>
-                                        <th class="border border-[#E1E4E8] px-2 py-1 text-left font-semibold text-xs">Name</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for accessory in product.productaccessories_set.all %}
-                                    <tr>
-                                        <td class="border border-[#E1E4E8] px-2 py-1 text-xs w-10">{{ accessory.quantity }}</td>
-                                        <td class="border border-[#E1E4E8] px-2 py-1 text-xs">{{ accessory.name }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+
+                <!-- Key Features -->
+                {% if product.bullets %}
+                <div>
+                    <h3 class="text-base font-bold text-[#313131] mb-3">Key Features</h3>
+                    <div class="text-sm text-[#505050]">
+                        <div class="space-y-2 [&>p]:flex [&>p]:items-start [&>p]:before:content-['•'] [&>p]:before:text-[#505050] [&>p]:before:mr-2 [&>p]:before:mt-1">
+                            {{ product.bullets|linebreaks }}
                         </div>
                     </div>
-                    {% endif %}
-                    
-                    <!-- Key Features -->
-                    {% if product.bullets %}
-                    <div>
-                        <h3 class="text-base font-bold text-[#313131] mb-3">Key Features</h3>
-                        <div class="text-sm text-[#505050]">
-                            <div class="space-y-2 [&>p]:flex [&>p]:items-start [&>p]:before:content-['•'] [&>p]:before:text-[#505050] [&>p]:before:mr-2 [&>p]:before:mt-1">
-                                {{ product.bullets|linebreaks }}
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -534,22 +578,23 @@
     }
     </script>
     
+    {{ product_image_urls|json_script:"product-image-data" }}
     <script>
     let currentImageIndex = 0;
     let allImages = [];
+    const productImageDataElement = document.getElementById('product-image-data');
+    if (productImageDataElement) {
+        try {
+            allImages = JSON.parse(productImageDataElement.textContent) || [];
+        } catch (error) {
+            allImages = [];
+        }
+    }
     
     // Initialize image array
     document.addEventListener('DOMContentLoaded', function() {
-        {% if product.image %}
-            allImages.push('{{ product.image }}');
-        {% endif %}
-        {% for image in product.productimages_set.all %}
-            allImages.push('{{ image.image }}');
-        {% endfor %}
-        
         // Initialize thumbnail highlighting and navigation button visibility
         updateActiveThumbnail(false);
-        
     });
     
     function changeMainImageByIndex(index) {

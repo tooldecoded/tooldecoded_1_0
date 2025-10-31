@@ -130,11 +130,12 @@ class Products(models.Model):
     image = models.TextField(blank=True, null=True)
     bullets = models.TextField(blank=True, null=True)
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
-    status = models.ForeignKey('Statuses', on_delete=models.CASCADE, blank=True, null=True)
+    status = models.ForeignKey('Statuses', default='Active', on_delete=models.CASCADE, blank=True, null=True)
     releasedate = models.DateField(blank=True, null=True)
     discontinueddate = models.DateField(blank=True, null=True)
     motortype = models.ForeignKey('MotorTypes', on_delete=models.SET_NULL, blank=True, null=True)
     features = models.ManyToManyField('Features')
+    isaccessory = models.BooleanField(default=False)
     class Meta:
         db_table = 'Products'
         ordering = ['name']
@@ -160,7 +161,7 @@ class Components(models.Model):
     standalone_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
     fair_price_narrative = models.JSONField(blank=True, null=True)
-    
+    isaccessory = models.BooleanField(default=False)
     class Meta:
         db_table = 'Components'
         ordering = ['name']

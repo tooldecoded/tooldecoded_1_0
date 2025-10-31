@@ -3,6 +3,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count, Case, When, Value, F, FloatField, Prefetch
 from django.db.models.functions import Cast
 from django.http import JsonResponse
+from django.utils.text import slugify
+from decimal import Decimal
 import uuid
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
@@ -180,28 +182,48 @@ def product_detail(request, product_id):
     product = get_object_or_404(Products, id=product_id)
     
     # Get product components with proper prefetching
-    product_components = ProductComponents.objects.filter(
+    product_components = list(ProductComponents.objects.filter(
         product=product
     ).select_related('component__brand').prefetch_related(
         'component__componentattributes_set__attribute',
         'component__itemtypes'
-    ).all()
+    ).all())
     
     # Pricing computation (standalone_price only) and extended values
     component_prices = {}
     prices_complete = True
+    any_price_available = False
     total_component_value = None
+    total_component_quantity = 0
+    decimal_zero = Decimal('0')
+    
     for pc in product_components:
+        total_component_quantity += pc.quantity
         unit_price = pc.component.standalone_price
-        ext_value = unit_price * pc.quantity if unit_price is not None else None
+        ext_value = None
+        pc.attribute_map = {
+            attr.attribute_id: attr.value
+            for attr in pc.component.componentattributes_set.all()
+        }
+        if unit_price is not None:
+            ext_value = unit_price * pc.quantity
+            any_price_available = True
+        else:
+            prices_complete = False
         component_prices[pc.component.id] = {
             'price': unit_price,
             'ext_value': ext_value,
+            'has_price': unit_price is not None,
+            'has_ext_value': ext_value is not None,
         }
         if ext_value is None:
             prices_complete = False
-    if prices_complete:
-        total_component_value = sum((component_prices[pc.component.id]['ext_value'] for pc in product_components), 0)
+    
+    if prices_complete and any_price_available:
+        total_component_value = sum(
+            (component_prices[pc.component.id]['ext_value'] for pc in product_components),
+            decimal_zero
+        )
     
     # Sorting controls
     sort = request.GET.get('sort', 'name')
@@ -210,50 +232,118 @@ def product_detail(request, product_id):
     
     def sort_key(pc):
         if sort == 'quantity':
-            return pc.quantity
+            return (pc.quantity, (pc.component.name or '').lower())
         if sort == 'sku':
-            return (pc.component.sku or '').lower()
+            return ((pc.component.sku or '').lower(), (pc.component.name or '').lower())
         if sort == 'ext_value':
-            val = component_prices.get(pc.component.id, {}).get('ext_value')
-            # Place None last regardless of direction
-            return (val is None, val or 0)
+            price_info = component_prices.get(pc.component.id, {})
+            value = price_info.get('ext_value') if price_info else None
+            if value is None:
+                return Decimal('-Infinity') if reverse_sort else Decimal('Infinity')
+            return value
         # default name
-        return pc.component.name.lower()
+        return (pc.component.name or '').lower()
     
-    # Group components by their item types for the comparison table
+    # Group components by their item types for the comparison view
     component_groups = {}
+    existing_group_anchors = set()
     for pc in product_components:
         component = pc.component
-        # Get the primary item type for grouping
         primary_itemtype = component.itemtypes.first()
         if primary_itemtype:
             itemtype_name = primary_itemtype.name
             if itemtype_name not in component_groups:
-                # Get all attributes for this item type to create columns
                 itemtype_attributes = Attributes.objects.filter(
                     itemtypes=primary_itemtype
                 ).order_by('name')
-                
+                anchor_slug = slugify(itemtype_name or 'group') or 'group'
+                anchor = f"component-group-{anchor_slug}"
+                if anchor in existing_group_anchors:
+                    index = 2
+                    unique_anchor = f"{anchor}-{index}"
+                    while unique_anchor in existing_group_anchors:
+                        index += 1
+                        unique_anchor = f"{anchor}-{index}"
+                    anchor = unique_anchor
+                existing_group_anchors.add(anchor)
                 component_groups[itemtype_name] = {
                     'itemtype': primary_itemtype,
                     'components': [],
-                    'columns': list(itemtype_attributes)
+                    'columns': list(itemtype_attributes),
+                    'component_count': 0,
+                    'total_quantity': 0,
+                    'total_value': Decimal('0'),
+                    'prices_complete': True,
+                    'has_price_data': False,
+                    'anchor': anchor,
                 }
-            
-            component_groups[itemtype_name]['components'].append(pc)
+            group_entry = component_groups[itemtype_name]
+            group_entry['components'].append(pc)
+            group_entry['component_count'] += 1
+            group_entry['total_quantity'] += pc.quantity
+            price_info = component_prices.get(component.id)
+            if price_info and price_info['price'] is not None:
+                group_entry['has_price_data'] = True
+            if price_info and price_info['ext_value'] is not None:
+                group_entry['total_value'] += price_info['ext_value']
+            else:
+                group_entry['prices_complete'] = False
     
     # Apply sorting within each group
-    for group_name, group_data in component_groups.items():
+    for group_data in component_groups.values():
         group_data['components'].sort(key=sort_key, reverse=reverse_sort)
+        if not group_data['prices_complete']:
+            group_data['total_value'] = None
     
     # Get component product images (if any) - placeholder for now
     component_products = {}
+    product_image_urls = []
+    if product.image:
+        product_image_urls.append(product.image)
+    product_image_urls.extend(list(product.productimages_set.values_list('image', flat=True)))
+
+    # Build component summary rows for hero pricing table
+    component_summary_rows = []
+    for group_name, group_data in component_groups.items():
+        for pc in group_data['components']:
+            price_info = component_prices.get(pc.component.id, {})
+            component_summary_rows.append({
+                'component_id': pc.component.id,
+                'name': pc.component.name,
+                'brand': pc.component.brand.name if pc.component.brand else '',
+                'sku': pc.component.sku or '',
+                'quantity': pc.quantity,
+                'unit_price': price_info.get('price'),
+                'ext_value': price_info.get('ext_value'),
+                'has_price': price_info.get('has_price'),
+                'has_ext_value': price_info.get('has_ext_value'),
+                'group_anchor': group_data['anchor'],
+                'group_name': group_name,
+            })
+
+    def summary_sort_key(row):
+        if row['ext_value'] is None:
+            return (0, decimal_zero, row['name'].lower())
+        return (1, row['ext_value'], row['name'].lower())
+
+    component_summary_rows.sort(key=summary_sort_key, reverse=True)
+
+    component_group_links = [
+        {
+            'name': group_name,
+            'anchor': group_data['anchor'],
+            'component_count': group_data['component_count'],
+        }
+        for group_name, group_data in component_groups.items()
+    ]
     
     current_filters = {
         'sort': sort,
         'sort_direction': sort_direction
     }
     
+    show_total_component_value = prices_complete and total_component_value is not None
+
     context = {
         'product': product,
         'component_groups': component_groups,
@@ -262,6 +352,14 @@ def product_detail(request, product_id):
         'component_prices': component_prices,
         'prices_complete': prices_complete,
         'total_component_value': total_component_value,
+        'total_component_quantity': total_component_quantity,
+        'component_count': len(product_components),
+        'component_group_count': len(component_groups),
+        'has_component_prices': any_price_available,
+        'show_total_component_value': show_total_component_value,
+        'product_image_urls': product_image_urls,
+        'component_summary_rows': component_summary_rows,
+        'component_group_links': component_group_links,
     }
 
     # Build breadcrumb parts from first item type's fullname (Category/Subcategory/ItemType)

@@ -1038,12 +1038,15 @@ def handle_product(row, i, action, df, sheet_name=""):
                         print(f"Row {i+1}: ListingType '{listingtype}' not found, skipping")
                 if status:
                     try:
+                        status_obj = Statuses.objects.get(name=str(status).strip())
                         old_status = product.status.name if product.status else None
-                        product.status = Statuses.objects.get(name=status)
-                        if old_status != status:
-                            updated_fields.append(f"status='{status}'")
+                        product.status = status_obj
+                        if old_status != status_obj.name:
+                            updated_fields.append(f"status='{status_obj.name}'")
                     except Statuses.DoesNotExist:
                         print(f"Row {i+1}: Status '{status}' not found, skipping")
+                    except Exception as e:
+                        print(f"Row {i+1}: Error setting status '{status}': {type(e).__name__}: {str(e)}, skipping")
                 if motortype:
                     try:
                         old_mt = product.motortype.name if product.motortype else None
@@ -1222,9 +1225,12 @@ def handle_product(row, i, action, df, sheet_name=""):
                             print(f"Row {i+1}: ListingType '{listingtype}' not found, skipping")
                     if status:
                         try:
-                            create_data['status'] = Statuses.objects.get(name=status)
+                            status_obj = Statuses.objects.get(name=str(status).strip())
+                            create_data['status'] = status_obj
                         except Statuses.DoesNotExist:
                             print(f"Row {i+1}: Status '{status}' not found, skipping")
+                        except Exception as e:
+                            print(f"Row {i+1}: Error setting status '{status}': {type(e).__name__}: {str(e)}, skipping")
                     if motortype:
                         try:
                             create_data['motortype'] = MotorTypes.objects.get(name=motortype)

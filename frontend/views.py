@@ -15,6 +15,7 @@ from .models import LearningArticle, Tag, SiteSettings
 from .utils import get_category_hierarchy_filters
 from . import catalog_utils
 from .templatetags.product_filters import format_attribute_value_helper
+from . import pricing_utils
 
 # ============================================================================
 # CATALOG VIEWS - UNIFIED IMPLEMENTATION
@@ -314,6 +315,7 @@ def product_detail(request, product_id):
                 'brand': pc.component.brand.name if pc.component.brand else '',
                 'sku': pc.component.sku or '',
                 'quantity': pc.quantity,
+                'image': pc.component.image,
                 'unit_price': price_info.get('price'),
                 'ext_value': price_info.get('ext_value'),
                 'has_price': price_info.get('has_price'),
@@ -323,9 +325,9 @@ def product_detail(request, product_id):
             })
 
     def summary_sort_key(row):
-        if row['ext_value'] is None:
+        if row['unit_price'] is None:
             return (0, decimal_zero, row['name'].lower())
-        return (1, row['ext_value'], row['name'].lower())
+        return (1, row['unit_price'], row['name'].lower())
 
     component_summary_rows.sort(key=summary_sort_key, reverse=True)
 
@@ -345,6 +347,58 @@ def product_detail(request, product_id):
     
     show_total_component_value = prices_complete and total_component_value is not None
 
+    # Get pricing listings and prorated component prices
+    latest_pricelistings = pricing_utils.get_latest_product_pricelistings(product, days=60)
+    
+    # Build consolidated pricing data structure for single table
+    # Add retailer pricing columns to component summary rows
+    retailers_data = []
+    
+    for retailer_id, pricelisting in latest_pricelistings.items():
+        retailer = pricelisting.retailer
+        retailer_key = str(retailer.id) if retailer else 'none'
+        
+        # Calculate prorated component prices for this listing
+        prorated_prices = pricing_utils.prorate_product_price_to_components(
+            product,
+            pricelisting.price
+        )
+        
+        # Calculate discount info for totals (compare kit price vs total component value)
+        discount_info = {}
+        if total_component_value and total_component_value > Decimal('0') and pricelisting.price:
+            total_savings = total_component_value - pricelisting.price
+            if total_savings > Decimal('0'):
+                discount_percentage = (total_savings / total_component_value) * Decimal('100')
+                discount_info = {
+                    'has_discount': True,
+                    'percentage': discount_percentage,
+                    'savings': total_savings,
+                }
+        
+        retailers_data.append({
+            'id': retailer_key,
+            'retailer': retailer,
+            'pricelisting': pricelisting,
+            'price': pricelisting.price,
+            'url': pricelisting.url,
+            'datepulled': pricelisting.datepulled,
+            'discount_info': discount_info,
+        })
+        
+        # Add pricing data to component summary rows
+        for row in component_summary_rows:
+            component_id = row['component_id']
+            prorated_data = prorated_prices.get(component_id, {})
+            effective_price = prorated_data.get('effective_price')
+            
+            # Add retailer pricing to row
+            if 'retailer_pricing' not in row:
+                row['retailer_pricing'] = {}
+            row['retailer_pricing'][retailer_key] = {
+                'effective_price': effective_price,
+            }
+
     context = {
         'product': product,
         'component_groups': component_groups,
@@ -361,6 +415,7 @@ def product_detail(request, product_id):
         'product_image_urls': product_image_urls,
         'component_summary_rows': component_summary_rows,
         'component_group_links': component_group_links,
+        'retailers_data': retailers_data,
     }
 
     # Build breadcrumb parts from first item type's fullname (Category/Subcategory/ItemType)
@@ -403,6 +458,74 @@ def product_detail(request, product_id):
     return render(request, 'frontend/product_detail.html', context)
 
 
+def component_price_finder(request):
+    """Component price finder view - search for components and see best kit prices"""
+    # Get search parameters
+    search_query = request.GET.get('q', '').strip()
+    component_id = request.GET.get('component_id')
+    sort_by = request.GET.get('sort', 'best_price')  # best_price, retailer, product_name
+    retailer_filter = request.GET.get('retailer')
+    
+    results = []
+    component = None
+    
+    if component_id:
+        try:
+            component = Components.objects.get(id=component_id)
+        except Components.DoesNotExist:
+            component = None
+    
+    elif search_query:
+        # Search for components by name or SKU
+        components = Components.objects.filter(
+            Q(name__icontains=search_query) | Q(sku__icontains=search_query)
+        ).select_related('brand')[:10]
+        
+        # If exactly one result, use it
+        if components.count() == 1:
+            component = components.first()
+    
+    if component:
+        # Get kit pricing data
+        kit_pricing_data = pricing_utils.get_component_kit_pricing(component)
+        
+        # Filter by retailer if specified
+        if retailer_filter:
+            kit_pricing_data = [
+                item for item in kit_pricing_data
+                if item['pricelisting'].retailer and str(item['pricelisting'].retailer.id) == retailer_filter
+            ]
+        
+        # Sort results
+        if sort_by == 'best_price':
+            kit_pricing_data.sort(key=lambda x: x['component_pricing']['effective_price'] or Decimal('999999'))
+        elif sort_by == 'retailer':
+            kit_pricing_data.sort(key=lambda x: (
+                x['pricelisting'].retailer.name if x['pricelisting'].retailer else '',
+                x['component_pricing']['effective_price'] or Decimal('999999')
+            ))
+        elif sort_by == 'product_name':
+            kit_pricing_data.sort(key=lambda x: x['product'].name.lower())
+        
+        results = kit_pricing_data
+    
+    # Get all retailers for filter dropdown
+    from toolanalysis.models import Retailers
+    all_retailers = Retailers.objects.all().order_by('name')
+    
+    context = {
+        'component': component,
+        'results': results,
+        'search_query': search_query,
+        'component_id': component_id,
+        'sort_by': sort_by,
+        'retailer_filter': retailer_filter,
+        'all_retailers': all_retailers,
+    }
+    
+    return render(request, 'frontend/component_price_finder.html', context)
+
+
 def component_detail(request, component_id):
     """Component detail view"""
     component = get_object_or_404(Components, id=component_id)
@@ -427,6 +550,9 @@ def component_detail(request, component_id):
     # Get products that use this component
     product_components = ProductComponents.objects.filter(component=component).select_related('product').prefetch_related('product__productimages_set')
     
+    # Get kit pricing data for this component
+    kit_pricing_data = pricing_utils.get_component_kit_pricing(component)
+    
     # Get site settings for fair price feature
     site_settings = SiteSettings.get_settings()
     
@@ -436,6 +562,7 @@ def component_detail(request, component_id):
         'additional_attributes': additional_attributes,
         'component_features': component_features,
         'product_components': product_components,
+        'kit_pricing_data': kit_pricing_data,
         'show_fair_price': site_settings.show_fair_price_feature,
     }
 

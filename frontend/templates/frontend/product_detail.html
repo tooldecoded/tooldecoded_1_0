@@ -2,7 +2,7 @@
 {% load product_filters %}
 {% load content_filters %}
 
-{% block title %}{{ product.name }} - ToolDecoded{% endblock %}
+{% block title %}DECODED: {{ product.name }}{% endblock %}
 
 {% block content %}
 <div class="min-h-screen bg-white">
@@ -239,8 +239,39 @@
                             <tr>
                                 <th scope="col" class="px-3 py-2 text-left w-16">Qty</th>
                                 <th scope="col" class="px-3 py-2 text-left">Component</th>
-                                <th scope="col" class="px-3 py-2 text-left">Unit Price</th>
-                                <th scope="col" class="px-3 py-2 text-left">Ext. Value</th>
+                                <th scope="col" class="px-3 py-2 text-right w-[120px]">Unit Price</th>
+                                <th scope="col" class="px-3 py-2 text-right w-[120px]">Ext. Value</th>
+                                {% if retailers_data %}
+                                    {% for retailer_info in retailers_data %}
+                                    <th scope="col" class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] w-[120px]">
+                                        {% if retailer_info.url %}
+                                            {% if retailer_info.retailer and retailer_info.retailer.color %}
+                                            <a href="{{ retailer_info.url }}" target="_blank" rel="noopener noreferrer" 
+                                               class="inline-flex items-center px-2.5 py-1 rounded-lg font-semibold text-xs uppercase transition-all hover:opacity-90 active:opacity-75"
+                                               style="background-color: {{ retailer_info.retailer.color }}; color: {% if retailer_info.retailer.color|get_text_color_for_bg == 'white' %}white{% else %}black{% endif %};">
+                                                {% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}
+                                            </a>
+                                            {% else %}
+                                            <a href="{{ retailer_info.url }}" target="_blank" rel="noopener noreferrer" 
+                                               class="inline-flex items-center px-2.5 py-1 rounded-lg font-semibold text-xs uppercase bg-[#0089D9] text-white transition-all hover:bg-[#006FB3] active:opacity-75">
+                                                {% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}
+                                            </a>
+                                            {% endif %}
+                                        {% else %}
+                                            {% if retailer_info.retailer and retailer_info.retailer.color %}
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg font-semibold text-xs uppercase"
+                                                  style="background-color: {{ retailer_info.retailer.color }}; color: {% if retailer_info.retailer.color|get_text_color_for_bg == 'white' %}white{% else %}black{% endif %};">
+                                                {% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}
+                                            </span>
+                                            {% else %}
+                                            <span class="font-semibold text-xs text-[#313131] uppercase">
+                                                {% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}
+                                            </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </th>
+                                    {% endfor %}
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
@@ -248,36 +279,121 @@
                             <tr>
                                 <td class="px-3 py-2 font-semibold">{{ row.quantity }}</td>
                                 <td class="px-3 py-2">
-                                    <a href="{% url 'component_detail' row.component_id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ row.name }}</a>
-                                    <div class="text-xs text-[#505050]">
-                                        {% if row.brand %}{{ row.brand }}{% endif %}
-                                        {% if row.sku %}{% if row.brand %} • {% endif %}Model# {{ row.sku }}{% endif %}
+                                    <div class="grid grid-cols-[1fr_auto] items-start gap-1.5">
+                                        <div class="min-w-0">
+                                            <a href="{% url 'component_detail' row.component_id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ row.name }}</a>
+                                            <div class="text-xs text-[#505050]">
+                                                {% if row.brand %}{{ row.brand }}{% endif %}
+                                                {% if row.sku %}{% if row.brand %} • {% endif %}Model# {{ row.sku }}{% endif %}
+                                            </div>
+                                            {% if row.group_anchor %}
+                                            <a href="#{{ row.group_anchor }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#0089D9] hover:text-[#006FB3]">
+                                                Jump to details
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                                </svg>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                        {% if row.image %}
+                                        <div class="flex gap-1 flex-shrink-0">
+                                            {% for i in row.quantity|make_list %}
+                                            <img src="{{ row.image }}" alt="{{ row.name }}" class="h-12 w-12 object-contain border border-[#E1E4E8] bg-white cursor-pointer hover:border-[#0089D9] transition-colors" onclick="openQuickView('{{ row.component_id }}')">
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
                                     </div>
-                                    {% if row.group_anchor %}
-                                    <a href="#{{ row.group_anchor }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#0089D9] hover:text-[#006FB3]">
-                                        Jump to details
-                                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </a>
-                                    {% endif %}
                                 </td>
-                                <td class="px-3 py-2">
+                                <td class="px-3 py-2 text-right whitespace-nowrap">
                                     {% if row.has_price %}
                                         {{ row.unit_price|usd }}
                                     {% else %}
-                                        &mdash;
+                                        <span class="text-[#B0B0B0]">&mdash;</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-3 py-2">
+                                <td class="px-3 py-2 text-right whitespace-nowrap">
                                     {% if row.has_ext_value %}
                                         {{ row.ext_value|usd }}
                                     {% else %}
-                                        &mdash;
+                                        <span class="text-[#B0B0B0]">&mdash;</span>
                                     {% endif %}
                                 </td>
+                                {% if retailers_data %}
+                                    {% for retailer_info in retailers_data %}
+                                        {% if row.retailer_pricing %}
+                                            {% with pricing=row.retailer_pricing|lookup:retailer_info.id %}
+                                            <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
+                                                {% if pricing and pricing.effective_price %}
+                                                    <span class="font-semibold text-[#0089D9]">{{ pricing.effective_price|usd }}</span>
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">&mdash;</span>
+                                                {% endif %}
+                                            </td>
+                                            {% endwith %}
+                                        {% else %}
+                                            <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap"><span class="text-[#B0B0B0]">&mdash;</span></td>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
                             </tr>
                             {% endfor %}
+                            {% if retailers_data and show_total_component_value %}
+                            <tr class="bg-[#F5F6F8] font-bold border-t-2 border-[#E1E4E8]">
+                                <td class="px-3 py-2" colspan="2">
+                                    <span class="text-[#313131]">Total</span>
+                                </td>
+                                <td class="px-3 py-2 text-right whitespace-nowrap">
+                                    {% if total_component_value %}
+                                        <span class="text-[#313131]">{{ total_component_value|usd }}</span>
+                                    {% else %}
+                                        <span class="text-[#B0B0B0]">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right whitespace-nowrap">
+                                    {% if total_component_value %}
+                                        <span class="text-[#313131]">{{ total_component_value|usd }}</span>
+                                    {% else %}
+                                        <span class="text-[#B0B0B0]">&mdash;</span>
+                                    {% endif %}
+                                </td>
+                                {% for retailer_info in retailers_data %}
+                                    <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
+                                        <span class="text-[#0089D9]">{{ retailer_info.price|usd }}</span>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% if retailers_data|length > 0 %}
+                            <tr class="bg-[#F5F6F8] border-t border-[#E1E4E8]">
+                                <td class="px-3 py-2" colspan="4"></td>
+                                {% for retailer_info in retailers_data %}
+                                    <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8]">
+                                        <div class="flex flex-col items-end gap-1.5">
+                                            {% if retailer_info.discount_info.has_discount %}
+                                                <span class="text-xs text-green-600 font-semibold whitespace-nowrap">
+                                                    Save {{ retailer_info.discount_info.percentage|floatformat:1 }}% ({{ retailer_info.discount_info.savings|usd }})
+                                                </span>
+                                            {% endif %}
+                                            {% if retailer_info.url %}
+                                            <a href="{{ retailer_info.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                                                {% if retailer_info.retailer and retailer_info.retailer.logo %}
+                                                    <img src="{{ retailer_info.retailer.logo }}" alt="{% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}" class="h-6 w-auto object-contain max-w-[100px]">
+                                                    <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                    </svg>
+                                                {% else %}
+                                                    <span class="text-sm text-[#0089D9] font-semibold">{% if retailer_info.retailer %}{{ retailer_info.retailer.name }}{% else %}Retailer{% endif %}</span>
+                                                    <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                    </svg>
+                                                {% endif %}
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                            {% endif %}
+                            {% endif %}
                         </tbody>
                     </table>
                     {% else %}
@@ -302,6 +418,7 @@
                 </div>
             </div>
             {% endif %}
+            
         </section>
 
         <section id="component-breakdown" class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
@@ -379,7 +496,7 @@
                             </div>
 
                             <div class="mt-4 flex items-start gap-4">
-                                <div class="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border border-[#E1E4E8] bg-white">
+                                <div class="flex h-20 w-20 items-center justify-center overflow-hidden border border-[#E1E4E8] bg-white">
                                     {% if pc.component.image %}
                                         <img src="{{ pc.component.image }}" alt="{{ pc.component.name }}" class="h-full w-full object-contain">
                                     {% elif component_products|lookup:pc.component.id %}
@@ -669,6 +786,160 @@
             }
         }
     }
+
+    // Quick View Functions (for component thumbnails)
+    function openQuickView(itemId) {
+        const modal = document.getElementById('quickViewModal');
+        const content = document.getElementById('quickViewContent');
+        // Set type to component since we're viewing components from the product detail page
+        const itemType = 'component';
+        
+        modal.classList.remove('hidden');
+        content.innerHTML = `
+            <div class="flex items-center justify-center p-8">
+                <span class="text-gray-600">Loading...</span>
+            </div>
+        `;
+        
+        fetch(`/api/quick-info/${itemId}/?type=${itemType}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    content.innerHTML = `
+                        <div class="text-center p-8">
+                            <p class="text-red-600">Error loading details</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const description = data.description || '';
+                const truncatedDesc = description.length > 500 ? description.substring(0, 500) + '...' : description;
+                const needsExpansion = description.length > 200;
+                
+                const batteryPlatformsHtml = data.battery_platforms && data.battery_platforms.length > 0 
+                    ? data.battery_platforms.map(platform => 
+                        `<span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">${platform}</span>`
+                      ).join('')
+                    : '';
+                
+                const keySpecsHtml = data.motor_type || (data.key_attributes && data.key_attributes.length > 0)
+                    ? `<div class="mb-4">
+                         <span class="text-sm font-medium text-gray-700">Key Specifications:</span>
+                         <div class="mt-2 space-y-2">
+                           ${data.motor_type ? `
+                             <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                               <span class="text-sm font-medium text-gray-700">Motor Type</span>
+                               <span class="text-sm text-gray-700 font-medium">${data.motor_type}</span>
+                             </div>
+                           ` : ''}
+                           ${data.key_attributes ? data.key_attributes.map(attr => `
+                             <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                               <span class="text-sm font-medium text-gray-700">
+                                 ${attr.name}
+                                 ${attr.unit ? `<span class="text-gray-500">(${attr.unit})</span>` : ''}
+                               </span>
+                               <span class="text-sm text-gray-700 font-medium">${attr.value}</span>
+                             </div>
+                           `).join('') : ''}
+                         </div>
+                       </div>`
+                    : '';
+                
+                const featuresHtml = data.features && data.features.length > 0
+                    ? `<div class="mb-4">
+                         <span class="text-sm font-medium text-gray-700">Features:</span>
+                         <div class="mt-2 flex flex-wrap gap-2">
+                           ${data.features.map(feature => 
+                             `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                                ${feature.name}
+                                ${feature.value && feature.value !== 'Yes' ? ` (${feature.value})` : ''}
+                              </span>`
+                           ).join('')}
+                         </div>
+                       </div>`
+                    : '';
+                
+                content.innerHTML = `
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="md:w-1/2">
+                            <div class="aspect-square bg-white rounded-lg overflow-hidden border">
+                                ${data.image ? 
+                                    `<img src="${data.image}" alt="${data.name}" class="w-full h-full object-contain">` :
+                                    `<div class="w-full h-full flex items-center justify-center text-gray-400">
+                                        <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </div>`
+                                }
+                            </div>
+                        </div>
+                        <div class="md:w-1/2">
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                        ${data.brand || 'Unknown Brand'}
+                                    </span>
+                                    ${batteryPlatformsHtml ? `<div class="flex gap-1">${batteryPlatformsHtml}</div>` : ''}
+                                </div>
+                                ${data.sku ? `<span class="text-xs text-gray-500">Model#: ${data.sku}</span>` : ''}
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">${data.name}</h3>
+                            ${data.status && data.status !== 'Active' ? `<div class="mb-2"><span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${data.status === 'Discontinued' ? 'bg-red-100 text-red-800' : data.status === 'Pre-release' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'}">${data.status}</span></div>` : ''}
+                            ${keySpecsHtml}
+                            ${featuresHtml}
+                            ${truncatedDesc ? `
+                                <div class="mb-4">
+                                    <p class="text-gray-700 line-clamp-3" id="descriptionText">${truncatedDesc}</p>
+                                    ${needsExpansion ? `
+                                        <button onclick="toggleDescription()" class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors mt-1" id="toggleDescriptionBtn">
+                                            Expand
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            <div class="flex gap-2">
+                                <a href="${data.url}" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg text-center hover:bg-blue-700 transition-colors">
+                                    View Full Details
+                                </a>
+                                <button onclick="closeQuickView()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                content.innerHTML = `
+                    <div class="text-center p-8">
+                        <p class="text-red-600">Error loading details</p>
+                    </div>
+                `;
+            });
+    }
+    
+    function closeQuickView() {
+        const modal = document.getElementById('quickViewModal');
+        modal.classList.add('hidden');
+    }
+    
+    function toggleDescription() {
+        const descriptionText = document.getElementById('descriptionText');
+        const toggleBtn = document.getElementById('toggleDescriptionBtn');
+        if (descriptionText && toggleBtn) {
+            if (descriptionText.classList.contains('line-clamp-3')) {
+                descriptionText.classList.remove('line-clamp-3');
+                toggleBtn.textContent = 'Collapse';
+            } else {
+                descriptionText.classList.add('line-clamp-3');
+                toggleBtn.textContent = 'Expand';
+            }
+        }
+    }
     </script>
+
+    <!-- Quick View Modal -->
+    {% include 'frontend/catalog/quick_view_modal.html' %}
 </div>
 {% endblock %}

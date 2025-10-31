@@ -111,6 +111,7 @@ class Retailers(models.Model):
     name = models.TextField(unique=True)
     url = models.TextField(blank=True, null=True)
     logo = models.TextField(blank=True, null=True)
+    color = models.TextField(blank=True, null=True)
     sortorder = models.IntegerField(blank=True, null=True)
     class Meta:
         db_table = 'Retailers'
@@ -130,7 +131,7 @@ class Products(models.Model):
     image = models.TextField(blank=True, null=True)
     bullets = models.TextField(blank=True, null=True)
     listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
-    status = models.ForeignKey('Statuses', default='Active', on_delete=models.CASCADE, blank=True, null=True)
+    status = models.ForeignKey('Statuses', on_delete=models.CASCADE, blank=True, null=True)
     releasedate = models.DateField(blank=True, null=True)
     discontinueddate = models.DateField(blank=True, null=True)
     motortype = models.ForeignKey('MotorTypes', on_delete=models.SET_NULL, blank=True, null=True)

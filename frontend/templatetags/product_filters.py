@@ -91,6 +91,15 @@ def split_bullets(value):
     return [line.strip() for line in lines if line.strip()]
 
 @register.filter
+def make_list(value):
+    """Create a list of integers from 0 to value-1 for looping"""
+    try:
+        count = int(value)
+        return list(range(count))
+    except (ValueError, TypeError):
+        return []
+
+@register.filter
 def lookup(dictionary, key):
     """Look up a key in a dictionary"""
     if dictionary and key in dictionary:
@@ -133,3 +142,51 @@ def get_component_attr_for_attribute(component_attributes, attribute):
     except Exception:
         pass
     return None
+
+@register.filter
+def get_text_color_for_bg(bg_color):
+    """
+    Determine if text should be white or black based on background color brightness.
+    Returns 'white' or 'black' based on luminance.
+    """
+    if not bg_color:
+        return 'black'
+    
+    # Remove # if present
+    bg_color = bg_color.strip().lstrip('#')
+    
+    # Convert hex to RGB
+    try:
+        if len(bg_color) == 6:
+            r = int(bg_color[0:2], 16)
+            g = int(bg_color[2:4], 16)
+            b = int(bg_color[4:6], 16)
+        elif len(bg_color) == 3:
+            # Expand 3-digit hex to 6-digit (e.g., #F0A -> #FF00AA)
+            r = int(bg_color[0] + bg_color[0], 16)
+            g = int(bg_color[1] + bg_color[1], 16)
+            b = int(bg_color[2] + bg_color[2], 16)
+        else:
+            return 'black'
+        
+        # Calculate relative luminance (perceived brightness)
+        # Using WCAG luminance formula for better contrast
+        def get_luminance(component):
+            """Convert RGB component to linear luminance"""
+            val = component / 255.0
+            if val <= 0.03928:
+                return val / 12.92
+            else:
+                return ((val + 0.055) / 1.055) ** 2.4
+        
+        r_lum = get_luminance(r)
+        g_lum = get_luminance(g)
+        b_lum = get_luminance(b)
+        luminance = 0.2126 * r_lum + 0.7152 * g_lum + 0.0722 * b_lum
+        
+        # Use white text if background luminance is low, black if high
+        # Threshold of 0.45 favors white text on vibrant colors (orange, red, etc.)
+        # which typically look better with white text even if technically "bright"
+        return 'white' if luminance < 0.45 else 'black'
+    except (ValueError, IndexError):
+        return 'black'

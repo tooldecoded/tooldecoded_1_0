@@ -3,7 +3,7 @@
 {% load content_filters %}
 {% load product_filters %}
 
-{% block title %}{{ component.name }} - ToolDecoded{% endblock %}
+{% block title %}DECODED: {{ component.name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -415,6 +415,92 @@
             <div id="content-products" class="tab-content hidden">
                 {% if product_components %}
                     <div class="space-y-6">
+                        <!-- Kit Pricing Section -->
+                        {% if kit_pricing_data %}
+                        <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200 mb-6">
+                            <h3 class="text-lg font-semibold text-[#313131] mb-4">Available in Kits - Price Comparison</h3>
+                            <p class="text-sm text-[#505050] mb-4">Find the best price for this component across different kit options</p>
+                            
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-sm bg-white rounded-xl overflow-hidden">
+                                    <thead class="bg-[#F5F6F8] text-xs font-semibold uppercase tracking-wide text-[#505050]">
+                                        <tr>
+                                            <th scope="col" class="px-3 py-2 text-left">Product/Kit</th>
+                                            <th scope="col" class="px-3 py-2 text-left">Retailer</th>
+                                            <th scope="col" class="px-3 py-2 text-right">Kit Price</th>
+                                            <th scope="col" class="px-3 py-2 text-right">Effective Price</th>
+                                            <th scope="col" class="px-3 py-2 text-right">List Price</th>
+                                            <th scope="col" class="px-3 py-2 text-right">Discount %</th>
+                                            <th scope="col" class="px-3 py-2 text-right">Savings</th>
+                                            <th scope="col" class="px-3 py-2 text-center">Link</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
+                                        {% for item in kit_pricing_data %}
+                                        <tr class="hover:bg-blue-50">
+                                            <td class="px-3 py-2">
+                                                <a href="{% url 'product_detail' item.product.id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ item.product.name }}</a>
+                                                <div class="text-xs text-[#505050]">Qty: {{ item.product_component.quantity }}</div>
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                {% if item.pricelisting.retailer %}
+                                                    {{ item.pricelisting.retailer.name }}
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-right font-semibold">{{ item.pricelisting.price|usd }}</td>
+                                            <td class="px-3 py-2 text-right font-semibold text-[#0089D9]">
+                                                {% if item.component_pricing.effective_price %}
+                                                    {{ item.component_pricing.effective_price|usd }}
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-right">
+                                                {% if item.component_pricing.list_price %}
+                                                    {{ item.component_pricing.list_price|usd }}
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-right">
+                                                {% if item.component_pricing.discounts.has_discount and item.component_pricing.discounts.percentage_discount %}
+                                                    <span class="font-semibold text-green-600">{{ item.component_pricing.discounts.percentage_discount|floatformat:1 }}%</span>
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-right">
+                                                {% if item.component_pricing.discounts.has_discount and item.component_pricing.discounts.dollar_discount %}
+                                                    <span class="font-semibold text-green-600">{{ item.component_pricing.discounts.dollar_discount|usd }}</span>
+                                                {% else %}
+                                                    <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-3 py-2 text-center">
+                                                {% if item.pricelisting.url %}
+                                                <a href="{{ item.pricelisting.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-[#0089D9] hover:text-[#006FB3]">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                    </svg>
+                                                </a>
+                                                {% else %}
+                                                <span class="text-[#B0B0B0]">—</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {% if not kit_pricing_data %}
+                            <div class="mt-4 text-sm text-[#505050]">No pricing data available for kits containing this component.</div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                        
                         <div class="flex justify-between items-center">
                             <h3 class="text-lg font-semibold text-[#313131]">Products Using This Component</h3>
                             <div class="flex space-x-2">

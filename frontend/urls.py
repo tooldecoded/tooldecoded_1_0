@@ -12,6 +12,7 @@ urlpatterns = [
     # Product detail view
     path('product/<uuid:product_id>/', views.product_detail, name='product_detail'),
     path('components/<uuid:component_id>/', views.component_detail, name='component_detail'),
+    path('component-price-finder/', views.component_price_finder, name='component_price_finder'),
     path('search/', views.search_results, name='search_results'),
     path('learn/', views.learning_index, name='learning_index'),
     path('learn/<slug:slug>/', views.learning_detail, name='learning_detail'),

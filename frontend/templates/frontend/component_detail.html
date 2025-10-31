@@ -43,6 +43,56 @@
         }
     }
     
+    /* Mobile-specific improvements for component detail */
+    @media (max-width: 768px) {
+        /* Breadcrumb improvements */
+        nav[aria-label="Breadcrumb"] ol {
+            max-width: 100%;
+        }
+        
+        nav[aria-label="Breadcrumb"] li {
+            min-height: 24px;
+        }
+        
+        /* Tab navigation - ensure proper wrapping and spacing */
+        nav[aria-label="Tabs"] {
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        nav[aria-label="Tabs"]::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        
+        .tab-button {
+            min-height: 48px; /* Better touch target */
+            padding: 0.75rem 1rem;
+        }
+        
+        /* Pricing matrix cards - optimize layout */
+        .md\:hidden .space-y-4 > div {
+            min-height: 48px;
+        }
+        
+        /* Line clamping for product names */
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-height: 4.5em; /* approximately 3 lines */
+        }
+        
+        /* Compact spacing for pricing matrix rows */
+        .md\:hidden .space-y-3 > div {
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    }
+    
     /* Smooth transitions */
     .transition-all {
         transition: all 0.3s ease-in-out;
@@ -69,37 +119,37 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-2 text-sm text-[#505050]">
-            <li>
-                <a href="{% url 'home' %}" class="hover:text-[#0089D9] transition-colors">Home</a>
+        <ol class="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm text-[#505050]">
+            <li class="flex items-center">
+                <a href="{% url 'home' %}" class="hover:text-[#0089D9] transition-colors truncate max-w-[120px] sm:max-w-none">Home</a>
             </li>
-            <li>
+            <li class="flex-shrink-0">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                 </svg>
             </li>
-            <li>
-                <a href="{% url 'components_index' %}" class="hover:text-[#0089D9] transition-colors">Tools & Components</a>
+            <li class="flex items-center">
+                <a href="{% url 'components_index' %}" class="hover:text-[#0089D9] transition-colors truncate max-w-[140px] sm:max-w-none">Tools & Components</a>
             </li>
             {% if breadcrumb_parts %}
                 {% for crumb in breadcrumb_parts %}
-                    <li>
+                    <li class="flex-shrink-0">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                         </svg>
                     </li>
-                    <li>
-                        <a href="{{ crumb.url }}" class="hover:text-[#0089D9] transition-colors">{{ crumb.label }}</a>
+                    <li class="flex items-center">
+                        <a href="{{ crumb.url }}" class="hover:text-[#0089D9] transition-colors truncate max-w-[140px] sm:max-w-none">{{ crumb.label }}</a>
                     </li>
                 {% endfor %}
             {% endif %}
-            <li>
+            <li class="flex-shrink-0">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
                 </svg>
             </li>
-            <li>
-                <span class="text-[#313131] font-medium">{{ component.name }}</span>
+            <li class="flex items-center min-w-0 flex-1">
+                <span class="text-[#313131] font-medium truncate">{{ component.name }}</span>
             </li>
         </ol>
     </nav>
@@ -244,7 +294,8 @@
             <p class="text-sm text-[#505050]">Find the best price for this component across different kit options</p>
         </div>
         
-        <div class="p-6">
+        <!-- Desktop Table View (hidden on mobile) -->
+        <div class="hidden md:block p-6">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm bg-white rounded-xl overflow-hidden">
                     <thead class="bg-[#F5F6F8] text-xs font-semibold uppercase tracking-wide text-[#505050]">
@@ -304,10 +355,17 @@
                             </td>
                             <td class="px-3 py-2 text-center">
                                 {% if item.pricelisting.url %}
-                                <a href="{{ item.pricelisting.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-[#0089D9] hover:text-[#006FB3]">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                    </svg>
+                                <a href="{{ item.pricelisting.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 hover:opacity-80 transition-opacity">
+                                    {% if item.pricelisting.retailer and item.pricelisting.retailer.logo %}
+                                        <img src="{{ item.pricelisting.retailer.logo }}" alt="{% if item.pricelisting.retailer %}{{ item.pricelisting.retailer.name }}{% else %}Retailer{% endif %}" class="h-6 w-auto object-contain max-w-[100px]">
+                                        <svg class="w-3 h-3 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    {% else %}
+                                        <svg class="w-4 h-4 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                    {% endif %}
                                 </a>
                                 {% else %}
                                 <span class="text-[#B0B0B0]">—</span>
@@ -319,6 +377,106 @@
                 </table>
             </div>
         </div>
+
+        <!-- Mobile Card View (transposed - columns as rows) -->
+        <div class="md:hidden p-4 space-y-4">
+            {% for item in kit_pricing_data %}
+            <div class="bg-[#F5F6F8] rounded-xl p-4 border border-[#E1E4E8]">
+                <div class="space-y-3">
+                    <!-- Product/Kit - Stacked layout for better space usage -->
+                    <div class="pb-2 border-b border-[#E1E4E8]">
+                        <div class="text-xs font-semibold uppercase tracking-wide text-[#505050] mb-2">Product/Kit</div>
+                        <div>
+                            <a href="{% url 'product_detail' item.product.id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3] block line-clamp-3">{{ item.product.name }}</a>
+                            <div class="text-xs text-[#505050] mt-1">Qty: {{ item.product_component.quantity }}</div>
+                        </div>
+                    </div>
+                    <!-- Retailer -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Retailer</span>
+                        <span class="text-sm text-[#313131]">
+                            {% if item.pricelisting.retailer %}
+                                {{ item.pricelisting.retailer.name }}
+                            {% else %}
+                                <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <!-- Kit Price -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Kit Price</span>
+                        <span class="text-sm font-semibold text-[#313131]">{{ item.pricelisting.price|usd }}</span>
+                    </div>
+                    <!-- Effective Price -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Effective Price</span>
+                        <span class="text-sm font-semibold text-[#0089D9]">
+                            {% if item.component_pricing.effective_price %}
+                                {{ item.component_pricing.effective_price|usd }}
+                            {% else %}
+                                <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <!-- List Price -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">List Price</span>
+                        <span class="text-sm text-[#313131]">
+                            {% if item.component_pricing.list_price %}
+                                {{ item.component_pricing.list_price|usd }}
+                            {% else %}
+                                <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <!-- Discount % -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Discount %</span>
+                        <span class="text-sm">
+                            {% if item.component_pricing.discounts.has_discount and item.component_pricing.discounts.percentage_discount %}
+                                <span class="font-semibold text-green-600">{{ item.component_pricing.discounts.percentage_discount|floatformat:1 }}%</span>
+                            {% else %}
+                                <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <!-- Savings -->
+                    <div class="flex justify-between items-center pb-2 border-b border-[#E1E4E8]">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Savings</span>
+                        <span class="text-sm">
+                            {% if item.component_pricing.discounts.has_discount and item.component_pricing.discounts.dollar_discount %}
+                                <span class="font-semibold text-green-600">{{ item.component_pricing.discounts.dollar_discount|usd }}</span>
+                            {% else %}
+                                <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <!-- Link -->
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold uppercase tracking-wide text-[#505050]">Link</span>
+                        <span class="text-sm">
+                            {% if item.pricelisting.url %}
+                            <a href="{{ item.pricelisting.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                                {% if item.pricelisting.retailer and item.pricelisting.retailer.logo %}
+                                    <img src="{{ item.pricelisting.retailer.logo }}" alt="{% if item.pricelisting.retailer %}{{ item.pricelisting.retailer.name }}{% else %}Retailer{% endif %}" class="h-6 w-auto object-contain max-w-[100px]">
+                                    <svg class="w-3 h-3 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                {% else %}
+                                    <svg class="w-5 h-5 text-[#0089D9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                    </svg>
+                                {% endif %}
+                            </a>
+                            {% else %}
+                            <span class="text-[#B0B0B0]">—</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
     {% endif %}
 
@@ -326,26 +484,26 @@
     <div class="bg-white rounded-xl shadow-sm border mt-8">
         <!-- Tab Navigation -->
         <div class="border-b border-[#E1E4E8]">
-            <nav class="flex space-x-8 px-8" aria-label="Tabs">
-                <button onclick="switchTab('specifications')" id="tab-specifications" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-[#0089D9]">
+            <nav class="flex flex-wrap md:flex-nowrap gap-x-4 md:gap-x-8 gap-y-2 px-4 md:px-8 overflow-x-auto" aria-label="Tabs">
+                <button onclick="switchTab('specifications')" id="tab-specifications" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-[#0089D9] whitespace-nowrap flex-shrink-0">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Specifications
                 </button>
-                <button onclick="switchTab('compatibility')" id="tab-compatibility" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
+                <button onclick="switchTab('compatibility')" id="tab-compatibility" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8] whitespace-nowrap flex-shrink-0">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                     Compatibility
                 </button>
-                <button onclick="switchTab('products')" id="tab-products" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
+                <button onclick="switchTab('products')" id="tab-products" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8] whitespace-nowrap flex-shrink-0">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                     Used In Products
                 </button>
-                <button onclick="switchTab('details')" id="tab-details" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8]">
+                <button onclick="switchTab('details')" id="tab-details" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-[#505050] hover:text-[#505050] hover:border-[#E1E4E8] whitespace-nowrap flex-shrink-0">
                     <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -948,15 +1106,13 @@ document.addEventListener('keydown', function(event) {
 
 
 // Mobile Menu Toggle for Tabs
+// Note: Tab navigation now uses Tailwind responsive classes (flex-wrap md:flex-nowrap)
+// This function is kept for compatibility but primarily handled by CSS
 function toggleMobileTabs() {
     const tabNav = document.querySelector('nav[aria-label="Tabs"]');
-    if (window.innerWidth < 1024) {
-        // Convert to accordion on mobile
-        tabNav.classList.add('flex-col', 'space-x-0', 'space-y-2');
-    } else {
-        // Convert back to tabs on desktop
-        tabNav.classList.remove('flex-col', 'space-x-0', 'space-y-2');
-        tabNav.classList.add('flex', 'space-x-8');
+    // CSS handles the responsive behavior, but ensure scroll works on mobile
+    if (window.innerWidth < 768 && tabNav) {
+        tabNav.style.webkitOverflowScrolling = 'touch';
     }
 }
 

@@ -1,0 +1,969 @@
+{% extends 'frontend/base.html' %}
+{% load product_filters %}
+
+{% block title %}Deal Decoder - ToolDecoded{% endblock %}
+
+{% block extra_head %}
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-white">
+    <!-- Breadcrumb Navigation -->
+    <nav class="bg-[#F5F6F8] px-4 py-3" aria-label="Breadcrumb">
+        <div class="max-w-7xl mx-auto">
+            <ol class="flex items-center space-x-2 text-sm">
+                <li>
+                    <a href="{% url 'home' %}" class="text-[#505050] hover:text-[#505050] transition-colors">Home</a>
+                </li>
+                <li>
+                    <svg class="w-4 h-4 text-[#505050]" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                </li>
+                <li>
+                    <span class="text-[#313131] font-medium">Deal Decoder</span>
+                </li>
+            </ol>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-[#313131] mb-2">Deal Decoder</h1>
+            <p class="text-[#505050]">Select components from a bundle deal, enter the bundle price, and see how each component's effective price compares to other products in the database.</p>
+        </div>
+
+        <!-- Errors -->
+        {% if errors %}
+        <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-red-800 mb-2">Please fix the following errors:</h3>
+                    <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if has_results %}
+        <!-- Results Section -->
+        <div class="space-y-6 mb-8">
+            <!-- Back Button -->
+            <div class="flex items-center mb-4">
+                <button 
+                    type="button"
+                    onclick="goBackWithSelections()"
+                    class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#313131] bg-white border border-[#E1E4E8] rounded-lg hover:bg-[#F5F6F8] transition-colors"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Select Components
+                </button>
+            </div>
+            
+            <!-- Bundle Summary -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6">
+                <h2 class="text-xl font-bold text-[#313131] mb-4">Your Bundle</h2>
+                <div class="mb-4">
+                    <span class="text-lg font-semibold text-[#0089D9]">Total Bundle Price: {{ bundle_price|usd }}</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#F5F6F8] text-xs font-semibold uppercase tracking-wide text-[#505050]">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 text-left">Component</th>
+                                <th scope="col" class="px-3 py-2 text-left">Brand</th>
+                                <th scope="col" class="px-3 py-2 text-right">Quantity</th>
+                                <th scope="col" class="px-3 py-2 text-right">List Price</th>
+                                <th scope="col" class="px-3 py-2 text-right">Effective Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
+                            {% for bundle_info in selected_components %}
+                            <tr>
+                                <td class="px-3 py-2">
+                                    <a href="{% url 'component_detail' bundle_info.component.id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ bundle_info.component.name }}</a>
+                                    {% if bundle_info.component.sku %}
+                                    <div class="text-xs text-[#505050]">SKU: {{ bundle_info.component.sku }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if bundle_info.component.brand %}
+                                    {{ bundle_info.component.brand.name }}
+                                    {% else %}
+                                    <span class="text-[#B0B0B0]">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right">{{ bundle_info.quantity }}</td>
+                                <td class="px-3 py-2 text-right">
+                                    {% if bundle_info.standalone_price %}
+                                    {{ bundle_info.standalone_price|usd }}
+                                    {% else %}
+                                    <span class="text-[#B0B0B0]">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right font-semibold text-[#0089D9]">
+                                    {{ bundle_info.effective_price|usd }}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Component Comparisons -->
+            {% for bundle_info in selected_components %}
+            {% with comp_id_str=bundle_info.component.id|stringformat:"s" %}
+            {% with comparison=comparison_data|lookup:comp_id_str %}
+            {% if comparison %}
+            <div class="bg-white rounded-2xl shadow-sm border p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-bold text-[#313131] mb-2">
+                        <a href="{% url 'component_detail' bundle_info.component.id %}" class="text-[#0089D9] hover:text-[#006FB3]">{{ bundle_info.component.name }}</a>
+                    </h3>
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
+                        <div>
+                            <span class="text-[#505050]">Your Bundle Price:</span>
+                            <span class="font-semibold text-[#0089D9] ml-1">{{ bundle_info.effective_price|usd }}</span>
+                        </div>
+                        {% if bundle_info.standalone_price %}
+                        <div>
+                            <span class="text-[#505050]">List Price:</span>
+                            <span class="ml-1">{{ bundle_info.standalone_price|usd }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if comparison.comparisons %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-[#F5F6F8] text-xs font-semibold uppercase tracking-wide text-[#505050]">
+                            <tr>
+                                <th scope="col" class="px-3 py-2 text-left">Product/Kit</th>
+                                <th scope="col" class="px-3 py-2 text-left">Retailer</th>
+                                <th scope="col" class="px-3 py-2 text-right">Kit Price</th>
+                                <th scope="col" class="px-3 py-2 text-right">Effective Price</th>
+                                <th scope="col" class="px-3 py-2 text-right">Price Difference</th>
+                                <th scope="col" class="px-3 py-2 text-center">Comparison</th>
+                                <th scope="col" class="px-3 py-2 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
+                            {% for comp in comparison.comparisons %}
+                            <tr class="{% if comp.is_better %}bg-green-50{% elif comp.is_equal %}bg-blue-50{% endif %}">
+                                <td class="px-3 py-2">
+                                    <a href="{% url 'product_detail' comp.product.id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ comp.product.name }}</a>
+                                    <div class="text-xs text-[#505050]">Qty: {{ comp.product_component.quantity }}</div>
+                                </td>
+                                <td class="px-3 py-2">
+                                    {% if comp.pricelisting.retailer %}
+                                    {{ comp.pricelisting.retailer.name }}
+                                    {% else %}
+                                    <span class="text-[#B0B0B0]">—</span>
+                                    {% endif %}
+                                    {% if comp.pricelisting.datepulled %}
+                                    <div class="text-xs text-[#505050]">{{ comp.pricelisting.datepulled|date:"M d, Y" }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right font-semibold">{{ comp.pricelisting.price|usd }}</td>
+                                <td class="px-3 py-2 text-right font-semibold text-[#0089D9]">{{ comp.effective_price|usd }}</td>
+                                <td class="px-3 py-2 text-right">
+                                    {% if comp.price_difference %}
+                                    {% if comp.is_better %}
+                                    <span class="text-green-600 font-semibold">+{{ comp.price_difference|usd }}</span>
+                                    {% else %}
+                                    <span class="text-red-600 font-semibold">{{ comp.price_difference|usd }}</span>
+                                    {% endif %}
+                                    {% if comp.percentage_diff %}
+                                    <div class="text-xs text-[#505050]">
+                                        {% if comp.is_better %}+{% endif %}{{ comp.percentage_diff|floatformat:1 }}%
+                                    </div>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-[#B0B0B0]">—</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    {% if comp.is_better %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                        Better Deal
+                                    </span>
+                                    {% elif comp.is_equal %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                        Same Price
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+                                        Your Deal Better
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-center">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <a href="{% url 'product_detail' comp.product.id %}" class="text-[#0089D9] hover:text-[#006FB3]" title="View Product">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+                                        {% if comp.pricelisting.url %}
+                                        <a href="{{ comp.pricelisting.url }}" target="_blank" rel="noopener noreferrer" class="text-[#0089D9] hover:text-[#006FB3]" title="View at Retailer">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                            </svg>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-8 text-[#505050]">
+                    <p>No comparison data available for this component. It may not be available in any products with current pricing.                    </p>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% endwith %}
+            {% endfor %}
+
+            <!-- Reset Button -->
+            <div class="text-center">
+                <a href="{% url 'deal_decoder' %}" class="inline-block px-6 py-2 bg-[#0089D9] text-white rounded-xl font-semibold hover:bg-[#006FB3] transition-colors">
+                    Analyze Another Deal
+                </a>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Form Section -->
+        <form method="post" action="{% url 'deal_decoder' %}" id="deal-decoder-form">
+            {% csrf_token %}
+            
+            <!-- Component Selection Interface -->
+            <div class="bg-white rounded-2xl shadow-sm border p-6 mb-6">
+                <!-- Filters, Bundle Price, and Selected Components -->
+                <div class="mb-6 pb-4 border-b border-[#E1E4E8] space-y-4">
+                    <!-- Filters -->
+                    <div id="browse-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label for="filter-search" class="block text-sm font-medium text-[#313131] mb-2">Search</label>
+                            <input 
+                                type="text" 
+                                id="filter-search" 
+                                placeholder="Filter components..."
+                                class="w-full px-3 py-2 text-sm border border-[#E1E4E8] rounded-lg focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]"
+                            >
+                        </div>
+                        <div>
+                            <label for="filter-brand" class="block text-sm font-medium text-[#313131] mb-2">Brand</label>
+                            <select 
+                                id="filter-brand" 
+                                class="w-full px-3 py-2 text-sm border border-[#E1E4E8] rounded-lg focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]"
+                            >
+                                <option value="">All Brands</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-category" class="block text-sm font-medium text-[#313131] mb-2">Category</label>
+                            <select 
+                                id="filter-category" 
+                                class="w-full px-3 py-2 text-sm border border-[#E1E4E8] rounded-lg focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]"
+                            >
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filter-itemtype" class="block text-sm font-medium text-[#313131] mb-2">Item Type</label>
+                            <select 
+                                id="filter-itemtype" 
+                                class="w-full px-3 py-2 text-sm border border-[#E1E4E8] rounded-lg focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]"
+                            >
+                                <option value="">All Types</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Bundle Price and Analyze Button (Centered) -->
+                    <div class="flex items-center justify-center gap-3">
+                        <div class="flex items-center gap-2">
+                            <label for="bundle_price" class="text-sm font-medium text-[#313131] whitespace-nowrap">Price:</label>
+                            <div class="relative" style="max-width: 200px; width: 100%;">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-[#505050] text-sm">$</span>
+                                </div>
+                                <input 
+                                    type="number" 
+                                    id="bundle_price" 
+                                    name="bundle_price" 
+                                    step="0.01" 
+                                    min="0.01"
+                                    placeholder="0.00"
+                                    required
+                                    class="w-full pl-7 pr-4 py-2 text-sm border border-[#E1E4E8] rounded-lg focus:ring-2 focus:ring-[#0089D9] focus:border-[#0089D9]"
+                                    value="{{ bundle_price|default:'' }}"
+                                >
+                            </div>
+                        </div>
+                        <button 
+                            type="submit" 
+                            id="submit-btn"
+                            class="px-6 py-2 bg-[#0089D9] text-white rounded-lg font-medium hover:bg-[#006FB3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled
+                        >
+                            Analyze Deal
+                        </button>
+                    </div>
+                    
+                    <!-- Selected Components Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-xl font-bold text-[#313131]">Selected Components</h2>
+                            <button 
+                                type="button"
+                                id="remove-all-btn"
+                                onclick="removeAllComponents()"
+                                class="text-xs px-3 py-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors border border-red-200 hidden"
+                            >
+                                Remove All
+                            </button>
+                        </div>
+                        <div 
+                            id="selected-components-list" 
+                            class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-2 p-4 border border-[#E1E4E8] rounded-xl bg-white max-h-[300px] overflow-y-auto"
+                        >
+                            <div class="col-span-full text-sm text-[#505050] text-center py-8 empty-state">
+                                Click "Add" button on components to add them here.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Component Grid -->
+                <div id="component-browser-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-4">
+                    <!-- Components will be loaded here -->
+                    <div class="col-span-full text-center py-8 text-[#505050]">
+                        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0089D9]"></div>
+                        <p class="mt-2">Loading components...</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div id="component-pagination" class="flex items-center justify-center gap-2 mb-4">
+                    <!-- Pagination will be populated here -->
+                </div>
+
+                <!-- Analyze Results -->
+                {% if results %}
+                    <div class="mt-6">
+                        <h2 class="text-xl font-bold text-[#313131] mb-4">Analysis Results</h2>
+                        {% for component_data in results.component_data %}
+                            <div class="border border-[#E1E4E8] rounded-xl p-6 bg-white mb-4">
+                                <h3 class="text-lg font-bold text-[#313131] mb-4">{{ component_data.component.name }}</h3>
+                                <!-- Comparison data will be shown here -->
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+(function() {
+    let selectedComponents = [];
+    let searchDebounceTimer = null;
+    let browseDebounceTimer = null;
+    let currentPage = 1;
+    let currentFilters = {
+        search: '',
+        brand: '',
+        category: '',
+        itemtype: '',
+    };
+    let filterOptions = {
+        brands: [],
+        categories: [],
+        itemtypes: [],
+    };
+
+    const selectedList = document.getElementById('selected-components-list');
+    const submitBtn = document.getElementById('submit-btn');
+    const form = document.getElementById('deal-decoder-form');
+    
+    // Store selections for back button
+    {% if has_results %}
+    const savedSelections = {
+        componentIds: {{ component_ids_json|safe }},
+        quantities: {{ quantities_json|safe }},
+        bundlePrice: "{{ bundle_price|default:'' }}"
+    };
+    
+    // Function to go back and restore selections
+    window.goBackWithSelections = function() {
+        const url = new URL(window.location.origin + '{% url "deal_decoder" %}');
+        savedSelections.componentIds.forEach((id, index) => {
+            url.searchParams.append('component_id', id);
+            url.searchParams.append('quantity', savedSelections.quantities[index] || 1);
+        });
+        if (savedSelections.bundlePrice) {
+            url.searchParams.append('bundle_price', savedSelections.bundlePrice);
+        }
+        window.location.href = url.toString();
+    };
+    {% endif %}
+    
+    // Restore selections from URL params (when coming back from results)
+    {% if restore_selections %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const componentIds = {{ component_ids_json|safe }};
+        const quantities = {{ quantities_json|safe }};
+        const bundlePrice = "{{ bundle_price|default:'' }}";
+        
+        // Fetch component data and restore selections
+        if (componentIds.length > 0) {
+            // Fetch all components in one call
+            const idsParam = componentIds.join(',');
+            fetch(`/api/components-for-deal-decoder/?ids=${idsParam}&page_size=100`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.components && data.components.length > 0) {
+                        // Create a map of component ID to component data
+                        const compMap = {};
+                        data.components.forEach(comp => {
+                            compMap[comp.id] = comp;
+                        });
+                        
+                        // Restore selections in order
+                        componentIds.forEach((compId, index) => {
+                            const comp = compMap[compId];
+                            if (comp) {
+                                const quantity = parseInt(quantities[index]) || 1;
+                                // Add the correct number of instances
+                                for (let i = 0; i < quantity; i++) {
+                                    selectedComponents.push({
+                                        instanceId: generateInstanceId(),
+                                        componentId: compId,
+                                        id: compId,
+                                        name: comp.name || 'Unknown Component',
+                                        brand: comp.brand || '',
+                                        sku: comp.sku || '',
+                                        image: comp.image || null,
+                                        quantity: 1
+                                    });
+                                }
+                            }
+                        });
+                        
+                        updateComponentList();
+                        
+                        // Set bundle price
+                        if (bundlePrice && document.getElementById('bundle_price')) {
+                            document.getElementById('bundle_price').value = bundlePrice;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading components:', error);
+                });
+        }
+    });
+    {% endif %}
+
+    // Update submit button state
+    function updateSubmitButton() {
+        if (selectedComponents.length > 0 && submitBtn) {
+            submitBtn.disabled = false;
+        } else {
+            if (submitBtn) submitBtn.disabled = true;
+        }
+    }
+
+    // Generate unique instance ID
+    function generateInstanceId() {
+        return 'inst_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+
+    // Remove component from list (for backward compatibility with browse grid)
+    window.removeComponent = function(componentId) {
+        // Remove all instances of this component
+        selectedComponents = selectedComponents.filter(c => (c.componentId || c.id) !== componentId);
+        updateComponentList();
+        // Refresh browse grid
+        loadComponents(currentPage);
+    };
+
+    // Update component list display with card format (instance-based, no quantity)
+    function updateComponentList() {
+        const removeAllBtn = document.getElementById('remove-all-btn');
+        
+        if (selectedComponents.length === 0) {
+            selectedList.innerHTML = `
+                <div class="col-span-full text-sm text-[#505050] text-center py-4 empty-state">
+                    Click "Add" button on components to add them here.
+                </div>
+            `;
+            if (removeAllBtn) removeAllBtn.classList.add('hidden');
+        } else {
+            if (removeAllBtn) removeAllBtn.classList.remove('hidden');
+            
+            let html = '';
+            selectedComponents.forEach((comp, index) => {
+                // Use stored image or try to get from browse grid
+                let imageHtml = '';
+                if (comp.image) {
+                    imageHtml = `<div class="mb-1.5 aspect-square bg-gray-100 rounded overflow-hidden" style="max-height: 50px;"><img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-contain"></div>`;
+                } else {
+                    // Try to get from browse grid as fallback
+                    const browseCard = document.querySelector(`[data-component-id="${comp.componentId || comp.id}"]`);
+                    if (browseCard) {
+                        const img = browseCard.querySelector('img');
+                        if (img && img.src) {
+                            comp.image = img.src; // Store it for next time
+                            imageHtml = `<div class="mb-1.5 aspect-square bg-gray-100 rounded overflow-hidden" style="max-height: 50px;"><img src="${img.src}" alt="${comp.name}" class="w-full h-full object-contain"></div>`;
+                        }
+                    }
+                }
+                if (!imageHtml) {
+                    imageHtml = `<div class="mb-1.5 aspect-square bg-gray-100 rounded flex items-center justify-center" style="max-height: 50px;"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg></div>`;
+                }
+                
+                html += `
+                    <div 
+                        class="border border-[#E1E4E8] rounded-lg p-2 bg-white hover:shadow-md transition-all relative group overflow-hidden"
+                        data-index="${index}"
+                        data-instance-id="${comp.instanceId}"
+                    >
+                        ${imageHtml}
+                        <h3 class="font-semibold text-[#313131] mb-0.5 line-clamp-2 text-xs leading-tight">${comp.name}</h3>
+                        ${comp.brand ? `<p class="text-xs text-[#505050] mb-0 line-clamp-1">${comp.brand}</p>` : ''}
+                        ${comp.sku ? `<p class="text-xs text-[#505050] mb-0.5 font-medium line-clamp-1">${comp.sku}</p>` : ''}
+                        <button 
+                            type="button"
+                            onclick="removeComponentInstance('${comp.instanceId}')"
+                            class="absolute top-0.5 right-0.5 p-0.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100"
+                            title="Remove this instance"
+                        >
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                        <input type="hidden" name="component_ids[]" value="${comp.componentId || comp.id}" data-instance-id="${comp.instanceId}">
+                        <input type="hidden" name="quantities[]" value="1" data-instance-id="${comp.instanceId}">
+                    </div>
+                `;
+            });
+            selectedList.innerHTML = html;
+        }
+        updateSubmitButton();
+    }
+
+    // Remove all components
+    window.removeAllComponents = function() {
+        if (confirm('Remove all selected components?')) {
+            selectedComponents = [];
+            updateComponentList();
+            const browseMode = document.getElementById('browse-mode');
+            if (browseMode && !browseMode.classList.contains('hidden')) {
+                loadComponents(currentPage);
+            }
+        }
+    };
+
+    // Remove a single component instance
+    window.removeComponentInstance = function(instanceId) {
+        selectedComponents = selectedComponents.filter(c => c.instanceId !== instanceId);
+        updateComponentList();
+        const browseMode = document.getElementById('browse-mode');
+        if (browseMode && !browseMode.classList.contains('hidden')) {
+            loadComponents(currentPage);
+        }
+    };
+
+
+    // Handle form submission - hidden inputs are already set correctly
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Validate
+            if (selectedComponents.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one component.');
+                return false;
+            }
+        });
+    }
+
+
+    // Load components from API
+    async function loadComponents(page = 1) {
+        const grid = document.getElementById('component-browser-grid');
+        const pagination = document.getElementById('component-pagination');
+        
+        // Build query string
+        const params = new URLSearchParams({
+            page: page,
+            page_size: 18, // Reduced from 24
+        });
+        
+        if (currentFilters.search) params.append('search', currentFilters.search);
+        if (currentFilters.brand) params.append('brand[]', currentFilters.brand);
+        if (currentFilters.category) params.append('category[]', currentFilters.category);
+        if (currentFilters.itemtype) params.append('itemtype[]', currentFilters.itemtype);
+        
+        try {
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-[#505050]"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#0089D9]"></div><p class="mt-2">Loading components...</p></div>';
+            
+            const response = await fetch(`/api/components-for-deal-decoder/?${params.toString()}`);
+            const data = await response.json();
+            
+            if (data.components && data.components.length > 0) {
+                let html = '';
+                data.components.forEach(comp => {
+                    // Check if this component has any instances selected
+                    const instanceCount = selectedComponents.filter(c => (c.componentId || c.id) === comp.id).length;
+                    const isSelected = instanceCount > 0;
+                    html += `
+                        <div 
+                            class="border border-[#E1E4E8] rounded-lg p-2 hover:shadow-sm transition-shadow ${isSelected ? 'bg-blue-50 border-blue-300' : 'bg-white'} flex flex-col h-full"
+                            data-component-id="${comp.id}"
+                            data-component-name="${escapeHtml(comp.name)}"
+                            data-component-brand="${escapeHtml(comp.brand || '')}"
+                            data-component-sku="${escapeHtml(comp.sku || '')}"
+                        >
+                            ${comp.image ? `
+                                <div class="mb-1.5 aspect-square bg-gray-100 rounded overflow-hidden" style="max-height: 60px;">
+                                    <img src="${comp.image}" alt="${comp.name}" class="w-full h-full object-contain">
+                                </div>
+                            ` : `
+                                <div class="mb-1.5 aspect-square bg-gray-100 rounded flex items-center justify-center" style="max-height: 60px;">
+                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                                    </svg>
+                                </div>
+                            `}
+                            <h3 class="font-semibold text-[#313131] mb-0.5 line-clamp-2 text-xs leading-tight">${comp.name}</h3>
+                            ${comp.brand ? `<p class="text-[10px] text-[#505050] mb-0">${comp.brand}</p>` : ''}
+                            ${comp.sku ? `<p class="text-[10px] text-[#505050] mb-0.5">${comp.sku}</p>` : ''}
+                            ${comp.standalone_price ? `<p class="text-[10px] font-semibold text-[#0089D9] mb-1">${formatPrice(comp.standalone_price)}</p>` : ''}
+                            <div class="mt-auto">
+                                <button 
+                                    type="button"
+                                    class="component-add-btn w-full px-2 py-1 text-xs rounded font-medium transition-colors bg-[#0089D9] text-white hover:bg-[#006FB3]"
+                                    data-component-id="${comp.id}"
+                                    data-component-name="${escapeHtml(comp.name)}"
+                                    data-component-brand="${escapeHtml(comp.brand || '')}"
+                                    data-component-sku="${escapeHtml(comp.sku || '')}"
+                                >
+                                    Add${instanceCount > 0 ? ` (${instanceCount})` : ''}
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                grid.innerHTML = html;
+                
+                // Pagination
+                if (data.num_pages > 1) {
+                    let paginationHtml = '';
+                    if (data.has_previous) {
+                        paginationHtml += `<button type="button" onclick="loadComponentsPage(${data.page - 1})" class="px-3 py-1 border border-[#E1E4E8] rounded-lg hover:bg-[#F5F6F8]">Previous</button>`;
+                    }
+                    paginationHtml += `<span class="text-sm text-[#505050] px-3">Page ${data.page} of ${data.num_pages}</span>`;
+                    if (data.has_next) {
+                        paginationHtml += `<button type="button" onclick="loadComponentsPage(${data.page + 1})" class="px-3 py-1 border border-[#E1E4E8] rounded-lg hover:bg-[#F5F6F8]">Next</button>`;
+                    }
+                    pagination.innerHTML = paginationHtml;
+                } else {
+                    pagination.innerHTML = '';
+                }
+            } else {
+                grid.innerHTML = '<div class="col-span-full text-center py-8 text-[#505050]">No components found. Try adjusting your filters.</div>';
+                pagination.innerHTML = '';
+            }
+        } catch (error) {
+            console.error('Error loading components:', error);
+            grid.innerHTML = '<div class="col-span-full text-center py-8 text-red-600">Error loading components. Please try again.</div>';
+        }
+    }
+
+    // Load filter options
+    async function loadFilterOptions() {
+        try {
+            const response = await fetch('/api/components-for-deal-decoder/?page=1&page_size=1&include_filters=true');
+            const data = await response.json();
+            
+            if (data.filter_options) {
+                // Store all filter options globally
+                filterOptions = data.filter_options;
+                
+                // Populate brand filter
+                const brandSelect = document.getElementById('filter-brand');
+                if (brandSelect && data.filter_options.brands) {
+                    data.filter_options.brands.forEach(brand => {
+                        const option = document.createElement('option');
+                        option.value = brand.id;
+                        option.textContent = brand.name;
+                        brandSelect.appendChild(option);
+                    });
+                }
+                
+                // Populate category filter
+                const categorySelect = document.getElementById('filter-category');
+                if (categorySelect && data.filter_options.categories) {
+                    data.filter_options.categories.forEach(cat => {
+                        const option = document.createElement('option');
+                        option.value = cat.id;
+                        option.textContent = cat.name;
+                        categorySelect.appendChild(option);
+                    });
+                }
+                
+                // Initially populate itemtype filter with all item types
+                updateItemTypeFilter();
+            }
+        } catch (error) {
+            console.error('Error loading filter options:', error);
+        }
+    }
+
+    // Update item type filter based on selected category
+    async function updateItemTypeFilter(categoryId = null) {
+        const itemtypeSelect = document.getElementById('filter-itemtype');
+        if (!itemtypeSelect) return;
+        
+        // Clear existing options (except "All Types")
+        const currentValue = itemtypeSelect.value;
+        itemtypeSelect.innerHTML = '<option value="">All Types</option>';
+        
+        if (!categoryId) {
+            // If no category selected, show all item types
+            if (filterOptions.itemtypes) {
+                filterOptions.itemtypes.forEach(itemtype => {
+                    const option = document.createElement('option');
+                    option.value = itemtype.id;
+                    option.textContent = itemtype.name;
+                    itemtypeSelect.appendChild(option);
+                });
+            }
+        } else {
+            // Load item types filtered by category
+            try {
+                const params = new URLSearchParams();
+                params.append('category[]', categoryId);
+                params.append('include_filters', 'true');
+                params.append('page', '1');
+                params.append('page_size', '1');
+                const response = await fetch(`/api/components-for-deal-decoder/?${params.toString()}`);
+                const data = await response.json();
+                
+                if (data.filter_options && data.filter_options.itemtypes) {
+                    data.filter_options.itemtypes.forEach(itemtype => {
+                        const option = document.createElement('option');
+                        option.value = itemtype.id;
+                        option.textContent = itemtype.name;
+                        itemtypeSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading item types:', error);
+            }
+        }
+        
+        // Reset item type selection if it's no longer valid
+        if (currentValue && !Array.from(itemtypeSelect.options).some(opt => opt.value === currentValue)) {
+            itemtypeSelect.value = '';
+            currentFilters.itemtype = '';
+        }
+    }
+
+    // Load components page
+    window.loadComponentsPage = function(page) {
+        currentPage = page;
+        loadComponents(page);
+        window.scrollTo({ top: document.getElementById('browse-tab').offsetTop - 100, behavior: 'smooth' });
+    };
+
+    // Add component from browse mode (instance-based - allows duplicates)
+    window.addComponentFromBrowse = function(componentId, componentName, componentBrand, componentSku, componentImage = null) {
+        if (!componentId) {
+            console.error('No component ID provided');
+            return;
+        }
+
+        // Try to get image from browse card if not provided
+        if (!componentImage) {
+            const browseCard = document.querySelector(`.draggable-browse-card[data-component-id="${componentId}"]`);
+            if (browseCard) {
+                const img = browseCard.querySelector('img');
+                if (img && img.src) {
+                    componentImage = img.src;
+                }
+            }
+        }
+
+        // Create new instance (allows duplicates)
+        const newComponent = {
+            instanceId: generateInstanceId(),
+            componentId: componentId,
+            id: componentId, // Keep for backward compatibility
+            name: componentName || 'Unknown Component',
+            brand: componentBrand || '',
+            sku: componentSku || '',
+            image: componentImage,
+            quantity: 1
+        };
+
+        selectedComponents.push(newComponent);
+        console.log('Added component instance:', newComponent);
+        console.log('Total instances:', selectedComponents.length);
+
+        updateComponentList();
+        updateSubmitButton();
+        
+        // Refresh browse grid (button states don't change since duplicates are allowed)
+    };
+
+    // Filter handlers
+    const filterSearch = document.getElementById('filter-search');
+    const filterBrand = document.getElementById('filter-brand');
+    const filterCategory = document.getElementById('filter-category');
+    const filterItemtype = document.getElementById('filter-itemtype');
+
+    if (filterSearch) {
+        filterSearch.addEventListener('input', function(e) {
+            currentFilters.search = e.target.value;
+            clearTimeout(browseDebounceTimer);
+            browseDebounceTimer = setTimeout(() => {
+                currentPage = 1;
+                loadComponents(1);
+            }, 500);
+        });
+    }
+
+    if (filterBrand) {
+        filterBrand.addEventListener('change', function(e) {
+            currentFilters.brand = e.target.value;
+            currentPage = 1;
+            loadComponents(1);
+        });
+    }
+
+    if (filterCategory) {
+        filterCategory.addEventListener('change', function(e) {
+            currentFilters.category = e.target.value;
+            currentPage = 1;
+            // Update item type filter based on category
+            updateItemTypeFilter(e.target.value);
+            loadComponents(1);
+        });
+    }
+
+    if (filterItemtype) {
+        filterItemtype.addEventListener('change', function(e) {
+            currentFilters.itemtype = e.target.value;
+            currentPage = 1;
+            loadComponents(1);
+        });
+    }
+
+    // Utility functions
+    function formatPrice(price) {
+        if (!price) return '—';
+        try {
+            const amount = parseFloat(price);
+            return '$' + amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        } catch {
+            return '—';
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize browse mode and set up event delegation
+    document.addEventListener('DOMContentLoaded', function() {
+        loadFilterOptions();
+        loadComponents(1);
+        
+        // Set up event delegation for component grid (handles dynamically added buttons)
+        // Use document-level delegation that works with dynamically added content
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.component-add-btn');
+            if (btn) {
+                const grid = document.getElementById('component-browser-grid');
+                // Only handle if button is in the browse grid (not in selected area)
+                if (grid && grid.contains(btn)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const compId = btn.getAttribute('data-component-id');
+                    
+                    if (!compId) {
+                        console.error('No component ID found on button');
+                        return;
+                    }
+                    
+                    const compName = btn.getAttribute('data-component-name') || '';
+                    const compBrand = btn.getAttribute('data-component-brand') || '';
+                    const compSku = btn.getAttribute('data-component-sku') || '';
+                    // Get image from the card
+                    const card = btn.closest('.draggable-browse-card');
+                    let compImage = null;
+                    if (card) {
+                        const img = card.querySelector('img');
+                        if (img && img.src) {
+                            compImage = img.src;
+                        }
+                    }
+                    console.log('Button click - adding component:', compId);
+                    addComponentFromBrowse(compId, compName, compBrand, compSku, compImage);
+                }
+            }
+        });
+    });
+
+    // Initial update
+    updateSubmitButton();
+})();
+</script>
+{% endblock %}
+

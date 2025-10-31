@@ -13,6 +13,7 @@ urlpatterns = [
     path('product/<uuid:product_id>/', views.product_detail, name='product_detail'),
     path('components/<uuid:component_id>/', views.component_detail, name='component_detail'),
     path('component-price-finder/', views.component_price_finder, name='component_price_finder'),
+    path('deal-decoder/', views.deal_decoder, name='deal_decoder'),
     path('search/', views.search_results, name='search_results'),
     path('learn/', views.learning_index, name='learning_index'),
     path('learn/<slug:slug>/', views.learning_detail, name='learning_detail'),
@@ -24,4 +25,5 @@ urlpatterns = [
     path('api/filter-options/', views.api_filter_options, name='api_filter_options'),
     path('api/quick-info/<uuid:item_id>/', views.api_quick_info, name='api_quick_info'),
     path('api/compare-components/', views.api_compare_components, name='api_compare_components'),
+    path('api/components-for-deal-decoder/', views.api_components_for_deal_decoder, name='api_components_for_deal_decoder'),
 ]

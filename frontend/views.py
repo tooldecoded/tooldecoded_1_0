@@ -596,6 +596,223 @@ def component_price_finder(request):
     return render(request, 'frontend/component_price_finder.html', context)
 
 
+def deal_decoder(request):
+    """Deal Decoder view - analyze bundle deals and compare component prices"""
+    from decimal import Decimal, InvalidOperation
+    
+    # Handle GET requests with preserved selections (from back button)
+    if request.method == 'GET':
+        component_ids = request.GET.getlist('component_id')
+        quantities = request.GET.getlist('quantity')
+        bundle_price = request.GET.get('bundle_price', '')
+        
+        # If we have component IDs, restore the form with these selections
+        if component_ids:
+            import json
+            quantities_list = quantities if quantities else [1] * len(component_ids)
+            # Convert quantities to integers
+            quantities_list = [int(q) if q else 1 for q in quantities_list]
+            context = {
+                'component_ids_json': json.dumps(component_ids),
+                'quantities_json': json.dumps(quantities_list),
+                'bundle_price': bundle_price,
+                'restore_selections': True,
+            }
+            return render(request, 'frontend/deal_decoder.html', context)
+    
+    if request.method == 'POST':
+        # Get selected components and quantities
+        component_ids = request.POST.getlist('component_ids[]')
+        quantities = request.POST.getlist('quantities[]')
+        bundle_price_str = request.POST.get('bundle_price', '').strip()
+        
+        # Validate inputs
+        errors = []
+        if not component_ids or not all(component_ids):
+            errors.append("Please select at least one component.")
+        if not bundle_price_str:
+            errors.append("Please enter a bundle price.")
+        
+        try:
+            bundle_price = Decimal(bundle_price_str)
+            if bundle_price <= 0:
+                errors.append("Bundle price must be greater than 0.")
+        except (InvalidOperation, ValueError):
+            errors.append("Please enter a valid bundle price.")
+        
+        if len(component_ids) != len(quantities):
+            errors.append("Component and quantity counts do not match.")
+        
+        # Parse quantities
+        parsed_quantities = []
+        for qty_str in quantities:
+            try:
+                qty = int(qty_str)
+                if qty <= 0:
+                    errors.append("All quantities must be greater than 0.")
+                parsed_quantities.append(qty)
+            except ValueError:
+                errors.append("Please enter valid quantities.")
+        
+        if errors:
+            # Return form with errors
+            context = {
+                'errors': errors,
+                'component_ids': component_ids,
+                'quantities': parsed_quantities,
+                'bundle_price': bundle_price_str,
+            }
+            return render(request, 'frontend/deal_decoder.html', context)
+        
+        # Get components
+        try:
+            selected_components = Components.objects.filter(
+                id__in=component_ids
+            ).select_related('brand')
+            
+            if selected_components.count() != len(component_ids):
+                errors.append("One or more selected components were not found.")
+                context = {'errors': errors}
+                return render(request, 'frontend/deal_decoder.html', context)
+        except Exception as e:
+            errors.append(f"Error loading components: {str(e)}")
+            context = {'errors': errors}
+            return render(request, 'frontend/deal_decoder.html', context)
+        
+        # Calculate effective prices from user's bundle using weighted proration
+        # This mimics the logic in prorate_product_price_to_components
+        component_data = {}
+        total_weight = Decimal('0')
+        
+        for component, quantity in zip(selected_components, parsed_quantities):
+            standalone_price = component.standalone_price
+            if standalone_price is not None:
+                weighted_value = standalone_price * Decimal(quantity)
+                total_weight += weighted_value
+                component_data[component.id] = {
+                    'component': component,
+                    'quantity': quantity,
+                    'standalone_price': standalone_price,
+                    'weighted_value': weighted_value,
+                    'has_price': True,
+                }
+            else:
+                component_data[component.id] = {
+                    'component': component,
+                    'quantity': quantity,
+                    'standalone_price': None,
+                    'weighted_value': Decimal('0'),
+                    'has_price': False,
+                }
+        
+        # Calculate weights and effective prices
+        components_without_price = [
+            comp_id for comp_id, data in component_data.items()
+            if not data['has_price']
+        ]
+        
+        # Allocate weights
+        if total_weight > 0:
+            used_weight = Decimal('0')
+            for comp_id, data in component_data.items():
+                if data['has_price']:
+                    weight = data['weighted_value'] / total_weight
+                    component_data[comp_id]['weight'] = weight
+                    used_weight += weight
+            
+            if components_without_price:
+                remaining_weight = Decimal('1') - used_weight
+                if remaining_weight > 0:
+                    weight_per_component = remaining_weight / Decimal(len(components_without_price))
+                    for comp_id in components_without_price:
+                        component_data[comp_id]['weight'] = weight_per_component
+        else:
+            # No components have standalone_price - equal distribution
+            weight_per_component = Decimal('1') / Decimal(len(component_data)) if component_data else Decimal('0')
+            for comp_id in component_data:
+                component_data[comp_id]['weight'] = weight_per_component
+        
+        # Calculate effective prices for user's bundle
+        user_bundle_results = {}
+        for comp_id, data in component_data.items():
+            weight = data.get('weight', Decimal('0'))
+            quantity = data['quantity']
+            
+            if quantity > 0 and weight > 0:
+                effective_price = (bundle_price * weight) / Decimal(quantity)
+            else:
+                effective_price = Decimal('0')
+            
+            user_bundle_results[comp_id] = {
+                'component': data['component'],
+                'quantity': quantity,
+                'standalone_price': data['standalone_price'],
+                'effective_price': effective_price,
+                'weight': weight,
+            }
+        
+        # For each component, get comparison data from other products
+        comparison_data = {}
+        for comp_id, bundle_info in user_bundle_results.items():
+            component = bundle_info['component']
+            user_effective_price = bundle_info['effective_price']
+            
+            # Get all products containing this component
+            kit_pricing_data = pricing_utils.get_component_kit_pricing(component)
+            
+            # Compare and sort
+            comparisons = []
+            for item in kit_pricing_data:
+                product_effective_price = item['component_pricing']['effective_price']
+                if product_effective_price is not None:
+                    price_difference = user_effective_price - product_effective_price
+                    percentage_diff = None
+                    if user_effective_price > 0:
+                        percentage_diff = (price_difference / user_effective_price) * Decimal('100')
+                    
+                    comparisons.append({
+                        'product': item['product'],
+                        'pricelisting': item['pricelisting'],
+                        'product_component': item['product_component'],
+                        'effective_price': product_effective_price,
+                        'list_price': item['component_pricing']['list_price'],
+                        'price_difference': price_difference,
+                        'percentage_diff': percentage_diff,
+                        'is_better': price_difference > 0,  # User pays more = product is better deal
+                        'is_equal': abs(price_difference) < Decimal('0.01'),
+                    })
+            
+            # Sort by effective price (best deals first)
+            comparisons.sort(key=lambda x: x['effective_price'] or Decimal('999999'))
+            
+            # Convert UUID to string for template access
+            comparison_data[str(comp_id)] = {
+                'user_bundle_info': bundle_info,
+                'comparisons': comparisons,
+            }
+        
+        # Store component IDs and quantities for back button (convert to strings for JSON serialization)
+        import json
+        component_ids_list = [str(comp_id) for comp_id in component_ids]
+        quantities_list = [int(qty) for qty in parsed_quantities]
+        
+        context = {
+            'selected_components': list(user_bundle_results.values()),
+            'bundle_price': bundle_price,
+            'comparison_data': comparison_data,
+            'has_results': True,
+            'component_ids_json': json.dumps(component_ids_list),
+            'quantities_json': json.dumps(quantities_list),
+        }
+        
+        return render(request, 'frontend/deal_decoder.html', context)
+    
+    else:
+        # GET request - show form
+        context = {}
+        return render(request, 'frontend/deal_decoder.html', context)
+
+
 def component_detail(request, component_id):
     """Component detail view"""
     component = get_object_or_404(Components, id=component_id)
@@ -1329,6 +1546,79 @@ def api_compare_components(request):
         
     except Exception as e:
         return JsonResponse({'error': f'Error processing comparison: {str(e)}'}, status=500)
+
+def api_components_for_deal_decoder(request):
+    """API endpoint for browsing/filtering components in Deal Decoder"""
+    from django.core.paginator import Paginator
+    
+    # Check if filtering by specific component IDs (for restoring selections)
+    ids_param = request.GET.get('ids')
+    if ids_param:
+        try:
+            # Handle comma-separated IDs or single ID
+            if ',' in ids_param:
+                component_ids = [id.strip() for id in ids_param.split(',')]
+            else:
+                component_ids = [ids_param.strip()]
+            
+            # Filter by IDs directly
+            components = Components.objects.filter(id__in=component_ids).select_related('brand', 'category', 'itemtype')
+        except Exception as e:
+            return JsonResponse({'error': f'Invalid component IDs: {str(e)}'}, status=400)
+    else:
+        # Parse filter parameters (reuse catalog_utils logic)
+        filters = catalog_utils.parse_filter_params(request)
+        
+        # Build filtered queryset
+        components = catalog_utils.build_filter_query(Components, filters)
+        
+        # Apply sorting
+        components = catalog_utils.apply_sorting(components, filters['sort'], filters['sort_direction'], Components)
+    
+    # Paginate
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('page_size', 24))
+    paginator = Paginator(components, page_size)
+    
+    try:
+        page_obj = paginator.page(page)
+    except:
+        page_obj = paginator.page(1)
+    
+    # Serialize components
+    components_data = []
+    for component in page_obj:
+        components_data.append({
+            'id': str(component.id),
+            'name': component.name,
+            'brand': component.brand.name if component.brand else None,
+            'sku': component.sku,
+            'image': component.image or '',
+            'standalone_price': str(component.standalone_price) if component.standalone_price else None,
+            'url': f'/components/{component.id}/',
+        })
+    
+    # Include filter options if requested
+    include_filters = request.GET.get('include_filters', 'false').lower() == 'true'
+    response_data = {
+        'components': components_data,
+        'page': page_obj.number,
+        'num_pages': paginator.num_pages,
+        'has_next': page_obj.has_next(),
+        'has_previous': page_obj.has_previous(),
+        'total_count': paginator.count,
+    }
+    
+    if include_filters:
+        # Get filter options from filtered components
+        filter_options = catalog_utils.get_filter_options(filters, Components)
+        response_data['filter_options'] = {
+            'brands': [{'id': str(b.id), 'name': b.name} for b in filter_options['brands']],
+            'categories': [{'id': str(c.id), 'name': c.name} for c in filter_options['categories']],
+            'itemtypes': [{'id': str(it.id), 'name': it.name} for it in filter_options['itemtypes']],
+        }
+    
+    return JsonResponse(response_data)
 
 # ============================================================================
 # END DEPRECATED SECTION

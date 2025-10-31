@@ -439,6 +439,11 @@
                         Featured
                     </a>
 
+                    <!-- Deal Decoder (standalone) -->
+                    <a href="{% url 'deal_decoder' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'deal_decoder' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1">
+                        Deal Decoder
+                    </a>
+
                     <!-- Learn (standalone) -->
                     <a href="{% url 'learning_index' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'learning_index' or request.resolver_match.url_name == 'learning_detail' %}text-[#0089D9] border-b-2 border-[#0089D9]{% else %}text-white hover:text-[#0089D9]{% endif %} transition-colors pb-1">
                         Learn
@@ -505,6 +510,11 @@
                     <!-- Featured (standalone) -->
                     <a href="{% url 'browse_flagship' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'browse_flagship' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg">
                         Featured
+                    </a>
+
+                    <!-- Deal Decoder (standalone) -->
+                    <a href="{% url 'deal_decoder' %}" class="text-sm font-medium {% if request.resolver_match.url_name == 'deal_decoder' %}text-[#0089D9] bg-white/10{% else %}text-white hover:text-[#0089D9] hover:bg-white/10{% endif %} transition-colors py-3 px-4 rounded-lg">
+                        Deal Decoder
                     </a>
 
                     <!-- Learn (standalone) -->

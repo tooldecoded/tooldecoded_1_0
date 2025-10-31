@@ -317,15 +317,29 @@ def show_column_requirements(parent_window):
     button_frame = tk.Frame(help_dialog)
     button_frame.pack(pady=10)
     
+    def on_exit():
+        """Properly exit the application"""
+        try:
+            help_dialog.grab_release()
+            help_dialog.destroy()
+        except:
+            pass
+        sys.exit(0)
+    
     close_button = tk.Button(button_frame, text="Close and Continue", command=lambda: help_dialog.destroy(), width=20)
     close_button.pack(side=tk.LEFT, padx=5)
     
-    exit_button = tk.Button(button_frame, text="Exit Application", command=lambda: sys.exit(0), width=20)
+    exit_button = tk.Button(button_frame, text="Exit Application", command=on_exit, width=20)
     exit_button.pack(side=tk.LEFT, padx=5)
     
     # Set up window close protocol
     def on_close():
-        help_dialog.destroy()
+        """Handle window close (X button) - just close, don't exit"""
+        try:
+            help_dialog.grab_release()
+            help_dialog.destroy()
+        except:
+            pass
     
     help_dialog.protocol("WM_DELETE_WINDOW", on_close)
     

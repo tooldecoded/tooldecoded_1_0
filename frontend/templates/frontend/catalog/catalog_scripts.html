@@ -187,7 +187,7 @@ function openQuickView(itemId) {
                                   </a>` : ''}
                                 </div>
                               </div>
-                              <a href="${product.url}" class="ml-3 flex-shrink-0 text-right block no-underline" style="color: inherit; text-decoration: none;">
+                              <a href="${product.retailer_url || product.url}" class="ml-3 flex-shrink-0 text-right block no-underline" style="color: inherit; text-decoration: none;">
                                 <div class="text-xs text-gray-500">Kit: <span class="font-medium text-gray-700">$${product.kit_price ? parseFloat(product.kit_price).toFixed(2) : '0.00'}</span></div>
                                 <div class="text-xs text-gray-500">Effective: <span class="font-semibold text-green-600">$${product.effective_price ? parseFloat(product.effective_price).toFixed(2) : '0.00'}</span></div>
                               </a>

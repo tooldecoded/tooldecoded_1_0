@@ -55,6 +55,7 @@ class LearningArticle(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     summary = models.TextField(blank=True)
+    image = models.TextField(blank=True, null=True)
     content = models.TextField()
     is_published = models.BooleanField(default=False)
     is_pinned = models.BooleanField(default=False)

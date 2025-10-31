@@ -143,10 +143,11 @@ COLUMNS_MAP = {
 
 def show_column_requirements(parent_window):
     """Show a dialog with column requirements for record types"""
-    # Ensure parent window is available (deiconify if needed)
+    # Keep parent window withdrawn - don't show it
+    # On Windows, if we set transient and then iconify the parent, the dialog also gets hidden
     try:
-        parent_window.deiconify()
-        parent_window.update()
+        parent_window.withdraw()  # Hide parent window
+        parent_window.update_idletasks()
     except:
         pass
     
@@ -160,17 +161,7 @@ def show_column_requirements(parent_window):
     y = (help_dialog.winfo_screenheight() // 2) - (help_dialog.winfo_height() // 2)
     help_dialog.geometry(f"+{x}+{y}")
     
-    # Prevent interaction with parent but keep it alive
-    help_dialog.transient(parent_window)
-    help_dialog.grab_set()
-    
-    # Hide parent window now that dialog is created
-    try:
-        parent_window.withdraw()
-    except:
-        pass
-    
-    # Create main frame with two panes
+    # Create main frame with two panes BEFORE setting grab
     main_frame = tk.Frame(help_dialog)
     main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
     
@@ -179,7 +170,24 @@ def show_column_requirements(parent_window):
     left_frame.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 5))
     left_frame.pack_propagate(False)
     
-    tk.Label(left_frame, text="Record Types:", font=("Arial", 10, "bold")).pack(pady=5)
+    # Action types explanation (compact version)
+    action_label = tk.Label(left_frame, text="Action Types:", font=("Arial", 9, "bold"))
+    action_label.pack(pady=(5, 2))
+    
+    action_text = tk.Text(left_frame, wrap=tk.WORD, font=("Arial", 8), height=10, width=25, 
+                         relief=tk.FLAT, bg=left_frame.cget('bg'), state=tk.DISABLED)
+    action_text.pack(pady=(0, 5), padx=5, fill=tk.X)
+    
+    action_content = """• CREATE - New record
+• UPDATE - Modify existing
+• DELETE - Remove record
+• PURGE - Clear fields"""
+    
+    action_text.config(state=tk.NORMAL)
+    action_text.insert(1.0, action_content)
+    action_text.config(state=tk.DISABLED)
+    
+    tk.Label(left_frame, text="Record Types:", font=("Arial", 10, "bold")).pack(pady=(10, 5))
     
     scrollbar_left = tk.Scrollbar(left_frame)
     scrollbar_left.pack(side=tk.RIGHT, fill=tk.Y)
@@ -202,11 +210,13 @@ def show_column_requirements(parent_window):
     def update_display(event=None):
         try:
             selection = types_listbox.curselection()
+            text_area.delete(1.0, tk.END)
+            
             if selection:
                 recordtype = record_types[selection[0]]
                 info = COLUMNS_MAP[recordtype]
                 
-                text_area.delete(1.0, tk.END)
+                text_area.insert(tk.END, f"{'='*60}\n")
                 text_area.insert(tk.END, f"Record Type: {recordtype}\n")
                 text_area.insert(tk.END, f"{'='*60}\n\n")
                 text_area.insert(tk.END, f"Description:\n{info['description']}\n\n")
@@ -231,54 +241,83 @@ def show_column_requirements(parent_window):
     
     types_listbox.bind('<<ListboxSelect>>', update_display)
     
-    # Close button
+    # Close and Exit buttons
     button_frame = tk.Frame(help_dialog)
     button_frame.pack(pady=10)
-    tk.Button(button_frame, text="Close and Continue", command=lambda: help_dialog.destroy(), width=20).pack()
+    
+    close_button = tk.Button(button_frame, text="Close and Continue", command=lambda: help_dialog.destroy(), width=20)
+    close_button.pack(side=tk.LEFT, padx=5)
+    
+    exit_button = tk.Button(button_frame, text="Exit Application", command=lambda: sys.exit(0), width=20)
+    exit_button.pack(side=tk.LEFT, padx=5)
     
     # Set up window close protocol
-    help_dialog.protocol("WM_DELETE_WINDOW", lambda: help_dialog.destroy())
+    def on_close():
+        help_dialog.destroy()
     
-    # Make sure dialog is fully rendered
+    help_dialog.protocol("WM_DELETE_WINDOW", on_close)
+    
+    # Make sure dialog is fully rendered and shown BEFORE setting grab
     help_dialog.update_idletasks()
+    help_dialog.update()
     
     # Initialize display
     if record_types:
         types_listbox.selection_set(0)
         help_dialog.update()
-        # Try to update display immediately
         try:
             update_display()
         except Exception as e:
             print(f"Warning: Could not initialize display: {e}")
     
+    # Ensure dialog is fully visible and on top
     help_dialog.lift()
     help_dialog.focus_force()
-    
-    # Ensure the dialog is fully shown
     help_dialog.update()
     help_dialog.update_idletasks()
+    
+    # Set grab for modal behavior (don't use transient with hidden parent on Windows)
+    # On Windows, transient + iconify causes the dialog to be hidden
+    help_dialog.grab_set()
+    
+    # Update one more time after grab
+    help_dialog.update()
+    help_dialog.update_idletasks()
+    
+    # Parent is already withdrawn - don't iconify it (would hide dialog on Windows)
     
     # Wait for dialog to close - this blocks until window is destroyed
     try:
         help_dialog.wait_window()
     except Exception as e:
         print(f"Error in wait_window: {e}")
+        import traceback
+        traceback.print_exc()
         # Fallback: keep updating until window is destroyed
         while help_dialog.winfo_exists():
-            parent_window.update()
-            help_dialog.update()
-            import time
-            time.sleep(0.1)
+            try:
+                parent_window.update()
+                help_dialog.update()
+                import time
+                time.sleep(0.1)
+            except:
+                break
+    
+    # Restore parent window after dialog closes (for file dialogs)
+    try:
+        parent_window.deiconify()
+        parent_window.update_idletasks()
+    except:
+        pass
 
 # Initialize root window
 root = tk.Tk()
 root.title("Import Master")
-root.withdraw()  # Hide initially
+# Withdraw root window immediately - we don't want it visible
+root.withdraw()
 
 # Update to ensure window is ready
 root.update_idletasks()
-root.update()
 
 # Show column requirements dialog first - root must stay alive for Toplevel to work
 try:
@@ -291,7 +330,9 @@ except Exception as e:
     traceback.print_exc()
     # Continue anyway if dialog fails - user can still proceed with import
 
-# Keep root window alive for file dialogs
+# Make sure root is deiconified for file dialogs
+root.deiconify()
+root.update_idletasks()
 
 file_path = filedialog.askopenfilename(
     title="Select Excel file",

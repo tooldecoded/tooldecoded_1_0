@@ -35,7 +35,7 @@ class LearningArticleAdmin(admin.ModelAdmin):
     
     fieldsets = (
         (None, {
-            'fields': ('title', 'slug', 'summary')
+            'fields': ('title', 'slug', 'summary', 'image')
         }),
         ('Content', {
             'fields': ('content',)

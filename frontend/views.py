@@ -1053,6 +1053,32 @@ def api_quick_info(request, item_id):
                     'value': comp_feature.value or 'Yes'
                 })
             
+            # Get top 3 products with lowest effective prices
+            kit_pricing = pricing_utils.get_component_kit_pricing(component)
+            lowest_price_products = []
+            if kit_pricing:
+                # Sort by effective_price ascending and take top 3
+                sorted_pricing = sorted(
+                    kit_pricing,
+                    key=lambda x: x['component_pricing']['effective_price']
+                )[:3]
+                
+                for item in sorted_pricing:
+                    product = item['product']
+                    pricelisting = item['pricelisting']
+                    effective_price = item['component_pricing']['effective_price']
+                    
+                    lowest_price_products.append({
+                        'name': product.name,
+                        'url': f'/product/{product.id}/',
+                        'effective_price': str(effective_price),
+                        'kit_price': str(pricelisting.price),
+                        'retailer': pricelisting.retailer.name if pricelisting.retailer else None,
+                        'retailer_url': pricelisting.url if pricelisting.url else None,
+                        'retailer_logo': pricelisting.retailer.logo if pricelisting.retailer and pricelisting.retailer.logo else None,
+                        'image': product.image or ''
+                    })
+            
             return JsonResponse({
                 'name': component.name,
                 'brand': component.brand.name if component.brand else '',
@@ -1062,6 +1088,7 @@ def api_quick_info(request, item_id):
                 'motor_type': component.motortype.name if component.motortype else None,
                 'key_attributes': key_attributes,
                 'features': features,
+                'lowest_price_products': lowest_price_products,
                 'url': f'/components/{component.id}/'
             })
         except Components.DoesNotExist:

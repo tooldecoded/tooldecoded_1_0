@@ -879,7 +879,7 @@
                                `<div class="flex items-center justify-between px-3 py-2 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'} border-b border-gray-100 last:border-b-0">
                                   <div class="flex-1 min-w-0 pr-2">
                                     <div class="flex items-center gap-2">
-                                      <a href="${product.url}" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline truncate flex-1 min-w-0" title="${product.name}">
+                                      <a href="${product.url}" class="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline line-clamp-2 flex-1 min-w-0" title="${product.name}">
                                         ${product.name}
                                       </a>
                                       ${product.retailer_url ? `<a href="${product.retailer_url}" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 inline-flex items-center gap-1 hover:opacity-80 transition-opacity" title="View at ${product.retailer || 'Retailer'}">

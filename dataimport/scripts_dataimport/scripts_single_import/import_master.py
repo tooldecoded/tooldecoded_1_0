@@ -1,6 +1,7 @@
 import os
 import django
 import sys
+import io
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tooldecoded.settings')
 django.setup()
@@ -15,8 +16,79 @@ from toolanalysis.models import (
 import pandas as pd
 from tkinter import filedialog, messagebox
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, ttk
 from datetime import date
+from collections import defaultdict
+from contextlib import redirect_stdout
+
+# ============================================================================
+# Custom output capture for detailed logging
+# ============================================================================
+
+class OutputCapture:
+    """Capture stdout while still printing to console and collecting messages"""
+    def __init__(self, original_stdout, results_collector=None):
+        self.original_stdout = original_stdout
+        self.results_collector = results_collector
+        self.buffer = []
+        self.line_buffer = ""
+        
+    def write(self, text):
+        """Write to both console and buffer"""
+        # Always write to console
+        self.original_stdout.write(text)
+        
+        # Accumulate text until we have a complete line
+        self.line_buffer += text
+        if '\n' in text:
+            lines = self.line_buffer.split('\n')
+            # Process complete lines, keep incomplete line in buffer
+            for line in lines[:-1]:
+                line = line.strip()
+                if line:
+                    self.buffer.append(line)
+                    # Extract meaningful operation messages for results
+                    if self.results_collector and line:
+                        # Look for operation messages (Row X: ... created/updated/deleted/etc.)
+                        # Capture all database operation messages that start with "Row"
+                        keywords = ['created', 'updated', 'deleted', 'purged', 'already exists']
+                        line_lower = line.lower().strip()
+                        # Capture any line that starts with "Row" and contains an operation keyword
+                        # This captures ALL record types: products, components, attributes, features,
+                        # categories, brands, retailers, statuses, battery platforms, etc.
+                        if line_lower.startswith('row') and any(keyword in line_lower for keyword in keywords):
+                            # Prevent duplicates and ensure we capture all operations
+                            if len(self.results_collector['details']) < 1000:
+                                # Use original line (not lowercased) for display
+                                if line not in self.results_collector['details']:
+                                    self.results_collector['details'].append(line)
+            # Keep the last incomplete line in buffer
+            self.line_buffer = lines[-1]
+        return len(text)
+    
+    def flush(self):
+        """Flush the original stdout and process any remaining buffer content"""
+        self.original_stdout.flush()
+        # Process any remaining buffer content (important for last line without newline)
+        if self.line_buffer:
+            line = self.line_buffer.strip()
+            if line:  # Only process non-empty lines
+                self.buffer.append(line)
+                if self.results_collector:
+                    # Capture all database operation messages that start with "Row"
+                    keywords = ['created', 'updated', 'deleted', 'purged', 'already exists']
+                    line_lower = line.lower().strip()
+                    # Capture any line that starts with "Row" and contains an operation keyword
+                    if line_lower.startswith('row') and any(keyword in line_lower for keyword in keywords):
+                        # Prevent duplicates and ensure we capture all operations
+                        if len(self.results_collector['details']) < 1000:
+                            if line not in self.results_collector['details']:
+                                self.results_collector['details'].append(line)
+            self.line_buffer = ""
+    
+    def get_output(self):
+        """Get captured output"""
+        return '\n'.join(self.buffer)
 
 # ============================================================================
 # Column requirements mapping (defined early for UI use)
@@ -310,6 +382,398 @@ def show_column_requirements(parent_window):
     except:
         pass
 
+def analyze_sheets(file_path, sheet_names):
+    """
+    Analyze selected sheets and create a summary of what will be processed.
+    Returns a dictionary with summary information.
+    """
+    summary = {
+        'total_rows': 0,
+        'by_sheet': {},
+        'by_action': defaultdict(int),
+        'by_recordtype': defaultdict(int),
+        'by_sheet_action': defaultdict(lambda: defaultdict(int)),
+        'by_sheet_recordtype': defaultdict(lambda: defaultdict(int)),
+        'errors': []
+    }
+    
+    try:
+        excel_file = pd.ExcelFile(file_path)
+        
+        for sheet_name in sheet_names:
+            try:
+                df = pd.read_excel(excel_file, sheet_name=sheet_name)
+                sheet_summary = {
+                    'total_rows': len(df),
+                    'valid_rows': 0,
+                    'invalid_rows': 0,
+                    'by_action': defaultdict(int),
+                    'by_recordtype': defaultdict(int)
+                }
+                
+                if len(df) == 0:
+                    summary['by_sheet'][sheet_name] = sheet_summary
+                    continue
+                
+                if 'action' not in df.columns or 'recordtype' not in df.columns:
+                    summary['errors'].append(f"Sheet '{sheet_name}': Missing 'action' or 'recordtype' column")
+                    summary['by_sheet'][sheet_name] = sheet_summary
+                    continue
+                
+                for i in range(len(df)):
+                    row = df.iloc[i]
+                    action = get_col(row, 'action', df)
+                    recordtype = get_col(row, 'recordtype', df)
+                    
+                    if action and recordtype:
+                        action_lower = str(action).lower().strip()
+                        recordtype_lower = str(recordtype).lower().strip()
+                        
+                        sheet_summary['valid_rows'] += 1
+                        sheet_summary['by_action'][action_lower] += 1
+                        sheet_summary['by_recordtype'][recordtype_lower] += 1
+                        summary['by_action'][action_lower] += 1
+                        summary['by_recordtype'][recordtype_lower] += 1
+                        summary['by_sheet_action'][sheet_name][action_lower] += 1
+                        summary['by_sheet_recordtype'][sheet_name][recordtype_lower] += 1
+                        summary['total_rows'] += 1
+                    else:
+                        sheet_summary['invalid_rows'] += 1
+                
+                summary['by_sheet'][sheet_name] = sheet_summary
+                
+            except Exception as e:
+                summary['errors'].append(f"Sheet '{sheet_name}': {str(e)}")
+    
+    except Exception as e:
+        summary['errors'].append(f"Error analyzing sheets: {str(e)}")
+    
+    return summary
+
+def show_preview_dialog(parent_window, summary):
+    """
+    Show a dialog with a preview/summary of what will be processed.
+    Returns True if user confirms, False if cancelled.
+    """
+    parent_window.withdraw()
+    parent_window.update_idletasks()
+    
+    preview_dialog = tk.Toplevel(parent_window)
+    preview_dialog.title("Import Preview - Review Before Processing")
+    preview_dialog.geometry("800x700")
+    
+    # Center the dialog
+    preview_dialog.update_idletasks()
+    x = (preview_dialog.winfo_screenwidth() // 2) - (preview_dialog.winfo_width() // 2)
+    y = (preview_dialog.winfo_screenheight() // 2) - (preview_dialog.winfo_height() // 2)
+    preview_dialog.geometry(f"+{x}+{y}")
+    
+    # Create main frame
+    main_frame = tk.Frame(preview_dialog)
+    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    # Title
+    title_label = tk.Label(main_frame, text="Import Preview", font=("Arial", 14, "bold"))
+    title_label.pack(pady=(0, 10))
+    
+    # Summary text area
+    text_area = scrolledtext.ScrolledText(main_frame, wrap=tk.WORD, font=("Courier", 9), width=80, height=30)
+    text_area.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+    
+    # Build summary text
+    summary_text = []
+    summary_text.append("=" * 70)
+    summary_text.append("IMPORT PREVIEW SUMMARY")
+    summary_text.append("=" * 70)
+    summary_text.append("")
+    
+    summary_text.append(f"Total Sheets: {len(summary['by_sheet'])}")
+    summary_text.append(f"Total Valid Rows: {summary['total_rows']}")
+    summary_text.append("")
+    
+    if summary['errors']:
+        summary_text.append("WARNINGS/ERRORS:")
+        summary_text.append("-" * 70)
+        for error in summary['errors']:
+            summary_text.append(f"  ⚠ {error}")
+        summary_text.append("")
+    
+    summary_text.append("BREAKDOWN BY ACTION:")
+    summary_text.append("-" * 70)
+    for action in sorted(summary['by_action'].keys()):
+        count = summary['by_action'][action]
+        summary_text.append(f"  {action.upper():<15} {count:>5} row(s)")
+    summary_text.append("")
+    
+    summary_text.append("BREAKDOWN BY RECORD TYPE:")
+    summary_text.append("-" * 70)
+    for recordtype in sorted(summary['by_recordtype'].keys()):
+        count = summary['by_recordtype'][recordtype]
+        summary_text.append(f"  {recordtype:<20} {count:>5} row(s)")
+    summary_text.append("")
+    
+    summary_text.append("DETAILED BREAKDOWN BY SHEET:")
+    summary_text.append("=" * 70)
+    for sheet_name in sorted(summary['by_sheet'].keys()):
+        sheet_info = summary['by_sheet'][sheet_name]
+        summary_text.append("")
+        summary_text.append(f"Sheet: {sheet_name}")
+        summary_text.append("-" * 70)
+        summary_text.append(f"  Total Rows: {sheet_info['total_rows']}")
+        summary_text.append(f"  Valid Rows: {sheet_info['valid_rows']}")
+        summary_text.append(f"  Invalid Rows: {sheet_info['invalid_rows']}")
+        
+        if sheet_info['by_action']:
+            summary_text.append("  Actions:")
+            for action, count in sorted(sheet_info['by_action'].items()):
+                summary_text.append(f"    {action.upper():<15} {count:>5}")
+        
+        if sheet_info['by_recordtype']:
+            summary_text.append("  Record Types:")
+            for rt, count in sorted(sheet_info['by_recordtype'].items()):
+                summary_text.append(f"    {rt:<20} {count:>5}")
+    
+    text_area.insert(1.0, "\n".join(summary_text))
+    text_area.config(state=tk.DISABLED)
+    
+    # Buttons
+    button_frame = tk.Frame(main_frame)
+    button_frame.pack(pady=10)
+    
+    confirmed = [False]
+    
+    def on_confirm():
+        confirmed[0] = True
+        preview_dialog.destroy()
+    
+    def on_cancel():
+        confirmed[0] = False
+        preview_dialog.destroy()
+    
+    confirm_button = tk.Button(button_frame, text="Confirm and Process", command=on_confirm, width=20, bg="#4CAF50", fg="white")
+    confirm_button.pack(side=tk.LEFT, padx=5)
+    
+    cancel_button = tk.Button(button_frame, text="Cancel", command=on_cancel, width=20)
+    cancel_button.pack(side=tk.LEFT, padx=5)
+    
+    preview_dialog.protocol("WM_DELETE_WINDOW", on_cancel)
+    
+    preview_dialog.update_idletasks()
+    preview_dialog.lift()
+    preview_dialog.focus_force()
+    preview_dialog.grab_set()
+    preview_dialog.wait_window()
+    
+    try:
+        parent_window.deiconify()
+        parent_window.update_idletasks()
+    except:
+        pass
+    
+    return confirmed[0]
+
+def show_results_dialog(parent_window, results):
+    """
+    Show a dialog with detailed results of the import process.
+    """
+    parent_window.withdraw()
+    parent_window.update_idletasks()
+    
+    results_dialog = tk.Toplevel(parent_window)
+    results_dialog.title("Import Results - Detailed Report")
+    results_dialog.geometry("900x750")
+    
+    # Center the dialog
+    results_dialog.update_idletasks()
+    x = (results_dialog.winfo_screenwidth() // 2) - (results_dialog.winfo_width() // 2)
+    y = (results_dialog.winfo_screenheight() // 2) - (results_dialog.winfo_height() // 2)
+    results_dialog.geometry(f"+{x}+{y}")
+    
+    # Create main frame with notebook for tabs
+    main_frame = tk.Frame(results_dialog)
+    main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+    # Title
+    title_label = tk.Label(main_frame, text="Import Results", font=("Arial", 14, "bold"))
+    title_label.pack(pady=(0, 10))
+    
+    # Create notebook for tabs
+    notebook = ttk.Notebook(main_frame)
+    notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+    
+    # Summary tab
+    summary_frame = tk.Frame(notebook)
+    notebook.add(summary_frame, text="Summary")
+    
+    summary_text = scrolledtext.ScrolledText(summary_frame, wrap=tk.WORD, font=("Courier", 9), width=80, height=30)
+    summary_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    
+    summary_lines = []
+    summary_lines.append("=" * 70)
+    summary_lines.append("IMPORT RESULTS SUMMARY")
+    summary_lines.append("=" * 70)
+    summary_lines.append("")
+    summary_lines.append(f"Total Sheets Processed: {results['total_sheets']}")
+    summary_lines.append(f"Total Rows Processed: {results['total_rows']}")
+    summary_lines.append(f"Successfully Processed: {results['success_count']}")
+    summary_lines.append(f"Errors: {results['error_count']}")
+    summary_lines.append(f"Warnings: {results['warning_count']}")
+    summary_lines.append("")
+    
+    if results['by_action']:
+        summary_lines.append("RESULTS BY ACTION:")
+        summary_lines.append("-" * 70)
+        for action in sorted(results['by_action'].keys()):
+            count = results['by_action'][action]
+            summary_lines.append(f"  {action.upper():<15} {count:>5}")
+        summary_lines.append("")
+    
+    if results['by_recordtype']:
+        summary_lines.append("RESULTS BY RECORD TYPE:")
+        summary_lines.append("-" * 70)
+        for rt in sorted(results['by_recordtype'].keys()):
+            count = results['by_recordtype'][rt]
+            summary_lines.append(f"  {rt:<20} {count:>5}")
+        summary_lines.append("")
+    
+    # Add detailed operation records below the summary
+    if results['details']:
+        summary_lines.append("")
+        summary_lines.append("=" * 70)
+        summary_lines.append("DETAILED OPERATION RECORDS")
+        summary_lines.append("=" * 70)
+        summary_lines.append("")
+        summary_lines.append("This section shows each database operation that was performed:")
+        summary_lines.append("")
+        if len(results['details']) >= 1000:
+            summary_lines.append("NOTE: Detailed log is limited to first 1000 entries for performance.")
+            summary_lines.append("Check console output for complete log.")
+            summary_lines.append("")
+        summary_lines.append("-" * 70)
+        summary_lines.append("")
+        
+        # Group details by operation type for better readability
+        created_ops = []
+        updated_ops = []
+        deleted_ops = []
+        purged_ops = []
+        other_ops = []
+        
+        for detail in results['details']:
+            detail_lower = detail.lower()
+            if 'created' in detail_lower or 'already exists' in detail_lower:
+                created_ops.append(detail)
+            elif 'updated' in detail_lower:
+                updated_ops.append(detail)
+            elif 'deleted' in detail_lower:
+                deleted_ops.append(detail)
+            elif 'purged' in detail_lower:
+                purged_ops.append(detail)
+            else:
+                other_ops.append(detail)
+        
+        # Display grouped operations
+        if created_ops:
+            summary_lines.append(f"CREATED OPERATIONS ({len(created_ops)}):")
+            summary_lines.append("-" * 70)
+            for op in created_ops:
+                summary_lines.append(f"  {op}")
+            summary_lines.append("")
+        
+        if updated_ops:
+            summary_lines.append(f"UPDATED OPERATIONS ({len(updated_ops)}):")
+            summary_lines.append("-" * 70)
+            for op in updated_ops:
+                summary_lines.append(f"  {op}")
+            summary_lines.append("")
+        
+        if deleted_ops:
+            summary_lines.append(f"DELETED OPERATIONS ({len(deleted_ops)}):")
+            summary_lines.append("-" * 70)
+            for op in deleted_ops:
+                summary_lines.append(f"  {op}")
+            summary_lines.append("")
+        
+        if purged_ops:
+            summary_lines.append(f"PURGED OPERATIONS ({len(purged_ops)}):")
+            summary_lines.append("-" * 70)
+            for op in purged_ops:
+                summary_lines.append(f"  {op}")
+            summary_lines.append("")
+        
+        if other_ops:
+            summary_lines.append(f"OTHER OPERATIONS ({len(other_ops)}):")
+            summary_lines.append("-" * 70)
+            for op in other_ops:
+                summary_lines.append(f"  {op}")
+            summary_lines.append("")
+    
+    summary_text.insert(1.0, "\n".join(summary_lines))
+    summary_text.config(state=tk.DISABLED)
+    
+    # Errors tab
+    errors_frame = tk.Frame(notebook)
+    notebook.add(errors_frame, text=f"Errors ({results['error_count']})")
+    
+    errors_text = scrolledtext.ScrolledText(errors_frame, wrap=tk.WORD, font=("Courier", 9), width=80, height=30)
+    errors_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    
+    if results['errors']:
+        errors_lines = []
+        errors_lines.append("=" * 70)
+        errors_lines.append("ERROR DETAILS")
+        errors_lines.append("=" * 70)
+        errors_lines.append("")
+        for i, error in enumerate(results['errors'], 1):
+            errors_lines.append(f"{i}. {error}")
+        errors_text.insert(1.0, "\n".join(errors_lines))
+    else:
+        errors_text.insert(1.0, "No errors occurred during import.")
+    
+    errors_text.config(state=tk.DISABLED)
+    
+    # Warnings tab
+    warnings_frame = tk.Frame(notebook)
+    notebook.add(warnings_frame, text=f"Warnings ({results['warning_count']})")
+    
+    warnings_text = scrolledtext.ScrolledText(warnings_frame, wrap=tk.WORD, font=("Courier", 9), width=80, height=30)
+    warnings_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+    
+    if results['warnings']:
+        warnings_lines = []
+        warnings_lines.append("=" * 70)
+        warnings_lines.append("WARNING DETAILS")
+        warnings_lines.append("=" * 70)
+        warnings_lines.append("")
+        for i, warning in enumerate(results['warnings'], 1):
+            warnings_lines.append(f"{i}. {warning}")
+        warnings_text.insert(1.0, "\n".join(warnings_lines))
+    else:
+        warnings_text.insert(1.0, "No warnings occurred during import.")
+    
+    warnings_text.config(state=tk.DISABLED)
+    
+    # Close button
+    button_frame = tk.Frame(main_frame)
+    button_frame.pack(pady=10)
+    
+    close_button = tk.Button(button_frame, text="Close", command=results_dialog.destroy, width=20)
+    close_button.pack()
+    
+    results_dialog.protocol("WM_DELETE_WINDOW", results_dialog.destroy)
+    
+    results_dialog.update_idletasks()
+    results_dialog.lift()
+    results_dialog.focus_force()
+    results_dialog.grab_set()
+    results_dialog.wait_window()
+    
+    try:
+        parent_window.deiconify()
+        parent_window.update_idletasks()
+    except:
+        pass
+
 # Initialize root window
 root = tk.Tk()
 root.title("Import Master")
@@ -448,9 +912,6 @@ except Exception as e:
     print(f"Error reading Excel file: {str(e)}")
     sys.exit(1)
 
-# Clean up root window
-root.destroy()
-
 # Helper function to safely get column value
 def get_col(row, col_name, df):
     """Get column value if column exists and is not NaN, otherwise return None"""
@@ -534,70 +995,124 @@ def handle_product(row, i, action, df, sheet_name=""):
                 brand_obj = Brands.objects.get(name=brand)
                 product = Products.objects.get(sku=sku, brand=brand_obj)
                 
+                updated_fields = []
+                m2m_added = []
+                
                 if name is not None:
+                    old_name = product.name
                     product.name = name
+                    if old_name != name:
+                        updated_fields.append(f"name='{name}'")
                 if description is not None:
+                    old_desc = product.description
                     product.description = description
+                    if old_desc != description:
+                        desc_str = f"{description[:50]}..." if description and len(str(description)) > 50 else str(description)
+                        updated_fields.append(f"description='{desc_str}'")
                 if image is not None:
+                    old_img = product.image
                     product.image = image
+                    if old_img != image:
+                        updated_fields.append(f"image='{image}'")
                 if listingtype:
                     try:
+                        old_lt = product.listingtype.name if product.listingtype else None
                         product.listingtype = ListingTypes.objects.get(name=listingtype)
+                        if old_lt != listingtype:
+                            updated_fields.append(f"listingtype='{listingtype}'")
                     except ListingTypes.DoesNotExist:
                         print(f"Row {i+1}: ListingType '{listingtype}' not found, skipping")
                 if status:
                     try:
+                        old_status = product.status.name if product.status else None
                         product.status = Statuses.objects.get(name=status)
+                        if old_status != status:
+                            updated_fields.append(f"status='{status}'")
                     except Statuses.DoesNotExist:
                         print(f"Row {i+1}: Status '{status}' not found, skipping")
                 if motortype:
                     try:
+                        old_mt = product.motortype.name if product.motortype else None
                         product.motortype = MotorTypes.objects.get(name=motortype)
+                        if old_mt != motortype:
+                            updated_fields.append(f"motortype='{motortype}'")
                     except MotorTypes.DoesNotExist:
                         print(f"Row {i+1}: MotorType '{motortype}' not found, skipping")
                 if releasedate:
+                    old_rd = product.releasedate
                     product.releasedate = pd.to_datetime(releasedate).date() if isinstance(releasedate, str) else releasedate
+                    if old_rd != product.releasedate:
+                        updated_fields.append(f"releasedate={product.releasedate}")
                 if discontinueddate:
+                    old_dd = product.discontinueddate
                     product.discontinueddate = pd.to_datetime(discontinueddate).date() if isinstance(discontinueddate, str) else discontinueddate
+                    if old_dd != product.discontinueddate:
+                        updated_fields.append(f"discontinueddate={product.discontinueddate}")
                 if isaccessory is not None:
+                    old_ia = product.isaccessory
                     product.isaccessory = bool(isaccessory)
+                    if old_ia != product.isaccessory:
+                        updated_fields.append(f"isaccessory={product.isaccessory}")
                 
                 # ManyToMany fields - use .add() only
                 if itemtype:
                     try:
-                        product.itemtypes.add(ItemTypes.objects.get(fullname=itemtype))
+                        it_obj = ItemTypes.objects.get(fullname=itemtype)
+                        if not product.itemtypes.filter(pk=it_obj.pk).exists():
+                            product.itemtypes.add(it_obj)
+                            m2m_added.append(f"itemtype='{itemtype}'")
                     except ItemTypes.DoesNotExist:
                         print(f"Row {i+1}: ItemType '{itemtype}' not found, skipping")
                 if subcategory:
                     try:
-                        product.subcategories.add(Subcategories.objects.get(fullname=subcategory))
+                        sc_obj = Subcategories.objects.get(fullname=subcategory)
+                        if not product.subcategories.filter(pk=sc_obj.pk).exists():
+                            product.subcategories.add(sc_obj)
+                            m2m_added.append(f"subcategory='{subcategory}'")
                     except Subcategories.DoesNotExist:
                         print(f"Row {i+1}: Subcategory '{subcategory}' not found, skipping")
                 if category:
                     try:
-                        product.categories.add(Categories.objects.get(fullname=category))
+                        cat_obj = Categories.objects.get(fullname=category)
+                        if not product.categories.filter(pk=cat_obj.pk).exists():
+                            product.categories.add(cat_obj)
+                            m2m_added.append(f"category='{category}'")
                     except Categories.DoesNotExist:
                         print(f"Row {i+1}: Category '{category}' not found, skipping")
                 if batteryplatform:
                     try:
-                        product.batteryplatforms.add(BatteryPlatforms.objects.get(name=batteryplatform))
+                        bp_obj = BatteryPlatforms.objects.get(name=batteryplatform)
+                        if not product.batteryplatforms.filter(pk=bp_obj.pk).exists():
+                            product.batteryplatforms.add(bp_obj)
+                            m2m_added.append(f"batteryplatform='{batteryplatform}'")
                     except BatteryPlatforms.DoesNotExist:
                         print(f"Row {i+1}: BatteryPlatform '{batteryplatform}' not found, skipping")
                 if batteryvoltage:
                     try:
-                        product.batteryvoltages.add(BatteryVoltages.objects.get(value=int(batteryvoltage)))
+                        bv_obj = BatteryVoltages.objects.get(value=int(batteryvoltage))
+                        if not product.batteryvoltages.filter(pk=bv_obj.pk).exists():
+                            product.batteryvoltages.add(bv_obj)
+                            m2m_added.append(f"batteryvoltage={batteryvoltage}")
                     except BatteryVoltages.DoesNotExist:
                         print(f"Row {i+1}: BatteryVoltage '{batteryvoltage}' not found, skipping")
                 if features:
                     feature_names = [f.strip() for f in str(features).split(',')]
                     for feat_name in feature_names:
                         try:
-                            product.features.add(Features.objects.get(name=feat_name))
+                            feat_obj = Features.objects.get(name=feat_name)
+                            if not product.features.filter(pk=feat_obj.pk).exists():
+                                product.features.add(feat_obj)
+                                m2m_added.append(f"feature='{feat_name}'")
                         except Features.DoesNotExist:
                             print(f"Row {i+1}: Feature '{feat_name}' not found")
                 
                 product.save()
-                print(f"Row {i+1}: Product {product.name} updated")
+                if updated_fields or m2m_added:
+                    all_changes = updated_fields + m2m_added
+                    changes_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: Product {product.brand.name} {product.sku} ({product.name}) updated - Fields: {changes_str}")
+                else:
+                    print(f"Row {i+1}: Product {product.brand.name} {product.sku} ({product.name}) updated (no fields changed)")
             except Products.DoesNotExist:
                 print(f"Row {i+1}: Product not found for update")
     elif action == 'purge':
@@ -787,72 +1302,129 @@ def handle_component(row, i, action, df, sheet_name=""):
                 brand_obj = Brands.objects.get(name=brand)
                 component = Components.objects.get(sku=sku, brand=brand_obj)
                 
+                updated_fields = []
+                m2m_added = []
+                
                 if name is not None:
+                    old_name = component.name
                     component.name = name
+                    if old_name != name:
+                        updated_fields.append(f"name='{name}'")
                 if description is not None:
+                    old_desc = component.description
                     component.description = description
+                    if old_desc != description:
+                        desc_str = f"{description[:50]}..." if description and len(str(description)) > 50 else str(description)
+                        updated_fields.append(f"description='{desc_str}'")
                 if image is not None:
+                    old_img = component.image
                     component.image = image
+                    if old_img != image:
+                        updated_fields.append(f"image='{image}'")
                 if listingtype:
                     try:
+                        old_lt = component.listingtype.name if component.listingtype else None
                         component.listingtype = ListingTypes.objects.get(name=listingtype)
+                        if old_lt != listingtype:
+                            updated_fields.append(f"listingtype='{listingtype}'")
                     except ListingTypes.DoesNotExist:
                         print(f"Row {i+1}: ListingType '{listingtype}' not found, skipping")
                 if motortype:
                     try:
+                        old_mt = component.motortype.name if component.motortype else None
                         component.motortype = MotorTypes.objects.get(name=motortype)
+                        if old_mt != motortype:
+                            updated_fields.append(f"motortype='{motortype}'")
                     except MotorTypes.DoesNotExist:
                         print(f"Row {i+1}: MotorType '{motortype}' not found, skipping")
                 if is_featured is not None:
+                    old_if = component.is_featured
                     component.is_featured = bool(is_featured)
+                    if old_if != component.is_featured:
+                        updated_fields.append(f"is_featured={component.is_featured}")
                 if standalone_price is not None:
+                    old_sp = component.standalone_price
                     component.standalone_price = float(standalone_price)
+                    if old_sp != component.standalone_price:
+                        updated_fields.append(f"standalone_price={component.standalone_price}")
                 if showcase_priority is not None:
+                    old_sc = component.showcase_priority
                     component.showcase_priority = int(showcase_priority)
+                    if old_sc != component.showcase_priority:
+                        updated_fields.append(f"showcase_priority={component.showcase_priority}")
                 if isaccessory is not None:
+                    old_ia = component.isaccessory
                     component.isaccessory = bool(isaccessory)
+                    if old_ia != component.isaccessory:
+                        updated_fields.append(f"isaccessory={component.isaccessory}")
                 
                 # ManyToMany fields - use .add() only
                 if itemtype:
                     try:
-                        component.itemtypes.add(ItemTypes.objects.get(fullname=itemtype))
+                        it_obj = ItemTypes.objects.get(fullname=itemtype)
+                        if not component.itemtypes.filter(pk=it_obj.pk).exists():
+                            component.itemtypes.add(it_obj)
+                            m2m_added.append(f"itemtype='{itemtype}'")
                     except ItemTypes.DoesNotExist:
                         print(f"Row {i+1}: ItemType '{itemtype}' not found, skipping")
                 if subcategory:
                     try:
-                        component.subcategories.add(Subcategories.objects.get(fullname=subcategory))
+                        sc_obj = Subcategories.objects.get(fullname=subcategory)
+                        if not component.subcategories.filter(pk=sc_obj.pk).exists():
+                            component.subcategories.add(sc_obj)
+                            m2m_added.append(f"subcategory='{subcategory}'")
                     except Subcategories.DoesNotExist:
                         print(f"Row {i+1}: Subcategory '{subcategory}' not found, skipping")
                 if category:
                     try:
-                        component.categories.add(Categories.objects.get(fullname=category))
+                        cat_obj = Categories.objects.get(fullname=category)
+                        if not component.categories.filter(pk=cat_obj.pk).exists():
+                            component.categories.add(cat_obj)
+                            m2m_added.append(f"category='{category}'")
                     except Categories.DoesNotExist:
                         print(f"Row {i+1}: Category '{category}' not found, skipping")
                 if batteryplatform:
                     try:
-                        component.batteryplatforms.add(BatteryPlatforms.objects.get(name=batteryplatform))
+                        bp_obj = BatteryPlatforms.objects.get(name=batteryplatform)
+                        if not component.batteryplatforms.filter(pk=bp_obj.pk).exists():
+                            component.batteryplatforms.add(bp_obj)
+                            m2m_added.append(f"batteryplatform='{batteryplatform}'")
                     except BatteryPlatforms.DoesNotExist:
                         print(f"Row {i+1}: BatteryPlatform '{batteryplatform}' not found, skipping")
                 if batteryvoltage:
                     try:
-                        component.batteryvoltages.add(BatteryVoltages.objects.get(value=int(batteryvoltage)))
+                        bv_obj = BatteryVoltages.objects.get(value=int(batteryvoltage))
+                        if not component.batteryvoltages.filter(pk=bv_obj.pk).exists():
+                            component.batteryvoltages.add(bv_obj)
+                            m2m_added.append(f"batteryvoltage={batteryvoltage}")
                     except BatteryVoltages.DoesNotExist:
                         print(f"Row {i+1}: BatteryVoltage '{batteryvoltage}' not found, skipping")
                 if productline:
                     try:
-                        component.productlines.add(ProductLines.objects.get(name=productline))
+                        pl_obj = ProductLines.objects.get(name=productline)
+                        if not component.productlines.filter(pk=pl_obj.pk).exists():
+                            component.productlines.add(pl_obj)
+                            m2m_added.append(f"productline='{productline}'")
                     except ProductLines.DoesNotExist:
                         print(f"Row {i+1}: ProductLine '{productline}' not found, skipping")
                 if features:
                     feature_names = [f.strip() for f in str(features).split(',')]
                     for feat_name in feature_names:
                         try:
-                            component.features.add(Features.objects.get(name=feat_name))
+                            feat_obj = Features.objects.get(name=feat_name)
+                            if not component.features.filter(pk=feat_obj.pk).exists():
+                                component.features.add(feat_obj)
+                                m2m_added.append(f"feature='{feat_name}'")
                         except Features.DoesNotExist:
                             print(f"Row {i+1}: Feature '{feat_name}' not found")
                 
                 component.save()
-                print(f"Row {i+1}: Component {component.name} updated")
+                if updated_fields or m2m_added:
+                    all_changes = updated_fields + m2m_added
+                    changes_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: Component {component.brand.name} {component.sku} ({component.name}) updated - Fields: {changes_str}")
+                else:
+                    print(f"Row {i+1}: Component {component.brand.name} {component.sku} ({component.name}) updated (no fields changed)")
             except Components.DoesNotExist:
                 print(f"Row {i+1}: Component not found for update")
     elif action == 'purge':
@@ -1042,14 +1614,27 @@ def handle_componentfeature(row, i, action, df, sheet_name=""):
                 feature_obj = Features.objects.get(name=feature)
                 try:
                     comp_feature = ComponentFeatures.objects.get(component=component, feature=feature_obj)
+                    updated_fields = []
                     if value is not None:
+                        old_value = comp_feature.value
                         comp_feature.value = value
-                    comp_feature.save()
-                    print(f"Row {i+1}: ComponentFeature updated")
+                        if old_value != value:
+                            updated_fields.append(f"value='{value}'")
+                    
+                    if updated_fields:
+                        comp_feature.save()
+                        fields_str = ', '.join(updated_fields)
+                        print(f"Row {i+1}: ComponentFeature updated - Component: {component.brand.name} {component.sku}, Feature: {feature}, Fields: {fields_str}")
+                    else:
+                        if value is not None:
+                            print(f"Row {i+1}: ComponentFeature updated - Component: {component.brand.name} {component.sku}, Feature: {feature}, Fields: value='{value}' (no change)")
+                        else:
+                            print(f"Row {i+1}: ComponentFeature updated - Component: {component.brand.name} {component.sku}, Feature: {feature} (no fields provided)")
                 except ComponentFeatures.DoesNotExist:
                     comp_feature = ComponentFeatures.objects.create(component=component, feature=feature_obj, value=value)
                     component.features.add(feature_obj)
-                    print(f"Row {i+1}: ComponentFeature created (was update)")
+                    value_str = f"value='{value}'" if value else "value=None"
+                    print(f"Row {i+1}: ComponentFeature created - Component: {component.brand.name} {component.sku}, Feature: {feature}, {value_str}")
             except (Brands.DoesNotExist, Components.DoesNotExist, Features.DoesNotExist) as e:
                 print(f"Row {i+1}: {type(e).__name__}")
     elif action == 'purge':
@@ -1081,7 +1666,7 @@ def handle_componentfeature(row, i, action, df, sheet_name=""):
 def handle_componentattribute(row, i, action, df, sheet_name=""):
     """Handle ComponentAttribute records"""
     brand = get_col(row, 'brand', df)
-    component_sku = get_col(row, 'component_sku', df)
+    component_sku = get_col(row, 'sku', df)
     attribute = get_col(row, 'attribute', df)
     value = get_col(row, 'value', df)
     
@@ -1098,10 +1683,14 @@ def handle_componentattribute(row, i, action, df, sheet_name=""):
                         attr_obj = Attributes.objects.get(name=attribute)
                         comp_attr = ComponentAttributes.objects.filter(component=component, attribute=attr_obj).first()
                     if comp_attr:
+                        deleted_value = comp_attr.value if comp_attr.value else None
                         comp_attr.delete()
-                        print(f"Row {i+1}: ComponentAttribute deleted")
+                        value_info = f", Value: '{deleted_value}'" if deleted_value else ""
+                        print(f"Row {i+1}: ComponentAttribute deleted - Component: {component.brand.name} {component.sku}, Attribute: {attribute}{value_info}")
+                    else:
+                        print(f"Row {i+1}: ComponentAttribute not found - Component: {component.brand.name} {component.sku}, Attribute: {attribute}")
                 except ComponentAttributes.DoesNotExist:
-                    print(f"Row {i+1}: ComponentAttribute not found")
+                    print(f"Row {i+1}: ComponentAttribute not found - Component: {component.brand.name} {component.sku}, Attribute: {attribute}")
             except (Brands.DoesNotExist, Components.DoesNotExist, Attributes.DoesNotExist) as e:
                 print(f"Row {i+1}: {type(e).__name__}")
     elif action in ['update', 'create']:
@@ -1116,13 +1705,27 @@ def handle_componentattribute(row, i, action, df, sheet_name=""):
                     else:
                         comp_attr = ComponentAttributes.objects.filter(component=component, attribute=attr_obj).first()
                     if comp_attr:
+                        updated_fields = []
                         if value is not None:
+                            old_value = comp_attr.value
                             comp_attr.value = value
-                        comp_attr.save()
-                        print(f"Row {i+1}: ComponentAttribute updated")
+                            if old_value != value:
+                                updated_fields.append(f"value='{value}'")
+                        
+                        if updated_fields:
+                            comp_attr.save()
+                            fields_str = ', '.join(updated_fields)
+                            print(f"Row {i+1}: ComponentAttribute updated - Component: {component.brand.name} {component.sku}, Attribute: {attribute}, Fields: {fields_str}")
+                        else:
+                            # Show what was attempted even if no change
+                            if value is not None:
+                                print(f"Row {i+1}: ComponentAttribute updated - Component: {component.brand.name} {component.sku}, Attribute: {attribute}, Fields: value='{value}' (no change from existing)")
+                            else:
+                                print(f"Row {i+1}: ComponentAttribute updated - Component: {component.brand.name} {component.sku}, Attribute: {attribute} (no fields provided)")
                 except ComponentAttributes.DoesNotExist:
                     ComponentAttributes.objects.create(component=component, attribute=attr_obj, value=value)
-                    print(f"Row {i+1}: ComponentAttribute created")
+                    value_str = f"value='{value}'" if value else "value=None"
+                    print(f"Row {i+1}: ComponentAttribute created - Component: {component.brand.name} {component.sku}, Attribute: {attribute}, {value_str}")
             except (Brands.DoesNotExist, Components.DoesNotExist, Attributes.DoesNotExist) as e:
                 print(f"Row {i+1}: {type(e).__name__}")
     elif action == 'purge':
@@ -1130,8 +1733,9 @@ def handle_componentattribute(row, i, action, df, sheet_name=""):
             try:
                 brand_obj = Brands.objects.get(name=brand)
                 component = Components.objects.get(sku=component_sku, brand=brand_obj)
+                count = ComponentAttributes.objects.filter(component=component).count()
                 ComponentAttributes.objects.filter(component=component).delete()
-                print(f"Row {i+1}: All ComponentAttributes purged")
+                print(f"Row {i+1}: ComponentAttribute purged - Component: {component.brand.name} {component.sku}, Purged {count} attribute(s)")
             except (Brands.DoesNotExist, Components.DoesNotExist) as e:
                 print(f"Row {i+1}: {type(e).__name__}")
 
@@ -1166,12 +1770,16 @@ def handle_productcomponent(row, i, action, df, sheet_name=""):
                 component = Components.objects.get(sku=component_sku, brand=comp_brand_obj)
                 try:
                     prod_comp = ProductComponents.objects.get(product=product, component=component)
+                    old_qty = prod_comp.quantity
                     prod_comp.quantity = int(quantity)
-                    prod_comp.save()
-                    print(f"Row {i+1}: ProductComponent updated")
+                    if old_qty != prod_comp.quantity:
+                        prod_comp.save()
+                        print(f"Row {i+1}: ProductComponent updated - Product: {product.brand.name} {product.sku}, Component: {component.brand.name} {component.sku}, Fields: quantity={prod_comp.quantity}")
+                    else:
+                        print(f"Row {i+1}: ProductComponent updated - Product: {product.brand.name} {product.sku}, Component: {component.brand.name} {component.sku}, Fields: quantity={quantity} (no change)")
                 except ProductComponents.DoesNotExist:
                     ProductComponents.objects.create(product=product, component=component, quantity=int(quantity))
-                    print(f"Row {i+1}: ProductComponent created")
+                    print(f"Row {i+1}: ProductComponent created - Product: {product.brand.name} {product.sku}, Component: {component.brand.name} {component.sku}, quantity={quantity}")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
     elif action == 'purge':
@@ -1210,12 +1818,16 @@ def handle_productaccessory(row, i, action, df, sheet_name=""):
                 product = Products.objects.get(sku=product_sku, brand=brand_obj)
                 try:
                     prod_acc = ProductAccessories.objects.get(product=product, name=name)
+                    old_qty = prod_acc.quantity
                     prod_acc.quantity = int(quantity)
-                    prod_acc.save()
-                    print(f"Row {i+1}: ProductAccessory updated")
+                    if old_qty != prod_acc.quantity:
+                        prod_acc.save()
+                        print(f"Row {i+1}: ProductAccessory updated - Product: {product.brand.name} {product.sku}, Name: {name}, Fields: quantity={prod_acc.quantity}")
+                    else:
+                        print(f"Row {i+1}: ProductAccessory updated - Product: {product.brand.name} {product.sku}, Name: {name}, Fields: quantity={quantity} (no change)")
                 except ProductAccessories.DoesNotExist:
                     ProductAccessories.objects.create(product=product, name=name, quantity=int(quantity))
-                    print(f"Row {i+1}: ProductAccessory created")
+                    print(f"Row {i+1}: ProductAccessory created - Product: {product.brand.name} {product.sku}, Name: {name}, quantity={quantity}")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
     elif action == 'purge':
@@ -1254,13 +1866,26 @@ def handle_productspecification(row, i, action, df, sheet_name=""):
                 product = Products.objects.get(sku=product_sku, brand=brand_obj)
                 try:
                     prod_spec = ProductSpecifications.objects.get(product=product, name=name)
+                    updated_fields = []
                     if value is not None:
+                        old_value = prod_spec.value
                         prod_spec.value = value
-                    prod_spec.save()
-                    print(f"Row {i+1}: ProductSpecification updated")
+                        if old_value != value:
+                            updated_fields.append(f"value='{value}'")
+                    
+                    if updated_fields:
+                        prod_spec.save()
+                        fields_str = ', '.join(updated_fields)
+                        print(f"Row {i+1}: ProductSpecification updated - Product: {product.brand.name} {product.sku}, Name: {name}, Fields: {fields_str}")
+                    else:
+                        if value is not None:
+                            print(f"Row {i+1}: ProductSpecification updated - Product: {product.brand.name} {product.sku}, Name: {name}, Fields: value='{value}' (no change)")
+                        else:
+                            print(f"Row {i+1}: ProductSpecification updated - Product: {product.brand.name} {product.sku}, Name: {name} (no fields provided)")
                 except ProductSpecifications.DoesNotExist:
                     ProductSpecifications.objects.create(product=product, name=name, value=value)
-                    print(f"Row {i+1}: ProductSpecification created")
+                    value_str = f"value='{value}'" if value else "value=None"
+                    print(f"Row {i+1}: ProductSpecification created - Product: {product.brand.name} {product.sku}, Name: {name}, {value_str}")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
     elif action == 'purge':
@@ -1341,12 +1966,36 @@ def handle_attribute(row, i, action, df, sheet_name=""):
                     attr = Attributes.objects.get(name=name, unit=unit)
                 else:
                     attr = Attributes.objects.get(name=name, unit__isnull=True)
+                
+                updated_fields = []
+                # Track what fields are being updated
                 if description is not None:
+                    old_desc = attr.description
                     attr.description = description
+                    if old_desc != description:
+                        updated_fields.append(f"description='{description}'")
                 if sortorder is not None:
+                    old_sort = attr.sortorder
                     attr.sortorder = int(sortorder)
-                attr.save()
-                print(f"Row {i+1}: Attribute {name} updated")
+                    if old_sort != attr.sortorder:
+                        updated_fields.append(f"sortorder={sortorder}")
+                
+                if updated_fields:
+                    attr.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Attribute {name} updated - Fields: {fields_str}")
+                else:
+                    # Even if no actual changes, show what was in the update
+                    attempted_fields = []
+                    if description is not None:
+                        attempted_fields.append(f"description='{description}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Attribute {name} updated - Fields: {fields_str} (no change from existing values)")
+                    else:
+                        print(f"Row {i+1}: Attribute {name} updated (no fields provided)")
             except Attributes.DoesNotExist:
                 print(f"Row {i+1}: Attribute not found")
             except Attributes.MultipleObjectsReturned:
@@ -1384,12 +2033,33 @@ def handle_feature(row, i, action, df, sheet_name=""):
         if name:
             try:
                 feat = Features.objects.get(name=name)
+                updated_fields = []
                 if description is not None:
+                    old_desc = feat.description
                     feat.description = description
+                    if old_desc != description:
+                        updated_fields.append(f"description='{description}'")
                 if sortorder is not None:
+                    old_sort = feat.sortorder
                     feat.sortorder = int(sortorder)
-                feat.save()
-                print(f"Row {i+1}: Feature {name} updated")
+                    if old_sort != feat.sortorder:
+                        updated_fields.append(f"sortorder={feat.sortorder}")
+                
+                if updated_fields:
+                    feat.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Feature {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if description is not None:
+                        attempted_fields.append(f"description='{description}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Feature {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Feature {name} updated (no fields provided)")
             except Features.DoesNotExist:
                 print(f"Row {i+1}: Feature not found")
     elif action == 'create':
@@ -1423,12 +2093,33 @@ def handle_category(row, i, action, df, sheet_name=""):
         if fullname:
             try:
                 cat = Categories.objects.get(fullname=fullname)
+                updated_fields = []
                 if name is not None:
+                    old_name = cat.name
                     cat.name = name
+                    if old_name != name:
+                        updated_fields.append(f"name='{name}'")
                 if sortorder is not None:
+                    old_sort = cat.sortorder
                     cat.sortorder = int(sortorder)
-                cat.save()
-                print(f"Row {i+1}: Category {fullname} updated")
+                    if old_sort != cat.sortorder:
+                        updated_fields.append(f"sortorder={cat.sortorder}")
+                
+                if updated_fields:
+                    cat.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Category {fullname} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if name is not None:
+                        attempted_fields.append(f"name='{name}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Category {fullname} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Category {fullname} updated (no fields provided)")
             except Categories.DoesNotExist:
                 print(f"Row {i+1}: Category not found")
     elif action == 'create':
@@ -1463,18 +2154,43 @@ def handle_subcategory(row, i, action, df, sheet_name=""):
         if fullname:
             try:
                 subcat = Subcategories.objects.get(fullname=fullname)
+                updated_fields = []
+                m2m_added = []
                 if name is not None:
+                    old_name = subcat.name
                     subcat.name = name
+                    if old_name != name:
+                        updated_fields.append(f"name='{name}'")
                 if sortorder is not None:
+                    old_sort = subcat.sortorder
                     subcat.sortorder = int(sortorder)
+                    if old_sort != subcat.sortorder:
+                        updated_fields.append(f"sortorder={subcat.sortorder}")
                 if category_fullname:
                     try:
                         cat = Categories.objects.get(fullname=category_fullname)
-                        subcat.categories.add(cat)  # Add only, preserve existing
+                        if not subcat.categories.filter(pk=cat.pk).exists():
+                            subcat.categories.add(cat)
+                            m2m_added.append(f"category='{category_fullname}'")
                     except Categories.DoesNotExist:
                         print(f"Row {i+1}: Category '{category_fullname}' not found")
-                subcat.save()
-                print(f"Row {i+1}: Subcategory {fullname} updated")
+                
+                if updated_fields or m2m_added:
+                    subcat.save()
+                    all_changes = updated_fields + m2m_added
+                    fields_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: Subcategory {fullname} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if name is not None:
+                        attempted_fields.append(f"name='{name}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Subcategory {fullname} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Subcategory {fullname} updated (no fields provided)")
             except Subcategories.DoesNotExist:
                 print(f"Row {i+1}: Subcategory not found")
     elif action == 'create':
@@ -1517,27 +2233,59 @@ def handle_itemtype(row, i, action, df, sheet_name=""):
         if fullname:
             try:
                 itemtype = ItemTypes.objects.get(fullname=fullname)
+                updated_fields = []
+                m2m_added = []
                 if name is not None:
+                    old_name = itemtype.name
                     itemtype.name = name
+                    if old_name != name:
+                        updated_fields.append(f"name='{name}'")
                 if sortorder is not None:
+                    old_sort = itemtype.sortorder
                     itemtype.sortorder = int(sortorder)
+                    if old_sort != itemtype.sortorder:
+                        updated_fields.append(f"sortorder={itemtype.sortorder}")
                 if category_fullname:
                     try:
-                        itemtype.categories.add(Categories.objects.get(fullname=category_fullname))
+                        cat_obj = Categories.objects.get(fullname=category_fullname)
+                        if not itemtype.categories.filter(pk=cat_obj.pk).exists():
+                            itemtype.categories.add(cat_obj)
+                            m2m_added.append(f"category='{category_fullname}'")
                     except Categories.DoesNotExist:
                         print(f"Row {i+1}: Category '{category_fullname}' not found")
                 if subcategory_fullname:
                     try:
-                        itemtype.subcategories.add(Subcategories.objects.get(fullname=subcategory_fullname))
+                        sc_obj = Subcategories.objects.get(fullname=subcategory_fullname)
+                        if not itemtype.subcategories.filter(pk=sc_obj.pk).exists():
+                            itemtype.subcategories.add(sc_obj)
+                            m2m_added.append(f"subcategory='{subcategory_fullname}'")
                     except Subcategories.DoesNotExist:
                         print(f"Row {i+1}: Subcategory '{subcategory_fullname}' not found")
                 if attribute_name:
                     try:
-                        itemtype.attributes.add(Attributes.objects.get(name=attribute_name))
+                        attr_obj = Attributes.objects.get(name=attribute_name)
+                        if not itemtype.attributes.filter(pk=attr_obj.pk).exists():
+                            itemtype.attributes.add(attr_obj)
+                            m2m_added.append(f"attribute='{attribute_name}'")
                     except Attributes.DoesNotExist:
                         print(f"Row {i+1}: Attribute '{attribute_name}' not found")
-                itemtype.save()
-                print(f"Row {i+1}: ItemType {fullname} updated")
+                
+                if updated_fields or m2m_added:
+                    itemtype.save()
+                    all_changes = updated_fields + m2m_added
+                    fields_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: ItemType {fullname} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if name is not None:
+                        attempted_fields.append(f"name='{name}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: ItemType {fullname} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: ItemType {fullname} updated (no fields provided)")
             except ItemTypes.DoesNotExist:
                 print(f"Row {i+1}: ItemType not found")
     elif action == 'create':
@@ -1585,10 +2333,22 @@ def handle_motortype(row, i, action, df, sheet_name=""):
         if name:
             try:
                 mt = MotorTypes.objects.get(name=name)
+                updated_fields = []
                 if sortorder is not None:
+                    old_sort = mt.sortorder
                     mt.sortorder = int(sortorder)
-                mt.save()
-                print(f"Row {i+1}: MotorType {name} updated")
+                    if old_sort != mt.sortorder:
+                        updated_fields.append(f"sortorder={mt.sortorder}")
+                
+                if updated_fields:
+                    mt.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: MotorType {name} updated - Fields: {fields_str}")
+                else:
+                    if sortorder is not None:
+                        print(f"Row {i+1}: MotorType {name} updated - Fields: sortorder={sortorder} (no change)")
+                    else:
+                        print(f"Row {i+1}: MotorType {name} updated (no fields provided)")
             except MotorTypes.DoesNotExist:
                 print(f"Row {i+1}: MotorType not found")
     elif action == 'create':
@@ -1619,15 +2379,30 @@ def handle_listingtype(row, i, action, df, sheet_name=""):
         if name:
             try:
                 lt = ListingTypes.objects.get(name=name)
+                updated_fields = []
                 if retailer:
                     try:
+                        old_ret = lt.retailer.name if lt.retailer else None
                         lt.retailer = Retailers.objects.get(name=retailer)
+                        if old_ret != retailer:
+                            updated_fields.append(f"retailer='{retailer}'")
                     except Retailers.DoesNotExist:
                         print(f"Row {i+1}: Retailer '{retailer}' not found")
                 elif retailer is None:
+                    old_ret = lt.retailer.name if lt.retailer else None
                     lt.retailer = None
-                lt.save()
-                print(f"Row {i+1}: ListingType {name} updated")
+                    if old_ret is not None:
+                        updated_fields.append("retailer=None")
+                
+                if updated_fields:
+                    lt.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: ListingType {name} updated - Fields: {fields_str}")
+                else:
+                    if retailer is not None:
+                        print(f"Row {i+1}: ListingType {name} updated - Fields: retailer='{retailer}' (no change)")
+                    else:
+                        print(f"Row {i+1}: ListingType {name} updated (no fields provided)")
             except ListingTypes.DoesNotExist:
                 print(f"Row {i+1}: ListingType not found")
     elif action == 'create':
@@ -1663,14 +2438,40 @@ def handle_brand(row, i, action, df, sheet_name=""):
         if name:
             try:
                 brand = Brands.objects.get(name=name)
+                updated_fields = []
                 if color is not None:
+                    old_color = brand.color
                     brand.color = color
+                    if old_color != color:
+                        updated_fields.append(f"color='{color}'")
                 if logo is not None:
+                    old_logo = brand.logo
                     brand.logo = logo
+                    if old_logo != logo:
+                        updated_fields.append(f"logo='{logo}'")
                 if sortorder is not None:
+                    old_sort = brand.sortorder
                     brand.sortorder = int(sortorder)
-                brand.save()
-                print(f"Row {i+1}: Brand {name} updated")
+                    if old_sort != brand.sortorder:
+                        updated_fields.append(f"sortorder={brand.sortorder}")
+                
+                if updated_fields:
+                    brand.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Brand {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if color is not None:
+                        attempted_fields.append(f"color='{color}'")
+                    if logo is not None:
+                        attempted_fields.append(f"logo='{logo}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Brand {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Brand {name} updated (no fields provided)")
             except Brands.DoesNotExist:
                 print(f"Row {i+1}: Brand not found")
     elif action == 'create':
@@ -1734,14 +2535,40 @@ def handle_retailer(row, i, action, df, sheet_name=""):
         if name:
             try:
                 retailer = Retailers.objects.get(name=name)
+                updated_fields = []
                 if url is not None:
+                    old_url = retailer.url
                     retailer.url = url
+                    if old_url != url:
+                        updated_fields.append(f"url='{url}'")
                 if logo is not None:
+                    old_logo = retailer.logo
                     retailer.logo = logo
+                    if old_logo != logo:
+                        updated_fields.append(f"logo='{logo}'")
                 if sortorder is not None:
+                    old_sort = retailer.sortorder
                     retailer.sortorder = int(sortorder)
-                retailer.save()
-                print(f"Row {i+1}: Retailer {name} updated")
+                    if old_sort != retailer.sortorder:
+                        updated_fields.append(f"sortorder={retailer.sortorder}")
+                
+                if updated_fields:
+                    retailer.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Retailer {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if url is not None:
+                        attempted_fields.append(f"url='{url}'")
+                    if logo is not None:
+                        attempted_fields.append(f"logo='{logo}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Retailer {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Retailer {name} updated (no fields provided)")
             except Retailers.DoesNotExist:
                 print(f"Row {i+1}: Retailer not found")
     elif action == 'create':
@@ -1778,14 +2605,40 @@ def handle_status(row, i, action, df, sheet_name=""):
         if name:
             try:
                 status = Statuses.objects.get(name=name)
+                updated_fields = []
                 if color is not None:
+                    old_color = status.color
                     status.color = color
+                    if old_color != color:
+                        updated_fields.append(f"color='{color}'")
                 if icon is not None:
+                    old_icon = status.icon
                     status.icon = icon
+                    if old_icon != icon:
+                        updated_fields.append(f"icon='{icon}'")
                 if sortorder is not None:
+                    old_sort = status.sortorder
                     status.sortorder = int(sortorder)
-                status.save()
-                print(f"Row {i+1}: Status {name} updated")
+                    if old_sort != status.sortorder:
+                        updated_fields.append(f"sortorder={status.sortorder}")
+                
+                if updated_fields:
+                    status.save()
+                    fields_str = ', '.join(updated_fields)
+                    print(f"Row {i+1}: Status {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if color is not None:
+                        attempted_fields.append(f"color='{color}'")
+                    if icon is not None:
+                        attempted_fields.append(f"icon='{icon}'")
+                    if sortorder is not None:
+                        attempted_fields.append(f"sortorder={sortorder}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: Status {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: Status {name} updated (no fields provided)")
             except Statuses.DoesNotExist:
                 print(f"Row {i+1}: Status not found")
     elif action == 'create':
@@ -1821,21 +2674,46 @@ def handle_batteryplatform(row, i, action, df, sheet_name=""):
         if name:
             try:
                 bp = BatteryPlatforms.objects.get(name=name)
+                updated_fields = []
+                m2m_added = []
                 if brand:
                     try:
+                        old_brand = bp.brand.name if bp.brand else None
                         bp.brand = Brands.objects.get(name=brand)
+                        if old_brand != brand:
+                            updated_fields.append(f"brand='{brand}'")
                     except Brands.DoesNotExist:
                         print(f"Row {i+1}: Brand '{brand}' not found")
                 elif brand is None:
+                    old_brand = bp.brand.name if bp.brand else None
                     bp.brand = None
+                    if old_brand is not None:
+                        updated_fields.append("brand=None")
                 if voltage_value is not None:
                     try:
                         voltage = BatteryVoltages.objects.get(value=int(voltage_value))
-                        bp.voltage.add(voltage)  # Add only, preserve existing
+                        if not bp.voltage.filter(pk=voltage.pk).exists():
+                            bp.voltage.add(voltage)
+                            m2m_added.append(f"voltage={voltage_value}")
                     except BatteryVoltages.DoesNotExist:
                         print(f"Row {i+1}: BatteryVoltage '{voltage_value}' not found")
-                bp.save()
-                print(f"Row {i+1}: BatteryPlatform {name} updated")
+                
+                if updated_fields or m2m_added:
+                    bp.save()
+                    all_changes = updated_fields + m2m_added
+                    fields_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: BatteryPlatform {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if brand is not None:
+                        attempted_fields.append(f"brand='{brand}'")
+                    if voltage_value is not None:
+                        attempted_fields.append(f"voltage={voltage_value}")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: BatteryPlatform {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: BatteryPlatform {name} updated (no fields provided)")
             except BatteryPlatforms.DoesNotExist:
                 print(f"Row {i+1}: BatteryPlatform not found")
     elif action == 'create':
@@ -1881,24 +2759,52 @@ def handle_productline(row, i, action, df, sheet_name=""):
             try:
                 brand_obj = Brands.objects.get(name=brand)
                 pl = ProductLines.objects.get(name=name, brand=brand_obj)
+                updated_fields = []
+                m2m_added = []
                 if description is not None:
+                    old_desc = pl.description
                     pl.description = description
+                    if old_desc != description:
+                        desc_str = f"{description[:50]}..." if description and len(str(description)) > 50 else str(description)
+                        updated_fields.append(f"description='{desc_str}'")
                 if image is not None:
+                    old_img = pl.image
                     pl.image = image
+                    if old_img != image:
+                        updated_fields.append(f"image='{image}'")
                 if batteryplatform_name:
                     try:
                         bp = BatteryPlatforms.objects.get(name=batteryplatform_name)
-                        pl.batteryplatform.add(bp)  # Add only, preserve existing
+                        if not pl.batteryplatform.filter(pk=bp.pk).exists():
+                            pl.batteryplatform.add(bp)
+                            m2m_added.append(f"batteryplatform='{batteryplatform_name}'")
                     except BatteryPlatforms.DoesNotExist:
                         print(f"Row {i+1}: BatteryPlatform '{batteryplatform_name}' not found")
                 if batteryvoltage_value is not None:
                     try:
                         bv = BatteryVoltages.objects.get(value=int(batteryvoltage_value))
-                        pl.batteryvoltage.add(bv)  # Add only, preserve existing
+                        if not pl.batteryvoltage.filter(pk=bv.pk).exists():
+                            pl.batteryvoltage.add(bv)
+                            m2m_added.append(f"batteryvoltage={batteryvoltage_value}")
                     except BatteryVoltages.DoesNotExist:
                         print(f"Row {i+1}: BatteryVoltage '{batteryvoltage_value}' not found")
-                pl.save()
-                print(f"Row {i+1}: ProductLine {name} updated")
+                
+                if updated_fields or m2m_added:
+                    pl.save()
+                    all_changes = updated_fields + m2m_added
+                    fields_str = ', '.join(all_changes)
+                    print(f"Row {i+1}: ProductLine {brand} {name} updated - Fields: {fields_str}")
+                else:
+                    attempted_fields = []
+                    if description is not None:
+                        attempted_fields.append(f"description='{description}'")
+                    if image is not None:
+                        attempted_fields.append(f"image='{image}'")
+                    if attempted_fields:
+                        fields_str = ', '.join(attempted_fields)
+                        print(f"Row {i+1}: ProductLine {brand} {name} updated - Fields: {fields_str} (no change)")
+                    else:
+                        print(f"Row {i+1}: ProductLine {brand} {name} updated (no fields provided)")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
     elif action == 'create':
@@ -2001,15 +2907,29 @@ def handle_pricelisting(row, i, action, df, sheet_name=""):
                 
                 try:
                     pl = PriceListings.objects.get(**query)
+                    updated_fields = []
                     if currency is not None:
+                        old_curr = pl.currency
                         pl.currency = currency
+                        if old_curr != currency:
+                            updated_fields.append(f"currency='{currency}'")
                     if url is not None:
+                        old_url = pl.url
                         pl.url = url
-                    pl.save()
-                    print(f"Row {i+1}: PriceListing updated")
+                        if old_url != url:
+                            updated_fields.append(f"url='{url}'")
+                    
+                    if updated_fields:
+                        pl.save()
+                        fields_str = ', '.join(updated_fields)
+                        print(f"Row {i+1}: PriceListing updated - Product: {product.brand.name} {product.sku}, Retailer: {retailer_name}, Price: {create_data['price']} {create_data['currency']}, Fields: {fields_str}")
+                    else:
+                        print(f"Row {i+1}: PriceListing updated - Product: {product.brand.name} {product.sku}, Retailer: {retailer_name}, Price: {create_data['price']} {create_data['currency']} (no fields changed)")
                 except PriceListings.DoesNotExist:
                     PriceListings.objects.create(**create_data)
-                    print(f"Row {i+1}: PriceListing created")
+                    retailer_sku_str = f", RetailerSKU: {retailer_sku}" if retailer_sku else ""
+                    url_str = f", URL: {url}" if url else ""
+                    print(f"Row {i+1}: PriceListing created - Product: {product.brand.name} {product.sku}, Retailer: {retailer_name}, Price: {create_data['price']} {create_data['currency']}{retailer_sku_str}{url_str}")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
 
@@ -2046,8 +2966,8 @@ ROUTERS = {
 # Function to process a single sheet
 # ============================================================================
 
-def process_sheet(file_path, sheet_name, excel_file):
-    """Process a single sheet from the Excel file"""
+def process_sheet(file_path, sheet_name, excel_file, results_collector=None):
+    """Process a single sheet from the Excel file and collect results"""
     print(f"\n{'='*60}")
     print(f"Processing sheet: {sheet_name}")
     print(f"{'='*60}")
@@ -2057,18 +2977,29 @@ def process_sheet(file_path, sheet_name, excel_file):
         print(f"Loaded {len(df)} rows and {len(df.columns)} columns")
         
         if len(df) == 0:
-            print(f"Sheet '{sheet_name}' is empty, skipping")
+            msg = f"Sheet '{sheet_name}' is empty, skipping"
+            print(msg)
+            if results_collector:
+                results_collector['warnings'].append(msg)
             return
         
         for i in range(len(df)):
             row = df.iloc[i]
             
             if 'action' not in df.columns:
-                print(f"Sheet '{sheet_name}', Row {i+1}: Skipping - 'action' column not found")
+                msg = f"Sheet '{sheet_name}', Row {i+1}: Skipping - 'action' column not found"
+                print(msg)
+                if results_collector:
+                    results_collector['warnings'].append(msg)
+                    results_collector['warning_count'] += 1
                 continue
             
             if 'recordtype' not in df.columns:
-                print(f"Sheet '{sheet_name}', Row {i+1}: Skipping - 'recordtype' column not found")
+                msg = f"Sheet '{sheet_name}', Row {i+1}: Skipping - 'recordtype' column not found"
+                print(msg)
+                if results_collector:
+                    results_collector['warnings'].append(msg)
+                    results_collector['warning_count'] += 1
                 continue
             
             action = get_col(row, 'action', df)
@@ -2078,36 +3009,210 @@ def process_sheet(file_path, sheet_name, excel_file):
                 continue
             
             if not recordtype:
-                print(f"Sheet '{sheet_name}', Row {i+1}: Skipping - recordtype is empty")
+                msg = f"Sheet '{sheet_name}', Row {i+1}: Skipping - recordtype is empty"
+                print(msg)
+                if results_collector:
+                    results_collector['warnings'].append(msg)
+                    results_collector['warning_count'] += 1
                 continue
             
             recordtype_lower = str(recordtype).lower().strip()
+            action_lower = str(action).lower().strip()
             
             if recordtype_lower in ROUTERS:
+                original_stdout = sys.stdout
+                output_capture = None
                 try:
+                    # Capture output to get detailed operation messages
+                    if results_collector:
+                        # Create output capture to get detailed messages
+                        output_capture = OutputCapture(original_stdout, results_collector)
+                        sys.stdout = output_capture
+                    
+                    # Call the handler - it will print detailed messages
                     ROUTERS[recordtype_lower](row, i, action, df, sheet_name)
+                    
+                    # Flush stdout to ensure all print statements are captured
+                    sys.stdout.flush()
+                    
+                    # Flush output capture to ensure all messages are processed
+                    details_before = len(results_collector['details']) if results_collector else 0
+                    if output_capture:
+                        output_capture.flush()
+                    
+                    # Track success
+                    if results_collector:
+                        results_collector['success_count'] += 1
+                        results_collector['by_action'][action_lower] += 1
+                        results_collector['by_recordtype'][recordtype_lower] += 1
+                        results_collector['total_rows'] += 1
+                        
+                        # Fallback: If no detail was captured but operation succeeded, create one with field details
+                        details_after = len(results_collector['details'])
+                        if details_before == details_after:
+                            # Try to get record identifier for better detail message
+                            record_id = ""
+                            if recordtype_lower in ['product', 'component']:
+                                sku = get_col(row, 'sku', df)
+                                brand = get_col(row, 'brand', df)
+                                if sku and brand:
+                                    record_id = f"{brand} {sku}"
+                            elif recordtype_lower == 'attribute':
+                                name = get_col(row, 'name', df)
+                                if name:
+                                    record_id = name
+                            elif recordtype_lower in ['feature', 'category', 'subcategory', 'itemtype', 'motortype', 
+                                                       'listingtype', 'brand', 'retailer', 'status', 'batteryplatform', 
+                                                       'productline']:
+                                name = get_col(row, 'name', df) or get_col(row, 'fullname', df)
+                                if name:
+                                    record_id = name
+                            
+                            # Collect updated fields (for UPDATE and PURGE actions)
+                            updated_fields = []
+                            if action_lower in ['update', 'purge']:
+                                # Exclude key/identifier columns and action/recordtype columns
+                                exclude_cols = {'action', 'recordtype', 'brand', 'sku', 'component_sku', 
+                                               'product_sku', 'component_brand', 'name', 'fullname'}
+                                for col in df.columns:
+                                    if col.lower() not in exclude_cols:
+                                        value = get_col(row, col, df)
+                                        if value is not None and value != '':
+                                            if action_lower == 'update':
+                                                # For update, show field and value
+                                                if pd.notna(value):
+                                                    updated_fields.append(f"{col}={value}")
+                                            elif action_lower == 'purge':
+                                                # For purge, just show field name
+                                                updated_fields.append(col)
+                            
+                            # Create a detail entry matching handler format
+                            # Format: "Row {i+1}: {RecordType} {identifier} {action_past_tense} [field details]"
+                            record_type_display = recordtype_lower.replace('_', ' ').title().replace(' ', '')
+                            if record_type_display == 'Componentfeature':
+                                record_type_display = 'ComponentFeature'
+                            elif record_type_display == 'Componentattribute':
+                                record_type_display = 'ComponentAttribute'
+                            elif record_type_display == 'Productcomponent':
+                                record_type_display = 'ProductComponent'
+                            elif record_type_display == 'Productaccessory':
+                                record_type_display = 'ProductAccessory'
+                            elif record_type_display == 'Productspecification':
+                                record_type_display = 'ProductSpecification'
+                            elif record_type_display == 'Productimage':
+                                record_type_display = 'ProductImage'
+                            elif record_type_display == 'Batteryvoltage':
+                                record_type_display = 'BatteryVoltage'
+                            elif record_type_display == 'Batteryplatform':
+                                record_type_display = 'BatteryPlatform'
+                            elif record_type_display == 'Productline':
+                                record_type_display = 'ProductLine'
+                            elif record_type_display == 'Pricelisting':
+                                record_type_display = 'PriceListing'
+                            
+                            # Convert action to past tense to match handler format and grouping logic
+                            action_past = {
+                                'create': 'created',
+                                'update': 'updated',
+                                'delete': 'deleted',
+                                'purge': 'purged'
+                            }.get(action_lower, action_lower)
+                            
+                            # Build detail message with field information
+                            if record_id:
+                                detail_msg = f"Row {i+1}: {record_type_display} {record_id} {action_past}"
+                            else:
+                                detail_msg = f"Row {i+1}: {record_type_display} {action_past}"
+                            
+                            # Add field details for UPDATE and PURGE
+                            if updated_fields:
+                                if action_lower == 'update':
+                                    detail_msg += f" - Fields: {', '.join(updated_fields)}"
+                                elif action_lower == 'purge':
+                                    detail_msg += f" - Purged fields: {', '.join(updated_fields)}"
+                            
+                            if len(results_collector['details']) < 1000:
+                                results_collector['details'].append(detail_msg)
                 except Exception as e:
-                    print(f"Sheet '{sheet_name}', Row {i+1}: Error processing {recordtype_lower}: {type(e).__name__}: {str(e)}")
+                    # Flush before restoring in case of error
+                    if output_capture:
+                        sys.stdout.flush()
+                        output_capture.flush()
+                    error_msg = f"Sheet '{sheet_name}', Row {i+1}: Error processing {recordtype_lower}: {type(e).__name__}: {str(e)}"
+                    print(error_msg)
+                    if results_collector:
+                        results_collector['errors'].append(error_msg)
+                        results_collector['error_count'] += 1
+                finally:
+                    # Always restore stdout
+                    if results_collector and output_capture:
+                        sys.stdout = original_stdout
             else:
-                print(f"Sheet '{sheet_name}', Row {i+1}: Unknown recordtype '{recordtype}', skipping")
+                msg = f"Sheet '{sheet_name}', Row {i+1}: Unknown recordtype '{recordtype}', skipping"
+                print(msg)
+                if results_collector:
+                    results_collector['warnings'].append(msg)
+                    results_collector['warning_count'] += 1
         
         print(f"\nCompleted processing sheet: {sheet_name}")
         
     except Exception as e:
-        print(f"Error processing sheet '{sheet_name}': {type(e).__name__}: {str(e)}")
+        error_msg = f"Error processing sheet '{sheet_name}': {type(e).__name__}: {str(e)}"
+        print(error_msg)
+        if results_collector:
+            results_collector['errors'].append(error_msg)
+            results_collector['error_count'] += 1
 
 # ============================================================================
 # Main processing loop - process all selected sheets
 # ============================================================================
+
+# Analyze sheets and show preview dialog
+print(f"\nAnalyzing {len(selected_sheets)} selected sheet(s)...")
+summary = analyze_sheets(file_path, selected_sheets)
+
+# Show preview dialog and get confirmation
+root.deiconify()
+root.update_idletasks()
+confirmed = show_preview_dialog(root, summary)
+
+if not confirmed:
+    print("\nImport cancelled by user.")
+    sys.exit(0)
+
+# Initialize results collector
+results = {
+    'total_sheets': len(selected_sheets),
+    'total_rows': 0,
+    'success_count': 0,
+    'error_count': 0,
+    'warning_count': 0,
+    'by_action': defaultdict(int),
+    'by_recordtype': defaultdict(int),
+    'errors': [],
+    'warnings': [],
+    'details': []
+}
 
 print(f"\nStarting import of {len(selected_sheets)} sheet(s)...")
 
 total_sheets = len(selected_sheets)
 for sheet_idx, sheet_name in enumerate(selected_sheets, 1):
     print(f"\n[{sheet_idx}/{total_sheets}] Processing sheet: {sheet_name}")
-    process_sheet(file_path, sheet_name, excel_file)
+    process_sheet(file_path, sheet_name, excel_file, results)
 
 print(f"\n{'='*60}")
 print(f"Import complete! Processed {len(selected_sheets)} sheet(s)")
 print(f"{'='*60}")
+print(f"Successfully processed: {results['success_count']} rows")
+print(f"Errors: {results['error_count']}")
+print(f"Warnings: {results['warning_count']}")
+
+# Show results dialog
+root.deiconify()
+root.update_idletasks()
+show_results_dialog(root, results)
+
+# Clean up
+root.destroy()
 

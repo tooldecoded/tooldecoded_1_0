@@ -6,6 +6,7 @@ class Attributes(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     name = models.TextField()
     unit = models.TextField(blank=True, null=True)
+    displayformat = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     sortorder = models.IntegerField(blank=True, null=True)
     class Meta:

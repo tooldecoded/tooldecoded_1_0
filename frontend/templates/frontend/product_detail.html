@@ -337,7 +337,7 @@
                                 {% endif %}
                             </tr>
                             {% endfor %}
-                            {% if retailers_data and show_total_component_value %}
+                            {% if show_total_component_value %}
                             <tr class="bg-[#F5F6F8] font-bold border-t-2 border-[#E1E4E8]">
                                 <td class="px-3 py-2" colspan="2">
                                     <span class="text-[#313131]">Total</span>
@@ -356,13 +356,15 @@
                                         <span class="text-[#B0B0B0]">&mdash;</span>
                                     {% endif %}
                                 </td>
-                                {% for retailer_info in retailers_data %}
-                                    <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
-                                        <span class="text-[#0089D9]">{{ retailer_info.price|usd }}</span>
-                                    </td>
-                                {% endfor %}
+                                {% if retailers_data %}
+                                    {% for retailer_info in retailers_data %}
+                                        <td class="px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
+                                            <span class="text-[#0089D9]">{{ retailer_info.price|usd }}</span>
+                                        </td>
+                                    {% endfor %}
+                                {% endif %}
                             </tr>
-                            {% if retailers_data|length > 0 %}
+                            {% if retailers_data and retailers_data|length > 0 %}
                             <tr class="bg-[#F5F6F8] border-t border-[#E1E4E8]">
                                 <td class="px-3 py-2" colspan="4"></td>
                                 {% for retailer_info in retailers_data %}

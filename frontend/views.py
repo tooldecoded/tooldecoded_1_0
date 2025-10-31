@@ -9,7 +9,7 @@ import uuid
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
     Categories, Subcategories, ItemTypes, Statuses, ListingTypes, ComponentAttributes, Attributes,
-    ProductLines, ProductComponents, Features, ComponentFeatures
+    ProductLines, ProductComponents, Features, ComponentFeatures, ProductAccessories
 )
 from .models import LearningArticle, Tag, SiteSettings
 from .utils import get_category_hierarchy_filters
@@ -246,56 +246,108 @@ def product_detail(request, product_id):
         # default name
         return (pc.component.name or '').lower()
     
-    # Group components by their item types for the comparison view
+    # Group components by category: Tools, Batteries, Chargers, Accessories
     component_groups = {}
-    existing_group_anchors = set()
+    
+    # Define category groups with their anchors
+    category_definitions = {
+        'Tools': {
+            'anchor': 'component-group-tools',
+            'columns': [],  # Will collect attributes from all itemtypes in this group
+            'itemtypes': set(),  # Track itemtypes in this group for attribute collection
+        },
+        'Batteries': {
+            'anchor': 'component-group-batteries',
+            'columns': [],
+            'itemtypes': set(),
+        },
+        'Chargers': {
+            'anchor': 'component-group-chargers',
+            'columns': [],
+            'itemtypes': set(),
+        },
+        'Accessories': {
+            'anchor': 'component-group-accessories',
+            'columns': [],
+            'itemtypes': set(),
+        },
+    }
+    
+    # Initialize groups
+    for category_name, category_info in category_definitions.items():
+        component_groups[category_name] = {
+            'components': [],
+            'columns': [],
+            'component_count': 0,
+            'total_quantity': 0,
+            'total_value': Decimal('0'),
+            'prices_complete': True,
+            'has_price_data': False,
+            'anchor': category_info['anchor'],
+            'itemtypes_set': category_info['itemtypes'],  # Track itemtypes for attribute collection
+        }
+    
+    # Categorize components
     for pc in product_components:
         component = pc.component
         primary_itemtype = component.itemtypes.first()
-        if primary_itemtype:
+        category_name = 'Tools'  # Default category
+        
+        # Determine category based on isaccessory flag first
+        if component.isaccessory:
+            category_name = 'Accessories'
+        elif primary_itemtype:
             itemtype_name = primary_itemtype.name
-            if itemtype_name not in component_groups:
-                itemtype_attributes = Attributes.objects.filter(
-                    itemtypes=primary_itemtype
-                ).order_by('name')
-                anchor_slug = slugify(itemtype_name or 'group') or 'group'
-                anchor = f"component-group-{anchor_slug}"
-                if anchor in existing_group_anchors:
-                    index = 2
-                    unique_anchor = f"{anchor}-{index}"
-                    while unique_anchor in existing_group_anchors:
-                        index += 1
-                        unique_anchor = f"{anchor}-{index}"
-                    anchor = unique_anchor
-                existing_group_anchors.add(anchor)
-                component_groups[itemtype_name] = {
-                    'itemtype': primary_itemtype,
-                    'components': [],
-                    'columns': list(itemtype_attributes),
-                    'component_count': 0,
-                    'total_quantity': 0,
-                    'total_value': Decimal('0'),
-                    'prices_complete': True,
-                    'has_price_data': False,
-                    'anchor': anchor,
-                }
-            group_entry = component_groups[itemtype_name]
-            group_entry['components'].append(pc)
-            group_entry['component_count'] += 1
-            group_entry['total_quantity'] += pc.quantity
-            price_info = component_prices.get(component.id)
-            if price_info and price_info['price'] is not None:
-                group_entry['has_price_data'] = True
-            if price_info and price_info['ext_value'] is not None:
-                group_entry['total_value'] += price_info['ext_value']
-            else:
-                group_entry['prices_complete'] = False
+            # Check for Batteries or Chargers by exact itemtype name match
+            if itemtype_name == 'Batteries':
+                category_name = 'Batteries'
+            elif itemtype_name == 'Chargers':
+                category_name = 'Chargers'
+            # Otherwise it's a Tool
+        
+        group_entry = component_groups[category_name]
+        group_entry['components'].append(pc)
+        group_entry['component_count'] += 1
+        group_entry['total_quantity'] += pc.quantity
+        
+        # Track itemtypes for attribute collection
+        if primary_itemtype:
+            group_entry['itemtypes_set'].add(primary_itemtype)
+        
+        # Update pricing info
+        price_info = component_prices.get(component.id)
+        if price_info and price_info['price'] is not None:
+            group_entry['has_price_data'] = True
+        if price_info and price_info['ext_value'] is not None:
+            group_entry['total_value'] += price_info['ext_value']
+        else:
+            group_entry['prices_complete'] = False
     
-    # Apply sorting within each group
-    for group_data in component_groups.values():
-        group_data['components'].sort(key=sort_key, reverse=reverse_sort)
-        if not group_data['prices_complete']:
-            group_data['total_value'] = None
+    # Collect attributes for each category group from all itemtypes in that group
+    for category_name, group_entry in component_groups.items():
+        if group_entry['itemtypes_set']:
+            # Get all attributes from all itemtypes in this category
+            category_attributes = Attributes.objects.filter(
+                itemtypes__in=group_entry['itemtypes_set']
+            ).distinct().order_by('name')
+            group_entry['columns'] = list(category_attributes)
+    
+    # Apply sorting within each group and remove empty groups
+    # Also remove the itemtypes_set key as it's not needed in template
+    groups_to_remove = []
+    for category_name, group_data in component_groups.items():
+        if not group_data['components']:
+            groups_to_remove.append(category_name)
+        else:
+            group_data['components'].sort(key=sort_key, reverse=reverse_sort)
+            if not group_data['prices_complete']:
+                group_data['total_value'] = None
+            # Remove internal tracking key
+            group_data.pop('itemtypes_set', None)
+    
+    # Remove empty groups
+    for category_name in groups_to_remove:
+        component_groups.pop(category_name, None)
     
     # Get component product images (if any) - placeholder for now
     component_products = {}
@@ -331,13 +383,16 @@ def product_detail(request, product_id):
 
     component_summary_rows.sort(key=summary_sort_key, reverse=True)
 
+    # Create group links in specific order: Tools, Batteries, Chargers, Accessories
+    category_order = ['Tools', 'Batteries', 'Chargers', 'Accessories']
     component_group_links = [
         {
             'name': group_name,
             'anchor': group_data['anchor'],
             'component_count': group_data['component_count'],
         }
-        for group_name, group_data in component_groups.items()
+        for group_name in category_order
+        if group_name in component_groups and component_groups[group_name]['components']
     ]
     
     current_filters = {
@@ -399,9 +454,23 @@ def product_detail(request, product_id):
                 'effective_price': effective_price,
             }
 
+    # Get ProductAccessories for this product
+    product_accessories = list(ProductAccessories.objects.filter(
+        product=product
+    ).order_by('name'))
+    
+    # Create ordered list of component groups for template iteration
+    category_order = ['Tools', 'Batteries', 'Chargers', 'Accessories']
+    ordered_component_groups = [
+        (group_name, component_groups[group_name])
+        for group_name in category_order
+        if group_name in component_groups and component_groups[group_name]['components']
+    ]
+    
     context = {
         'product': product,
         'component_groups': component_groups,
+        'ordered_component_groups': ordered_component_groups,
         'component_products': component_products,
         'current_filters': current_filters,
         'component_prices': component_prices,
@@ -416,6 +485,7 @@ def product_detail(request, product_id):
         'component_summary_rows': component_summary_rows,
         'component_group_links': component_group_links,
         'retailers_data': retailers_data,
+        'product_accessories': product_accessories,
     }
 
     # Build breadcrumb parts from first item type's fullname (Category/Subcategory/ItemType)

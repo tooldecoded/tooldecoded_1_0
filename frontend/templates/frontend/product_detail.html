@@ -459,8 +459,7 @@
                 </div>
             </div>
 
-            {% for group_name, group_data in component_groups.items %}
-                {% if group_data.components %}
+            {% for group_name, group_data in ordered_component_groups %}
                 <section id="{{ group_data.anchor }}" class="space-y-4">
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div class="space-y-1">
@@ -561,8 +560,33 @@
                         {% endfor %}
                     </div>
                 </section>
-                {% endif %}
             {% endfor %}
+
+            {% if product_accessories %}
+            <section id="component-group-product-accessories" class="space-y-4">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-semibold text-[#313131]">Product Accessories</h3>
+                            <span class="inline-flex items-center rounded-full bg-[#F5F6F8] px-3 py-1 text-xs font-semibold text-[#505050]">{{ product_accessories|length }} items</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    {% for accessory in product_accessories %}
+                    <article class="rounded-2xl border border-[#E1E4E8] bg-white p-4 shadow-sm transition-colors hover:border-[#0089D9]">
+                        <div class="flex items-start gap-4">
+                            <span class="inline-flex items-center rounded-full bg-[#EDF8FF] px-3 py-1 text-xs font-semibold text-[#0089D9]">Qty {{ accessory.quantity }}</span>
+                            <div class="flex-1">
+                                <div class="text-base font-semibold text-[#313131]">{{ accessory.name }}</div>
+                            </div>
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
         </section>
 
         <div class="grid grid-cols-2 gap-6">

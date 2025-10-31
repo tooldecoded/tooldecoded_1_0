@@ -117,7 +117,7 @@ COLUMNS_MAP = {
         'description': 'ComponentFeatures - Features associated with components'
     },
     'componentattribute': {
-        'required': ['action', 'recordtype', 'brand', 'component_sku', 'attribute'],
+        'required': ['action', 'recordtype', 'brand', 'sku', 'attribute'],
         'optional': ['value'],
         'description': 'ComponentAttributes - Attributes associated with components'
     },
@@ -143,7 +143,7 @@ COLUMNS_MAP = {
     },
     'attribute': {
         'required': ['action', 'recordtype', 'name'],
-        'optional': ['unit', 'description', 'sortorder'],
+        'optional': ['unit', 'description', 'sortorder', 'displayformat'],
         'description': 'Attributes - Attribute definitions'
     },
     'feature': {
@@ -1945,30 +1945,28 @@ def handle_attribute(row, i, action, df, sheet_name=""):
     unit = get_col(row, 'unit', df)
     description = get_col(row, 'description', df)
     sortorder = get_col(row, 'sortorder', df)
+    displayformat = get_col(row, 'displayformat', df)
     
     if action == 'delete':
         if name:
             try:
-                if unit:
-                    attr = Attributes.objects.get(name=name, unit=unit)
-                else:
-                    attr = Attributes.objects.get(name=name, unit__isnull=True)
+                attr = Attributes.objects.get(name=name)
                 attr.delete()
                 print(f"Row {i+1}: Attribute {name} deleted")
             except Attributes.DoesNotExist:
                 print(f"Row {i+1}: Attribute not found")
-            except Attributes.MultipleObjectsReturned:
-                print(f"Row {i+1}: Multiple Attributes found, cannot delete without unit")
     elif action == 'update':
         if name:
             try:
-                if unit:
-                    attr = Attributes.objects.get(name=name, unit=unit)
-                else:
-                    attr = Attributes.objects.get(name=name, unit__isnull=True)
+                attr = Attributes.objects.get(name=name)
                 
                 updated_fields = []
                 # Track what fields are being updated
+                if unit is not None:
+                    old_unit = attr.unit
+                    attr.unit = unit
+                    if old_unit != unit:
+                        updated_fields.append(f"unit='{unit}'")
                 if description is not None:
                     old_desc = attr.description
                     attr.description = description
@@ -1979,6 +1977,11 @@ def handle_attribute(row, i, action, df, sheet_name=""):
                     attr.sortorder = int(sortorder)
                     if old_sort != attr.sortorder:
                         updated_fields.append(f"sortorder={sortorder}")
+                if displayformat is not None:
+                    old_df = attr.displayformat
+                    attr.displayformat = displayformat
+                    if old_df != displayformat:
+                        updated_fields.append(f"displayformat='{displayformat}'")
                 
                 if updated_fields:
                     attr.save()
@@ -1987,10 +1990,14 @@ def handle_attribute(row, i, action, df, sheet_name=""):
                 else:
                     # Even if no actual changes, show what was in the update
                     attempted_fields = []
+                    if unit is not None:
+                        attempted_fields.append(f"unit='{unit}'")
                     if description is not None:
                         attempted_fields.append(f"description='{description}'")
                     if sortorder is not None:
                         attempted_fields.append(f"sortorder={sortorder}")
+                    if displayformat is not None:
+                        attempted_fields.append(f"displayformat='{displayformat}'")
                     if attempted_fields:
                         fields_str = ', '.join(attempted_fields)
                         print(f"Row {i+1}: Attribute {name} updated - Fields: {fields_str} (no change from existing values)")
@@ -1998,21 +2005,42 @@ def handle_attribute(row, i, action, df, sheet_name=""):
                         print(f"Row {i+1}: Attribute {name} updated (no fields provided)")
             except Attributes.DoesNotExist:
                 print(f"Row {i+1}: Attribute not found")
-            except Attributes.MultipleObjectsReturned:
-                print(f"Row {i+1}: Multiple Attributes found")
     elif action == 'create':
         if name:
             try:
-                if unit:
-                    create_data = {'name': name, 'unit': unit}
-                else:
-                    create_data = {'name': name}
+                # Check if attribute already exists (by name only, since name is unique)
+                Attributes.objects.get(name=name)
+                print(f"Row {i+1}: Attribute {name} already exists, updating instead")
+                handle_attribute(row, i, 'update', df, sheet_name)
+            except Attributes.DoesNotExist:
+                create_data = {'name': name}
+                if unit is not None:
+                    create_data['unit'] = unit
                 if description is not None:
                     create_data['description'] = description
                 if sortorder is not None:
                     create_data['sortorder'] = int(sortorder)
+                if displayformat is not None:
+                    create_data['displayformat'] = displayformat
+                
                 Attributes.objects.create(**create_data)
-                print(f"Row {i+1}: Attribute {name} created")
+                
+                # Show what was created
+                created_fields = []
+                if unit is not None:
+                    created_fields.append(f"unit='{unit}'")
+                if description is not None:
+                    created_fields.append(f"description='{description}'")
+                if sortorder is not None:
+                    created_fields.append(f"sortorder={sortorder}")
+                if displayformat is not None:
+                    created_fields.append(f"displayformat='{displayformat}'")
+                
+                if created_fields:
+                    fields_str = ', '.join(created_fields)
+                    print(f"Row {i+1}: Attribute {name} created - Fields: {fields_str}")
+                else:
+                    print(f"Row {i+1}: Attribute {name} created")
             except Exception as e:
                 print(f"Row {i+1}: {type(e).__name__}: {str(e)}")
 

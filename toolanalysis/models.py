@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Attributes(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-    name = models.TextField()
+    name = models.TextField(unique=True)
     unit = models.TextField(blank=True, null=True)
     displayformat = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -12,7 +12,6 @@ class Attributes(models.Model):
     class Meta:
         db_table = 'Attributes'
         ordering = ['sortorder', 'name']
-        unique_together = ('name', 'unit')
 
 class Features(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)

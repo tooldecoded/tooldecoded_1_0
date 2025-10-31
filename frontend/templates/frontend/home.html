@@ -130,7 +130,13 @@
         <div class="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {% for article in latest_articles %}
                 <article class="rounded-2xl border border-[#E1E4E8] bg-white overflow-hidden">
-                    <div class="h-40 bg-[#F5F6F8]"></div>
+                    {% if article.image %}
+                        <div class="h-40 w-full overflow-hidden">
+                            <img src="{{ article.image }}" alt="{{ article.title }}" class="w-full h-full object-cover">
+                        </div>
+                    {% else %}
+                        <div class="h-40 bg-[#F5F6F8]"></div>
+                    {% endif %}
                     <div class="p-6">
                         <h3 class="font-semibold">{{ article.title }}</h3>
                         {% if article.summary %}

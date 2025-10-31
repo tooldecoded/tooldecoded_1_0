@@ -14,6 +14,7 @@ from toolanalysis.models import (
 from .models import LearningArticle, Tag, SiteSettings
 from .utils import get_category_hierarchy_filters
 from . import catalog_utils
+from .templatetags.product_filters import format_attribute_value_helper
 
 # ============================================================================
 # CATALOG VIEWS - UNIFIED IMPLEMENTATION
@@ -909,9 +910,10 @@ def api_quick_info(request, item_id):
             
             key_attributes = []
             for attr in important_attributes:
+                formatted_value = format_attribute_value_helper(attr) if attr.value else 'N/A'
                 key_attributes.append({
                     'name': attr.attribute.name,
-                    'value': attr.value or 'N/A',
+                    'value': formatted_value,
                     'unit': attr.attribute.unit or ''
                 })
             
@@ -1006,15 +1008,17 @@ def api_compare_components(request):
             
             # Add important attributes
             for attr in important_attrs:
+                formatted_value = format_attribute_value_helper(attr) if attr.value else 'N/A'
                 component_data['important_attributes'][attr.attribute.name] = {
-                    'value': attr.value or 'N/A',
+                    'value': formatted_value,
                     'unit': attr.attribute.unit or ''
                 }
             
             # Add additional attributes
             for attr in additional_attrs:
+                formatted_value = format_attribute_value_helper(attr) if attr.value else 'N/A'
                 component_data['additional_attributes'][attr.attribute.name] = {
-                    'value': attr.value or 'N/A',
+                    'value': formatted_value,
                     'unit': attr.attribute.unit or ''
                 }
             

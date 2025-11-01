@@ -5,6 +5,7 @@ from django.db.models.functions import Cast
 from django.http import JsonResponse
 from django.utils.text import slugify
 from decimal import Decimal
+from collections import defaultdict
 import uuid
 from toolanalysis.models import (
     Products, Components, Brands, BatteryVoltages, BatteryPlatforms, 
@@ -186,7 +187,7 @@ def product_detail(request, product_id):
     # Get product components with proper prefetching
     product_components = list(ProductComponents.objects.filter(
         product=product
-    ).select_related('component__brand').prefetch_related(
+    ).select_related('component__brand', 'component__componentclass', 'component__motortype').prefetch_related(
         'component__componentattributes_set__attribute',
         'component__itemtypes'
     ).all())
@@ -207,6 +208,11 @@ def product_detail(request, product_id):
             attr.attribute_id: attr.value
             for attr in pc.component.componentattributes_set.all()
         }
+        # Get attributes associated with this component's itemtypes
+        component_itemtypes = pc.component.itemtypes.all()
+        pc.component_attributes = list(Attributes.objects.filter(
+            itemtypes__in=component_itemtypes
+        ).distinct().order_by('name'))
         if unit_price is not None:
             ext_value = unit_price * pc.quantity
             any_price_available = True
@@ -227,127 +233,26 @@ def product_detail(request, product_id):
             decimal_zero
         )
     
-    # Sorting controls
-    sort = request.GET.get('sort', 'name')
-    sort_direction = request.GET.get('sort_direction', 'asc')
-    reverse_sort = (sort_direction == 'desc')
+    # Sort components by componentclass (sortorder, then name), then component name
+    product_components.sort(key=lambda pc: (
+        pc.component.componentclass.sortorder if pc.component.componentclass and pc.component.componentclass.sortorder is not None else 999999,
+        pc.component.componentclass.name if pc.component.componentclass else '',
+        (pc.component.name or '').lower()
+    ))
     
-    def sort_key(pc):
-        if sort == 'quantity':
-            return (pc.quantity, (pc.component.name or '').lower())
-        if sort == 'sku':
-            return ((pc.component.sku or '').lower(), (pc.component.name or '').lower())
-        if sort == 'ext_value':
-            price_info = component_prices.get(pc.component.id, {})
-            value = price_info.get('ext_value') if price_info else None
-            if value is None:
-                return Decimal('-Infinity') if reverse_sort else Decimal('Infinity')
-            return value
-        # default name
-        return (pc.component.name or '').lower()
-    
-    # Group components by category: Tools, Batteries, Chargers, Accessories
-    component_groups = {}
-    
-    # Define category groups with their anchors
-    category_definitions = {
-        'Tools': {
-            'anchor': 'component-group-tools',
-            'columns': [],  # Will collect attributes from all itemtypes in this group
-            'itemtypes': set(),  # Track itemtypes in this group for attribute collection
-        },
-        'Batteries': {
-            'anchor': 'component-group-batteries',
-            'columns': [],
-            'itemtypes': set(),
-        },
-        'Chargers': {
-            'anchor': 'component-group-chargers',
-            'columns': [],
-            'itemtypes': set(),
-        },
-        'Accessories': {
-            'anchor': 'component-group-accessories',
-            'columns': [],
-            'itemtypes': set(),
-        },
-    }
-    
-    # Initialize groups
-    for category_name, category_info in category_definitions.items():
-        component_groups[category_name] = {
-            'components': [],
-            'columns': [],
-            'component_count': 0,
-            'total_quantity': 0,
-            'total_value': Decimal('0'),
-            'prices_complete': True,
-            'has_price_data': False,
-            'anchor': category_info['anchor'],
-            'itemtypes_set': category_info['itemtypes'],  # Track itemtypes for attribute collection
-        }
-    
-    # Categorize components
+    # Collect all itemtypes for attribute collection
+    all_itemtypes = set()
     for pc in product_components:
-        component = pc.component
-        primary_itemtype = component.itemtypes.first()
-        category_name = 'Tools'  # Default category
-        
-        # Determine category based on isaccessory flag first
-        if component.isaccessory:
-            category_name = 'Accessories'
-        elif primary_itemtype:
-            itemtype_name = primary_itemtype.name
-            # Check for Batteries or Chargers by exact itemtype name match
-            if itemtype_name == 'Batteries':
-                category_name = 'Batteries'
-            elif itemtype_name == 'Chargers':
-                category_name = 'Chargers'
-            # Otherwise it's a Tool
-        
-        group_entry = component_groups[category_name]
-        group_entry['components'].append(pc)
-        group_entry['component_count'] += 1
-        group_entry['total_quantity'] += pc.quantity
-        
-        # Track itemtypes for attribute collection
+        primary_itemtype = pc.component.itemtypes.first()
         if primary_itemtype:
-            group_entry['itemtypes_set'].add(primary_itemtype)
-        
-        # Update pricing info
-        price_info = component_prices.get(component.id)
-        if price_info and price_info['price'] is not None:
-            group_entry['has_price_data'] = True
-        if price_info and price_info['ext_value'] is not None:
-            group_entry['total_value'] += price_info['ext_value']
-        else:
-            group_entry['prices_complete'] = False
+            all_itemtypes.add(primary_itemtype)
     
-    # Collect attributes for each category group from all itemtypes in that group
-    for category_name, group_entry in component_groups.items():
-        if group_entry['itemtypes_set']:
-            # Get all attributes from all itemtypes in this category
-            category_attributes = Attributes.objects.filter(
-                itemtypes__in=group_entry['itemtypes_set']
-            ).distinct().order_by('name')
-            group_entry['columns'] = list(category_attributes)
-    
-    # Apply sorting within each group and remove empty groups
-    # Also remove the itemtypes_set key as it's not needed in template
-    groups_to_remove = []
-    for category_name, group_data in component_groups.items():
-        if not group_data['components']:
-            groups_to_remove.append(category_name)
-        else:
-            group_data['components'].sort(key=sort_key, reverse=reverse_sort)
-            if not group_data['prices_complete']:
-                group_data['total_value'] = None
-            # Remove internal tracking key
-            group_data.pop('itemtypes_set', None)
-    
-    # Remove empty groups
-    for category_name in groups_to_remove:
-        component_groups.pop(category_name, None)
+    # Get all attributes from all itemtypes
+    all_attributes = []
+    if all_itemtypes:
+        all_attributes = list(Attributes.objects.filter(
+            itemtypes__in=all_itemtypes
+        ).distinct().order_by('name'))
     
     # Get component product images (if any) - placeholder for now
     component_products = {}
@@ -356,48 +261,36 @@ def product_detail(request, product_id):
         product_image_urls.append(product.image)
     product_image_urls.extend(list(product.productimages_set.values_list('image', flat=True)))
 
-    # Build component summary rows for hero pricing table
+    # Build component summary rows (flat list, no grouping)
     component_summary_rows = []
-    for group_name, group_data in component_groups.items():
-        for pc in group_data['components']:
-            price_info = component_prices.get(pc.component.id, {})
-            component_summary_rows.append({
-                'component_id': pc.component.id,
-                'name': pc.component.name,
-                'brand': pc.component.brand.name if pc.component.brand else '',
-                'sku': pc.component.sku or '',
-                'quantity': pc.quantity,
-                'image': pc.component.image,
-                'unit_price': price_info.get('price'),
-                'ext_value': price_info.get('ext_value'),
-                'has_price': price_info.get('has_price'),
-                'has_ext_value': price_info.get('has_ext_value'),
-                'group_anchor': group_data['anchor'],
-                'group_name': group_name,
-            })
-
-    def summary_sort_key(row):
-        if row['unit_price'] is None:
-            return (0, decimal_zero, row['name'].lower())
-        return (1, row['unit_price'], row['name'].lower())
-
-    component_summary_rows.sort(key=summary_sort_key, reverse=True)
-
-    # Create group links in specific order: Tools, Batteries, Chargers, Accessories
-    category_order = ['Tools', 'Batteries', 'Chargers', 'Accessories']
-    component_group_links = [
-        {
-            'name': group_name,
-            'anchor': group_data['anchor'],
-            'component_count': group_data['component_count'],
-        }
-        for group_name in category_order
-        if group_name in component_groups and component_groups[group_name]['components']
-    ]
+    for pc in product_components:
+        price_info = component_prices.get(pc.component.id, {})
+        # Get componentclass info for accent stripe
+        componentclass_name = None
+        componentclass_id = None
+        if pc.component.componentclass:
+            componentclass_name = pc.component.componentclass.name
+            componentclass_id = str(pc.component.componentclass.id)
+        
+        component_summary_rows.append({
+            'component_id': pc.component.id,
+            'name': pc.component.name,
+            'brand': pc.component.brand.name if pc.component.brand else '',
+            'sku': pc.component.sku or '',
+            'quantity': pc.quantity,
+            'quantity_list': list(range(pc.quantity)) if pc.quantity and pc.quantity > 0 else [],
+            'image': pc.component.image,
+            'unit_price': price_info.get('price'),
+            'ext_value': price_info.get('ext_value'),
+            'has_price': price_info.get('has_price'),
+            'has_ext_value': price_info.get('has_ext_value'),
+            'componentclass_name': componentclass_name,
+            'componentclass_id': componentclass_id,
+        })
     
     current_filters = {
-        'sort': sort,
-        'sort_direction': sort_direction
+        'sort': 'name',
+        'sort_direction': 'asc'
     }
     
     show_total_component_value = prices_complete and total_component_value is not None
@@ -459,17 +352,110 @@ def product_detail(request, product_id):
         product=product
     ).order_by('name'))
     
-    # Create ordered list of component groups for template iteration
-    category_order = ['Tools', 'Batteries', 'Chargers', 'Accessories']
-    ordered_component_groups = [
-        (group_name, component_groups[group_name])
-        for group_name in category_order
-        if group_name in component_groups and component_groups[group_name]['components']
-    ]
+    # Group components by componentclass
+    component_groups = defaultdict(lambda: {'components': [], 'total_quantity': 0, 'total_value': Decimal('0'), 'battery_count': 0, 'charger_count': 0})
+    
+    for pc in product_components:
+        # Determine group name - combine batteries and chargers
+        if pc.component.componentclass:
+            class_name = pc.component.componentclass.name
+            class_name_lower = class_name.lower()
+            # Combine batteries and chargers into one group (using exact componentclass names)
+            if class_name_lower in ('batteries', 'chargers', 'battery', 'charger'):
+                group_name = 'Batteries & Chargers'
+                group_sortorder = pc.component.componentclass.sortorder if pc.component.componentclass.sortorder is not None else 999998
+                # Track separate counts for batteries and chargers
+                if class_name_lower in ('batteries', 'battery'):
+                    component_groups[group_name]['battery_count'] += 1
+                elif class_name_lower in ('chargers', 'charger'):
+                    component_groups[group_name]['charger_count'] += 1
+            else:
+                group_name = class_name
+                group_sortorder = pc.component.componentclass.sortorder if pc.component.componentclass.sortorder is not None else 999999
+        else:
+            group_name = 'Other'
+            group_sortorder = 999999
+        
+        component_groups[group_name]['components'].append(pc)
+        component_groups[group_name]['total_quantity'] += pc.quantity
+        price_info = component_prices.get(pc.component.id, {})
+        if price_info.get('ext_value'):
+            component_groups[group_name]['total_value'] += price_info['ext_value']
+        component_groups[group_name]['sortorder'] = group_sortorder
+    
+    # Convert to list of tuples and sort by sortorder, then name
+    ordered_component_groups = []
+    for group_name, group_data in sorted(component_groups.items(), key=lambda x: (x[1]['sortorder'], x[0])):
+        group_components = group_data['components']
+        group_total_value = group_data['total_value'] if group_data['total_value'] > Decimal('0') else None
+        
+        # Check if all components in this group have prices
+        group_prices_complete = all(
+            component_prices.get(pc.component.id, {}).get('has_price', False)
+            for pc in group_components
+        )
+        group_has_price_data = any(
+            component_prices.get(pc.component.id, {}).get('has_price', False)
+            for pc in group_components
+        )
+        
+        ordered_component_groups.append((
+            group_name,
+            {
+                'components': group_components,
+                'component_count': len(group_components),
+                'total_quantity': group_data['total_quantity'],
+                'total_value': group_total_value,
+                'prices_complete': group_prices_complete,
+                'has_price_data': group_has_price_data,
+                'anchor': f"component-group-{group_name.lower().replace(' ', '-').replace('&', 'and')}",
+                'battery_count': group_data.get('battery_count', 0),
+                'charger_count': group_data.get('charger_count', 0),
+            }
+        ))
+    
+    # If no groups were created (no components), create empty group
+    if not ordered_component_groups:
+        ordered_component_groups = [('Included Components', {
+            'components': [],
+            'component_count': 0,
+            'total_quantity': 0,
+            'total_value': None,
+            'prices_complete': False,
+            'has_price_data': False,
+            'anchor': 'component-breakdown',
+        })]
+    
+    # Calculate componentclass counts for badges in Component Value Summary table
+    # Store as dict with count and sortorder
+    componentclass_counts = defaultdict(lambda: {'count': 0, 'sortorder': 999999})
+    for pc in product_components:
+        if pc.component.componentclass:
+            class_name = pc.component.componentclass.name
+            class_name_lower = class_name.lower()
+            sortorder = pc.component.componentclass.sortorder if pc.component.componentclass.sortorder is not None else 999999
+            # Track batteries and chargers separately, but also combine them
+            if class_name_lower in ('batteries', 'battery'):
+                componentclass_counts['Batteries']['count'] += 1
+                if componentclass_counts['Batteries']['sortorder'] == 999999:
+                    componentclass_counts['Batteries']['sortorder'] = sortorder
+            elif class_name_lower in ('chargers', 'charger'):
+                componentclass_counts['Chargers']['count'] += 1
+                if componentclass_counts['Chargers']['sortorder'] == 999999:
+                    componentclass_counts['Chargers']['sortorder'] = sortorder
+            else:
+                componentclass_counts[class_name]['count'] += 1
+                if componentclass_counts[class_name]['sortorder'] == 999999:
+                    componentclass_counts[class_name]['sortorder'] = sortorder
+    
+    # Convert to sorted list of tuples (sortorder, then name)
+    ordered_componentclass_counts = sorted(
+        componentclass_counts.items(),
+        key=lambda x: (x[1]['sortorder'], x[0])
+    )
     
     context = {
         'product': product,
-        'component_groups': component_groups,
         'ordered_component_groups': ordered_component_groups,
         'component_products': component_products,
         'current_filters': current_filters,
@@ -478,13 +464,14 @@ def product_detail(request, product_id):
         'total_component_value': total_component_value,
         'total_component_quantity': total_component_quantity,
         'component_count': len(product_components),
-        'component_group_count': len(component_groups),
+        'component_group_count': len(ordered_component_groups),
         'has_component_prices': any_price_available,
         'show_total_component_value': show_total_component_value,
         'product_image_urls': product_image_urls,
         'component_summary_rows': component_summary_rows,
-        'component_group_links': component_group_links,
         'retailers_data': retailers_data,
+        'componentclass_counts': dict(componentclass_counts),
+        'ordered_componentclass_counts': ordered_componentclass_counts,
         'product_accessories': product_accessories,
     }
 

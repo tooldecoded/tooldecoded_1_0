@@ -240,8 +240,7 @@
                             <tr>
                                 <th scope="col" class="px-2 sm:px-3 py-2 text-left w-16">Qty</th>
                                 <th scope="col" class="px-2 sm:px-3 py-2 text-left">Component</th>
-                                <th scope="col" class="px-2 sm:px-3 py-2 text-right w-[120px]">Unit Price</th>
-                                <th scope="col" class="px-2 sm:px-3 py-2 text-right w-[120px]">Ext. Value</th>
+                                <th scope="col" class="px-2 sm:px-3 py-2 text-right w-[140px]">List Price</th>
                                 {% if retailers_data %}
                                     {% for retailer_info in retailers_data %}
                                     <th scope="col" class="px-2 sm:px-3 py-2 text-right border-l-2 border-[#E1E4E8] w-[120px]">
@@ -278,23 +277,23 @@
                         <tbody class="divide-y divide-[#E1E4E8] text-[#313131]">
                             {% for row in component_summary_rows %}
                             <tr>
-                                <td class="px-2 sm:px-3 py-2 font-semibold">{{ row.quantity }}</td>
-                                <td class="px-2 sm:px-3 py-2">
-                                    <div class="grid grid-cols-[1fr_auto] items-start gap-1.5">
+                                <td class="px-2 sm:px-3 py-2 font-semibold {% if row.componentclass_id %}relative{% endif %}" style="border-left: none !important;">
+                                    {% if row.componentclass_id %}
+                                    <!-- Componentclass accent stripe -->
+                                    {% with stripe_color=row.componentclass_name|componentclass_color %}
+                                    <div class="absolute left-0 w-1 rounded-r" style="background: linear-gradient(to bottom, {{ stripe_color|hex_to_rgba:0.8 }}, {{ stripe_color|hex_to_rgba:0.5 }}, {{ stripe_color|hex_to_rgba:0.8 }}); z-index: 10; top: 50%; transform: translateY(-50%); height: calc(100% - 1.5rem); box-shadow: 0 1px 2px rgba(0,0,0,0.1);"></div>
+                                    {% endwith %}
+                                    {% endif %}
+                                    <span class="{% if row.componentclass_id %}ml-4{% endif %}">{{ row.quantity }}</span>
+                                </td>
+                                <td class="px-2 sm:px-3 py-2 align-middle">
+                                    <div class="grid grid-cols-[1fr_auto] items-center gap-1.5">
                                         <div class="min-w-0">
                                             <a href="{% url 'component_detail' row.component_id %}" class="font-semibold text-[#0089D9] hover:text-[#006FB3]">{{ row.name }}</a>
                                             <div class="text-xs text-[#505050]">
                                                 {% if row.brand %}{{ row.brand }}{% endif %}
                                                 {% if row.sku %}{% if row.brand %} • {% endif %}Model# {{ row.sku }}{% endif %}
                                             </div>
-                                            {% if row.group_anchor %}
-                                            <a href="#{{ row.group_anchor }}" class="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#0089D9] hover:text-[#006FB3]">
-                                                Jump to details
-                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                                </svg>
-                                            </a>
-                                            {% endif %}
                                         </div>
                                         {% if row.image %}
                                         <div class="flex gap-1 flex-shrink-0">
@@ -314,15 +313,16 @@
                                     </div>
                                 </td>
                                 <td class="px-2 sm:px-3 py-2 text-right whitespace-nowrap">
-                                    {% if row.has_price %}
-                                        {{ row.unit_price|usd }}
-                                    {% else %}
-                                        <span class="text-[#B0B0B0]">&mdash;</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-2 sm:px-3 py-2 text-right whitespace-nowrap">
-                                    {% if row.has_ext_value %}
-                                        {{ row.ext_value|usd }}
+                                    {% if row.has_price and row.unit_price %}
+                                        <div class="flex flex-col items-end gap-1">
+                                            {% if row.quantity_list %}
+                                                {% for _ in row.quantity_list %}
+                                                    <span>{{ row.unit_price|usd }}</span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span>{{ row.unit_price|usd }}</span>
+                                            {% endif %}
+                                        </div>
                                     {% else %}
                                         <span class="text-[#B0B0B0]">&mdash;</span>
                                     {% endif %}
@@ -333,7 +333,15 @@
                                             {% with pricing=row.retailer_pricing|lookup:retailer_info.id %}
                                             <td class="px-2 sm:px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
                                                 {% if pricing and pricing.effective_price %}
-                                                    <a href="{% if retailer_info.url %}{{ retailer_info.url }}{% else %}{% url 'product_detail' product.id %}{% endif %}" {% if retailer_info.url %}target="_blank" rel="noopener noreferrer"{% endif %} class="font-semibold text-[#0089D9] hover:text-[#0089D9] no-underline">{{ pricing.effective_price|usd }}</a>
+                                                    <div class="flex flex-col items-end gap-1">
+                                                        {% if row.quantity_list %}
+                                                            {% for _ in row.quantity_list %}
+                                                                <a href="{% if retailer_info.url %}{{ retailer_info.url }}{% else %}{% url 'product_detail' product.id %}{% endif %}" {% if retailer_info.url %}target="_blank" rel="noopener noreferrer"{% endif %} class="font-semibold text-[#0089D9] hover:text-[#0089D9] no-underline">{{ pricing.effective_price|usd }}</a>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <a href="{% if retailer_info.url %}{{ retailer_info.url }}{% else %}{% url 'product_detail' product.id %}{% endif %}" {% if retailer_info.url %}target="_blank" rel="noopener noreferrer"{% endif %} class="font-semibold text-[#0089D9] hover:text-[#0089D9] no-underline">{{ pricing.effective_price|usd }}</a>
+                                                        {% endif %}
+                                                    </div>
                                                 {% else %}
                                                     <span class="text-[#B0B0B0]">&mdash;</span>
                                                 {% endif %}
@@ -358,13 +366,6 @@
                                         <span class="text-[#B0B0B0]">&mdash;</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-2 sm:px-3 py-2 text-right whitespace-nowrap">
-                                    {% if total_component_value %}
-                                        <span class="text-[#313131]">{{ total_component_value|usd }}</span>
-                                    {% else %}
-                                        <span class="text-[#B0B0B0]">&mdash;</span>
-                                    {% endif %}
-                                </td>
                                 {% if retailers_data %}
                                     {% for retailer_info in retailers_data %}
                                         <td class="px-2 sm:px-3 py-2 text-right border-l-2 border-[#E1E4E8] whitespace-nowrap">
@@ -375,7 +376,7 @@
                             </tr>
                             {% if retailers_data and retailers_data|length > 0 %}
                             <tr class="bg-[#F5F6F8] border-t border-[#E1E4E8]">
-                                <td class="px-2 sm:px-3 py-2" colspan="4"></td>
+                                <td class="px-2 sm:px-3 py-2" colspan="3"></td>
                                 {% for retailer_info in retailers_data %}
                                     <td class="px-2 sm:px-3 py-2 text-right border-l-2 border-[#E1E4E8]">
                                         <div class="flex flex-col items-end gap-1.5">
@@ -444,7 +445,7 @@
                                 <!-- Pricing Info -->
                                 <div class="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-[#E1E4E8]">
                                     <div>
-                                        <div class="text-xs font-semibold uppercase tracking-wide text-[#505050] mb-1">Unit Price</div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-[#505050] mb-1">List Price</div>
                                         <div class="text-base font-semibold text-[#313131]">
                                             {% if row.has_price %}
                                                 {{ row.unit_price|usd }}
@@ -454,7 +455,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="text-xs font-semibold uppercase tracking-wide text-[#505050] mb-1">Ext. Value</div>
+                                        <div class="text-xs font-semibold uppercase tracking-wide text-[#505050] mb-1">Ext. List</div>
                                         <div class="text-base font-bold text-[#0089D9]">
                                             {% if row.has_ext_value %}
                                                 {{ row.ext_value|usd }}
@@ -487,18 +488,6 @@
                                             {% endif %}
                                         {% endfor %}
                                     </div>
-                                </div>
-                                {% endif %}
-                                
-                                <!-- Jump to Details Link -->
-                                {% if row.group_anchor %}
-                                <div class="mt-2">
-                                    <a href="#{{ row.group_anchor }}" class="inline-flex items-center gap-1 text-sm font-semibold text-[#0089D9] hover:text-[#006FB3]">
-                                        Jump to details
-                                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                                        </svg>
-                                    </a>
                                 </div>
                                 {% endif %}
                             </div>
@@ -582,70 +571,52 @@
         </section>
 
         <section id="component-breakdown" class="bg-white rounded-2xl shadow-sm border p-6 space-y-6">
-            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
+            <div>
+                <div class="flex items-center gap-2">
                     <h2 class="text-xl font-bold text-[#313131]">Detailed Component Breakdown</h2>
-                    <p class="text-sm text-[#505050]">
-                        {{ component_count }} components • {{ total_component_quantity }} total pieces{% if component_group_count > 1 %} across {{ component_group_count }} groups{% endif %}
-                    </p>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <label for="componentSortSelect" class="text-sm font-medium text-[#505050]">Sort by:</label>
-                    <select id="componentSortSelect" name="sort" class="custom-select" onchange="handleComponentSortChange(this)">
-                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name</option>
-                        <option value="quantity" {% if current_filters.sort == 'quantity' %}selected{% endif %}>Quantity</option>
-                        <option value="sku" {% if current_filters.sort == 'sku' %}selected{% endif %}>Model#</option>
-                        <option value="ext_value" {% if current_filters.sort == 'ext_value' %}selected{% endif %}>Ext. Value</option>
-                    </select>
-                    <button type="button" id="componentSortDirectionToggle" class="p-1 text-[#505050] hover:text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded" onclick="toggleComponentSortDirection()" title="Toggle sort direction">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            {% if current_filters.sort_direction == 'desc' %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            {% else %}
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+                    {% if ordered_componentclass_counts %}
+                        {% for class_name, class_data in ordered_componentclass_counts %}
+                            {% if class_data.count > 0 %}
+                                {% with badge_color=class_name|componentclass_color %}
+                                <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold" style="background-color: {{ badge_color|hex_to_rgba:0.15 }}; color: {{ badge_color }};">{{ class_data.count }} {{ class_name }}</span>
+                                {% endwith %}
                             {% endif %}
-                        </svg>
-                    </button>
+                        {% endfor %}
+                    {% endif %}
                 </div>
+                <p class="text-sm text-[#505050]">
+                    {{ component_count }} components • {{ total_component_quantity }} total pieces{% if component_group_count > 1 %} across {{ component_group_count }} groups{% endif %}
+                </p>
             </div>
 
             {% for group_name, group_data in ordered_component_groups %}
-                <section id="{{ group_data.anchor }}" class="space-y-4">
+                <section id="{{ group_data.anchor }}" class="space-y-4 {% if not forloop.first %}mt-8 pt-8{% endif %}">
                     <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                         <div class="space-y-1">
-                            {% if component_group_count > 1 %}
-                            <div class="flex items-center gap-2">
-                                <h3 class="text-lg font-semibold text-[#313131]">{{ group_name }}</h3>
-                                <span class="inline-flex items-center rounded-full bg-[#F5F6F8] px-3 py-1 text-xs font-semibold text-[#505050]">{{ group_data.component_count }} components</span>
-                            </div>
-                            {% else %}
-                            <h3 class="text-lg font-semibold text-[#313131]">Included Components</h3>
-                            {% endif %}
-                            <p class="text-xs text-[#505050]">{{ group_data.total_quantity }} total pieces</p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            {% if group_data.prices_complete and group_data.has_price_data %}
-                            <span class="inline-flex items-center rounded-full border border-[#E1E4E8] bg-[#F5F6F8] px-3 py-1 text-sm font-semibold text-[#313131]">
-                                Group value: {{ group_data.total_value|usd }}
-                            </span>
-                            {% endif %}
+                            <h3 class="text-xl font-bold text-[#313131]">{{ group_name }}</h3>
                         </div>
                     </div>
 
                     <div class="grid gap-4 md:grid-cols-2">
                         {% for pc in group_data.components %}
                         {% with price_info=component_prices|lookup:pc.component.id %}
+                        {% if pc.component.componentclass %}
+                            {% with card_color=pc.component.componentclass.name|componentclass_color %}
+                            <article class="rounded-2xl bg-white p-4 shadow-sm transition-all duration-200" style="border: 1.5px solid {{ card_color|hex_to_rgba:0.4 }};" onmouseover="this.style.borderColor='{{ card_color|hex_to_rgba:0.7 }}'" onmouseout="this.style.borderColor='{{ card_color|hex_to_rgba:0.4 }}'">
+                            {% endwith %}
+                        {% else %}
                         <article class="rounded-2xl border border-[#E1E4E8] bg-white p-4 shadow-sm transition-colors hover:border-[#0089D9]">
+                        {% endif %}
                             <div class="flex items-start justify-between gap-4">
                                 <span class="inline-flex items-center rounded-full bg-[#EDF8FF] px-3 py-1 text-xs font-semibold text-[#0089D9]">Qty {{ pc.quantity }}</span>
                                 <div class="text-right">
-                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-[#505050]">Unit Price</div>
+                                    <div class="text-[11px] font-semibold uppercase tracking-wide text-[#505050]">List Price</div>
                                     {% if price_info and price_info.has_price %}
                                         <div class="text-sm font-semibold text-[#313131]">{{ price_info.price|usd }}</div>
                                     {% else %}
                                         <div class="text-sm font-semibold text-[#B0B0B0]">&mdash;</div>
                                     {% endif %}
-                                    <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#505050]">Ext. Value</div>
+                                    <div class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#505050]">Ext. List</div>
                                     {% if price_info and price_info.has_ext_value %}
                                         <div class="text-sm font-bold text-[#0089D9]">{{ price_info.ext_value|usd }}</div>
                                     {% else %}
@@ -677,13 +648,30 @@
                                 </div>
                             </div>
 
-                            {% if group_data.columns %}
+                            {% if pc.component.motortype and pc.component.motortype.name %}
+                            <div class="mt-4">
+                                <dl class="grid grid-cols-1 gap-y-2 text-xs text-[#505050] sm:grid-cols-2">
+                                    <div>
+                                        <dt class="font-semibold text-[#313131]">Brushless</dt>
+                                        <dd class="mt-0.5 text-[#505050]">
+                                            {% if pc.component.motortype.name|lower == 'brushless' %}
+                                                Yes
+                                            {% else %}
+                                                No
+                                            {% endif %}
+                                        </dd>
+                                    </div>
+                                </dl>
+                            </div>
+                            {% endif %}
+
+                            {% if pc.component_attributes %}
                             <dl class="mt-4 grid grid-cols-1 gap-y-2 text-xs text-[#505050] sm:grid-cols-2">
-                                {% for column in group_data.columns %}
+                                {% for attribute in pc.component_attributes %}
                                 <div>
-                                    <dt class="font-semibold text-[#313131]">{{ column.name }}{% if column.unit %}<span class="ml-1 text-[10px] uppercase text-[#8A8A8A]">({{ column.unit }})</span>{% endif %}</dt>
+                                    <dt class="font-semibold text-[#313131]">{{ attribute.name }}{% if attribute.unit %}<span class="ml-1 text-[10px] uppercase text-[#8A8A8A]">({{ attribute.unit }})</span>{% endif %}</dt>
                                     <dd class="mt-0.5 text-[#505050]">
-                                        {% with value=pc.attribute_map|lookup:column.id %}
+                                        {% with value=pc.attribute_map|lookup:attribute.id %}
                                             {% if value %}
                                                 {{ value }}
                                             {% else %}
@@ -825,58 +813,6 @@
         }
     }
     
-    // Component sorting functions
-    function handleComponentSortChange(selectElement) {
-        // Get current URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Update the sort parameter
-        urlParams.set('sort', selectElement.value);
-        
-        // Preserve sort_direction parameter
-        const currentDirection = urlParams.get('sort_direction') || 'asc';
-        urlParams.set('sort_direction', currentDirection);
-        
-        // Navigate to the new URL
-        window.location.href = '?' + urlParams.toString();
-    }
-    
-    function toggleComponentSortDirection() {
-        // Get current URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Toggle the sort direction
-        const currentDirection = urlParams.get('sort_direction') || 'asc';
-        const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-        
-        // Update the sort direction parameter
-        urlParams.set('sort_direction', newDirection);
-        
-        // Navigate to the new URL
-        window.location.href = '?' + urlParams.toString();
-    }
-    
-    function sortComponents(sortField) {
-        // Get current URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        
-        // Check if we're already sorting by this field
-        const currentSort = urlParams.get('sort') || 'name';
-        const currentDirection = urlParams.get('sort_direction') || 'asc';
-        
-        if (currentSort === sortField) {
-            // Toggle direction if same field
-            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
-            urlParams.set('sort_direction', newDirection);
-        } else {
-            // Set new field with default ascending direction
-            urlParams.set('sort', sortField);
-            urlParams.set('sort_direction', 'asc');
-        }
-        
-        // Navigate to the new URL
-        window.location.href = '?' + urlParams.toString();
-    }
     </script>
     
     {{ product_image_urls|json_script:"product-image-data" }}

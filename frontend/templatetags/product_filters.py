@@ -190,3 +190,58 @@ def get_text_color_for_bg(bg_color):
         return 'white' if luminance < 0.45 else 'black'
     except (ValueError, IndexError):
         return 'black'
+
+@register.filter
+def componentclass_color(componentclass_name):
+    """
+    Return a color for a componentclass based on its name.
+    Blue for Tools, Red for Batteries, Purple for Chargers, Green for Accessories.
+    """
+    if not componentclass_name:
+        return '#0089D9'  # Default blue (site theme)
+    
+    componentclass_lower = componentclass_name.lower()
+    
+    # Special case: "Batteries & Chargers" group should use battery color (red) since batteries come first
+    if componentclass_lower == 'batteries & chargers':
+        return '#EF4444'  # Red for batteries (takes precedence)
+    
+    # Tools - site theme blue
+    if 'tool' in componentclass_lower:
+        return '#0089D9'
+    
+    # Batteries - complementary red (check before chargers to handle combined groups)
+    if 'batter' in componentclass_lower:
+        return '#EF4444'
+    
+    # Chargers - complementary purple-red shade
+    if 'charger' in componentclass_lower:
+        return '#C026D3'  # Violet/magenta - purple with red undertones
+    
+    # Accessories - complementary green
+    if 'accessor' in componentclass_lower:
+        return '#10B981'
+    
+    # Default to blue for unknown classes
+    return '#0089D9'
+
+@register.filter
+def hex_to_rgba(hex_color, alpha=0.8):
+    """
+    Convert hex color to rgba format.
+    """
+    if not hex_color or not hex_color.startswith('#'):
+        return f'rgba(0, 137, 217, {alpha})'  # Default blue
+    
+    try:
+        # Remove # if present
+        hex_color = hex_color.lstrip('#')
+        
+        # Convert to RGB
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        
+        return f'rgba({r}, {g}, {b}, {alpha})'
+    except (ValueError, IndexError):
+        return f'rgba(0, 137, 217, {alpha})'  # Default fallback

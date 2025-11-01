@@ -157,12 +157,13 @@ class Components(models.Model):
     motortype = models.ForeignKey('MotorTypes', on_delete=models.SET_NULL, blank=True, null=True)
     image = models.TextField(blank=True, null=True)
     features = models.ManyToManyField('Features')
-    listingtype = models.ForeignKey('ListingTypes', on_delete=models.CASCADE, blank=True, null=True)
+    listingtype = models.ForeignKey('ListingTypes', on_delete=models.SET_NULL, blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     standalone_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     showcase_priority = models.IntegerField(default=0, help_text="Higher priority = appears first in browse page sections")
     fair_price_narrative = models.JSONField(blank=True, null=True)
     isaccessory = models.BooleanField(default=False)
+    componentclass = models.ForeignKey('ComponentClasses', on_delete=models.SET_NULL, blank=True, null=True)
     class Meta:
         db_table = 'Components'
         ordering = ['name']
@@ -276,3 +277,12 @@ class ComponentPricingHistory(models.Model):
         indexes = [
             models.Index(fields=['component', '-calculation_date']),
         ]
+
+class ComponentClasses(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    name = models.TextField(unique=True)
+    description = models.TextField(blank=True, null=True)
+    sortorder = models.IntegerField(blank=True, null=True)
+    class Meta:
+        db_table = 'ComponentClasses'
+        ordering = ['sortorder', 'name']

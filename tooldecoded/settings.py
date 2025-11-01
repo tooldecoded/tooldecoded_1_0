@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     #myapps
     'toolanalysis.apps.ToolanalysisConfig',
     'frontend.apps.FrontendConfig',
+    'product_management.apps.ProductManagementConfig',
     'components_backoffice.apps.ComponentsBackofficeConfig',
 ]
 
@@ -178,6 +179,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Components Backoffice feature flag and defaults
 ENABLE_COMPONENTS_BACKOFFICE = True
+ENABLE_PRODUCT_MANAGEMENT_BACKOFFICE = ENABLE_COMPONENTS_BACKOFFICE
 
 # Safe defaults and constants
 COMP_BACKOFFICE_MAX_IMPORT_MB = 10

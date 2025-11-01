@@ -1,0 +1,18 @@
+{% for field in form.visible_fields %}
+  <div class="pm-field{% if field.errors %} pm-field-error{% endif %}">
+    <label for="{{ field.id_for_label }}" class="pm-label">
+      {{ field.label }}{% if field.field.required %}<span class="pm-required">*</span>{% endif %}
+    </label>
+    {{ field }}
+    {% if field.help_text %}
+      <p class="pm-help">{{ field.help_text }}</p>
+    {% endif %}
+    {% for error in field.errors %}
+      <p class="pm-error">{{ error }}</p>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% for hidden in form.hidden_fields %}
+  {{ hidden }}
+{% endfor %}
+

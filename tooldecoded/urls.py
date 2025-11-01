@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 from django.conf import settings
 
 urlpatterns = [
@@ -24,10 +25,22 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 ]
 
+if getattr(settings, "ENABLE_PRODUCT_MANAGEMENT_BACKOFFICE", False):
+    urlpatterns += [
+        path(
+            "product-management/",
+            include("product_management.urls", namespace="product_management"),
+        )
+    ]
+
 if getattr(settings, "ENABLE_COMPONENTS_BACKOFFICE", False):
     urlpatterns += [
         path(
             "components-backoffice/",
-            include("components_backoffice.urls_editor", namespace="components_backoffice"),
+            RedirectView.as_view(pattern_name="product_management:dashboard", permanent=False),
+        ),
+        path(
+            "components-backoffice/<path:subpath>",
+            RedirectView.as_view(pattern_name="product_management:dashboard", permanent=False),
         ),
     ]

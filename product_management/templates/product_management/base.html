@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Product Management{% endblock %} · Tooldecoded</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'product_management/styles.css' %}">
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="pm-body">
+    <header class="pm-header">
+      <div class="pm-shell">
+        <h1 class="pm-title">Product &amp; Component Backoffice</h1>
+        <nav class="pm-nav">
+          <a href="{% url 'product_management:dashboard' %}" class="pm-nav-link">Dashboard</a>
+          <a href="{% url 'product_management:dashboard' %}?tab=relationships" class="pm-nav-link">Relationships</a>
+        </nav>
+      </div>
+    </header>
+    <main class="pm-main">
+      <div class="pm-shell">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+    <script src="{% static 'product_management/dashboard.js' %}" defer></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>
+

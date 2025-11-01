@@ -1,0 +1,233 @@
+{% extends "product_management/base.html" %}
+
+{% block title %}Import Preview{% endblock %}
+
+{% block content %}
+  <div class="pm-container">
+    <h1 class="pm-page-title">Import Preview</h1>
+    
+    {% if preview.missing_critical %}
+      <div class="pm-message pm-message-error">
+        <strong>Missing Critical Fields:</strong>
+        <ul>
+          {% for field in preview.missing_critical %}
+            <li>{{ field }}</li>
+          {% endfor %}
+        </ul>
+        <p>These fields are required and cannot be imported without them.</p>
+      </div>
+    {% endif %}
+    
+    {% if preview.warnings %}
+      <div class="pm-message pm-message-warning">
+        <strong>Warnings:</strong>
+        <ul>
+          {% for warning in preview.warnings %}
+            <li>{{ warning }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    
+    <div class="pm-grid pm-grid-wide">
+      <!-- Product Preview -->
+      <article class="pm-card">
+        <h2 class="pm-card-title">
+          Product
+          {% if preview.status == "update" and preview.existing_product %}
+            <span class="pm-badge">Update Existing</span>
+          {% else %}
+            <span class="pm-badge pm-badge-success">New</span>
+          {% endif %}
+        </h2>
+        
+        {% if preview.status == "update" and preview.existing_product %}
+          <div class="pm-diff-view">
+            <table class="pm-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Current Value</th>
+                  <th>New Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for diff in preview.field_diffs %}
+                  {% if diff.field_name in 'name,sku,description,image' %}
+                    <tr class="{% if diff.changed %}pm-diff-changed{% endif %}">
+                      <td><strong>{{ diff.field_name|title }}</strong></td>
+                      <td class="pm-diff-old">{{ diff.old_value|default:"—" }}</td>
+                      <td class="pm-diff-new">{{ diff.new_value|default:"—" }}</td>
+                    </tr>
+                  {% endif %}
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="pm-empty">No changes to product fields</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <dl class="pm-data-list">
+            <dt>Name:</dt>
+            <dd>{{ preview.product_data.name }}</dd>
+            <dt>SKU:</dt>
+            <dd>{{ preview.product_data.sku }}</dd>
+            <dt>Brand:</dt>
+            <dd>{{ preview.product_data.brand }}</dd>
+            {% if preview.product_data.description %}
+              <dt>Description:</dt>
+              <dd>{{ preview.product_data.description|truncatewords:50 }}</dd>
+            {% endif %}
+            {% if preview.product_data.image %}
+              <dt>Image:</dt>
+              <dd><img src="{{ preview.product_data.image }}" alt="Product" style="max-width: 200px; max-height: 200px;" /></dd>
+            {% endif %}
+          </dl>
+        {% endif %}
+      </article>
+      
+      <!-- Component Preview -->
+      <article class="pm-card">
+        <h2 class="pm-card-title">
+          Main Component
+          {% if preview.status == "update" and preview.existing_component %}
+            <span class="pm-badge">Update Existing</span>
+          {% else %}
+            <span class="pm-badge pm-badge-success">New</span>
+          {% endif %}
+        </h2>
+        
+        {% if preview.status == "update" and preview.existing_component %}
+          <div class="pm-diff-view">
+            <table class="pm-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Current Value</th>
+                  <th>New Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for diff in preview.field_diffs %}
+                  {% if diff.field_name in 'name,sku,description,image' %}
+                    <tr class="{% if diff.changed %}pm-diff-changed{% endif %}">
+                      <td><strong>{{ diff.field_name|title }}</strong></td>
+                      <td class="pm-diff-old">{{ diff.old_value|default:"—" }}</td>
+                      <td class="pm-diff-new">{{ diff.new_value|default:"—" }}</td>
+                    </tr>
+                  {% endif %}
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="pm-empty">No changes to component fields</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <dl class="pm-data-list">
+            <dt>Name:</dt>
+            <dd>{{ preview.component_data.name }}</dd>
+            <dt>SKU:</dt>
+            <dd>{{ preview.component_data.sku }}</dd>
+            <dt>Brand:</dt>
+            <dd>{{ preview.component_data.brand }}</dd>
+            {% if preview.component_data.description %}
+              <dt>Description:</dt>
+              <dd>{{ preview.component_data.description|truncatewords:30 }}</dd>
+            {% endif %}
+          </dl>
+        {% endif %}
+      </article>
+      
+      <!-- Specifications/Attributes -->
+      {% if preview.attributes %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Attributes ({{ preview.attributes|length }})</h2>
+          <table class="pm-table">
+            <thead>
+              <tr>
+                <th>Attribute</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attr in preview.attributes %}
+                <tr>
+                  <td>{{ attr.attribute_name }}</td>
+                  <td>{{ attr.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </article>
+      {% endif %}
+      
+      <!-- Features -->
+      {% if preview.features %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Features ({{ preview.features|length }})</h2>
+          <ul class="pm-feature-list">
+            {% for feature in preview.features %}
+              <li>
+                <strong>{{ feature.name }}:</strong> {{ feature.value }}
+              </li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+      
+      <!-- Included Components -->
+      {% if preview.included_components %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Included Components ({{ preview.included_components|length }})</h2>
+          <ul class="pm-component-list">
+            {% for item in preview.included_components %}
+              <li>{{ item.name }}{% if item.sku %} ({{ item.sku }}){% endif %}</li>
+            {% endfor %}
+          </ul>
+        </article>
+      {% endif %}
+    </div>
+    
+    <!-- Summary -->
+    <div class="pm-card" style="margin-top: 1.5rem;">
+      <h2 class="pm-card-title">Import Summary</h2>
+      <dl class="pm-data-list">
+        <dt>Will Create/Update:</dt>
+        <dd>
+          <ul>
+            <li>{{ preview.will_create.product }} Product</li>
+            <li>{{ preview.will_create.component }} Main Component</li>
+            {% if preview.will_create.included_components %}
+              <li>{{ preview.will_create.included_components }} Included Components</li>
+            {% endif %}
+            {% if preview.will_create.attributes %}
+              <li>{{ preview.will_create.attributes }} Attributes</li>
+            {% endif %}
+            {% if preview.will_create.features %}
+              <li>{{ preview.will_create.features }} Features</li>
+            {% endif %}
+          </ul>
+        </dd>
+      </dl>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="pm-action-bar" style="margin-top: 1.5rem;">
+      <form method="post" action="{% url 'product_management:import_preview_approve' %}">
+        {% csrf_token %}
+        <input type="hidden" name="approve" value="true" />
+        <button type="submit" class="pm-button" {% if preview.missing_critical %}disabled{% endif %}>
+          Approve & Import
+        </button>
+      </form>
+      <a href="{% url 'product_management:import_preview_cancel' %}" class="pm-button pm-button-secondary">
+        Cancel
+      </a>
+    </div>
+  </div>
+{% endblock %}
+

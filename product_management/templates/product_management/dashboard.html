@@ -1,0 +1,348 @@
+{% extends "product_management/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  {% if messages %}
+    <ul class="pm-messages">
+      {% for message in messages %}
+        <li class="pm-message pm-message-{{ message.tags|default:'info' }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="pm-tabs" role="tablist">
+    <button type="button" class="pm-tab{% if active_tab == 'quick' %} is-active{% endif %}" data-pm-tab-target="quick">Quick Create</button>
+    <button type="button" class="pm-tab{% if active_tab == 'bundles' %} is-active{% endif %}" data-pm-tab-target="bundles">Bundles</button>
+    <button type="button" class="pm-tab{% if active_tab == 'relationships' %} is-active{% endif %}" data-pm-tab-target="relationships">Relationships</button>
+    <button type="button" class="pm-tab{% if active_tab == 'batch' %} is-active{% endif %}" data-pm-tab-target="batch">Batch Edit</button>
+    <button type="button" class="pm-tab{% if active_tab == 'import' %} is-active{% endif %}" data-pm-tab-target="import">Import</button>
+  </div>
+
+  <section class="pm-panel{% if active_tab == 'quick' %} is-active{% endif %}" data-pm-tab-panel="quick" aria-labelledby="quick">
+    <div class="pm-grid">
+      <article class="pm-card">
+        <h2 class="pm-card-title">Bare Tool + Optional Product</h2>
+        <form method="post" action="{% url 'product_management:bare_tool_create' %}" class="pm-form">
+          {% csrf_token %}
+          {{ bare_tool_form.non_field_errors }}
+          <div class="pm-field-grid">
+            {% for field in bare_tool_form %}
+              {% if field.name == 'product_name' %}
+                <div class="pm-field-divider">
+                  <h3 class="pm-subtitle">Optional Product Shell</h3>
+                  <p class="pm-help">Product will auto-copy component fields. Only override if different.</p>
+                </div>
+              {% endif %}
+              {% if field.name|slice:":7" == 'product' %}
+                {% if field.name == 'product_name' or field.name == 'product_sku' or field.name == 'product_bullets' %}
+                  <div class="pm-field pm-product-override{% if field.errors %} pm-field-error{% endif %}" data-auto-sync-field="{{ field.name|slice:"8:" }}">
+                    <label for="{{ field.id_for_label }}" class="pm-label">
+                      {{ field.label }}
+                      {% if field.name == 'product_bullets' %}
+                        <span class="pm-help-text">(optional - product only)</span>
+                      {% else %}
+                        <span class="pm-help-text">(optional - defaults to component value)</span>
+                      {% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                      <p class="pm-help">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                      <p class="pm-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  {# Hide other product fields - they'll auto-populate #}
+                  <div style="display: none;">
+                    {{ field }}
+                  </div>
+                {% endif %}
+              {% else %}
+                <div class="pm-field{% if field.errors %} pm-field-error{% endif %}">
+                  <label for="{{ field.id_for_label }}" class="pm-label">
+                    {{ field.label }}{% if field.field.required %}<span class="pm-required">*</span>{% endif %}
+                  </label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <p class="pm-help">{{ field.help_text }}</p>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <p class="pm-error">{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          </div>
+          <button type="submit" class="pm-button">Create Bare Tool</button>
+        </form>
+      </article>
+
+      <article class="pm-card">
+        <h2 class="pm-card-title">Quick Component</h2>
+        <form method="post" action="{% url 'product_management:component_quick_create' %}" class="pm-form">
+          {% csrf_token %}
+          {{ component_form.non_field_errors }}
+          {% include "product_management/partials/form_fields.html" with form=component_form %}
+          <button type="submit" class="pm-button">Create Component</button>
+        </form>
+      </article>
+
+      <article class="pm-card">
+        <h2 class="pm-card-title">Quick Product</h2>
+        <form method="post" action="{% url 'product_management:product_quick_create' %}" class="pm-form">
+          {% csrf_token %}
+          {{ product_form.non_field_errors }}
+          {% include "product_management/partials/form_fields.html" with form=product_form %}
+          <button type="submit" class="pm-button">Create Product</button>
+        </form>
+      </article>
+    </div>
+  </section>
+
+  <section class="pm-panel{% if active_tab == 'bundles' %} is-active{% endif %}" data-pm-tab-panel="bundles" aria-labelledby="bundles">
+    <div class="pm-grid pm-grid-wide">
+      <article class="pm-card">
+        <h2 class="pm-card-title">Bundle Existing Products</h2>
+        <p class="pm-help">Select products to bundle. The new bundle product will include all components from the selected products.</p>
+        
+        <div class="pm-bundle-selector">
+          <form method="get" action="{% url 'product_management:dashboard' %}" class="pm-form pm-form-compact">
+            <input type="hidden" name="tab" value="bundles" />
+            {{ bundle_selector.non_field_errors }}
+            {% include "product_management/partials/form_fields.html" with form=bundle_selector %}
+            <div class="pm-field" style="grid-column: 1 / -1;">
+              <button type="submit" class="pm-button pm-button-secondary">Search Products</button>
+            </div>
+          </form>
+          
+          {% if bundle_product_results %}
+            <div class="pm-batch-controls" style="margin-top: 1rem;">
+              <button type="button" class="pm-button pm-button-secondary pm-bundle-select-all">Select All</button>
+              <button type="button" class="pm-button pm-button-secondary pm-bundle-selected-count" disabled>0 selected</button>
+            </div>
+            <ul class="pm-result-list" id="bundle-product-list">
+              {% for product in bundle_product_results %}
+                <li class="pm-selectable-item" data-product-id="{{ product.id }}">
+                  <div class="pm-result-row">
+                    <input type="checkbox" class="pm-bundle-product-checkbox" data-product-id="{{ product.id }}" />
+                    <div>
+                      <span class="pm-result-title" title="{{ product.name }}">{{ product.name }}</span>
+                      <span class="pm-result-meta">
+                        {% if product.brand %}{{ product.brand.name }}{% else %}—{% endif %}
+                        · {{ product.sku|default:'—' }}
+                        {% if product.productcomponents_set.count %}
+                          · {{ product.productcomponents_set.count }} component{{ product.productcomponents_set.count|pluralize }}
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </div>
+        
+        <form method="post" action="{% url 'product_management:bundle_create' %}" class="pm-form" id="bundle-create-form" style="margin-top: 1.5rem;">
+          {% csrf_token %}
+          {{ bundle_form.non_field_errors }}
+          {{ bundle_form.source_products }}
+          {% for field in bundle_form %}
+            {% if field.name != 'source_products' %}
+              <div class="pm-field{% if field.errors %} pm-field-error{% endif %}">
+                <label for="{{ field.id_for_label }}" class="pm-label">
+                  {{ field.label }}{% if field.field.required %}<span class="pm-required">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                  <p class="pm-help">{{ field.help_text }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                  <p class="pm-error">{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+          <button type="submit" class="pm-button" id="bundle-submit-btn" disabled>Create Bundle</button>
+        </form>
+      </article>
+    </div>
+  </section>
+
+  <section class="pm-panel{% if active_tab == 'relationships' %} is-active{% endif %}" data-pm-tab-panel="relationships" aria-labelledby="relationships">
+    <div class="pm-grid pm-grid-wide">
+      <article class="pm-card">
+        <h2 class="pm-card-title">Component Lookup</h2>
+        <form method="get" action="{% url 'product_management:dashboard' %}" class="pm-form pm-form-compact">
+          <input type="hidden" name="tab" value="relationships" />
+          {{ component_selector.non_field_errors }}
+          {% include "product_management/partials/form_fields.html" with form=component_selector %}
+          <div class="pm-field" style="grid-column: 1 / -1;">
+            <button type="submit" class="pm-button pm-button-secondary">Search</button>
+          </div>
+        </form>
+        <div class="pm-results">
+          {% if component_results %}
+            <div class="pm-batch-controls">
+              <button type="button" class="pm-button pm-button-secondary pm-batch-select-all" data-target="component">Select All</button>
+              <button type="button" class="pm-button pm-button-secondary pm-batch-edit-btn" data-target="component" disabled>Edit Selected (0)</button>
+            </div>
+            <ul class="pm-result-list">
+              {% for component in component_results %}
+                <li class="pm-selectable-item" data-entity-type="component" data-entity-id="{{ component.id }}">
+                  <div class="pm-result-row">
+                    <input type="checkbox" class="pm-batch-checkbox" data-entity-type="component" data-entity-id="{{ component.id }}" />
+                    <div>
+                      <span class="pm-result-title" title="{{ component.name }}">{{ component.name }}</span>
+                      <span class="pm-result-meta">
+                        {% if component.brand %}{{ component.brand.name }}{% else %}—{% endif %}
+                        · {{ component.sku|default:'—' }}
+                      </span>
+                    </div>
+                    <form method="post" action="{% url 'product_management:undo_last_change' 'component' component.id %}" class="pm-inline-form pm-inline-form-compact">
+                      {% csrf_token %}
+                      <input type="hidden" name="tab" value="relationships" />
+                      <button type="submit" class="pm-button pm-button-link">Undo</button>
+                    </form>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="pm-empty">Use the filters above to find existing components.</p>
+          {% endif %}
+        </div>
+      </article>
+
+      <article class="pm-card">
+        <h2 class="pm-card-title">Products → Components</h2>
+        <form method="get" action="{% url 'product_management:dashboard' %}" class="pm-form pm-form-compact">
+          <input type="hidden" name="tab" value="relationships" />
+          {{ product_selector.non_field_errors }}
+          {% include "product_management/partials/form_fields.html" with form=product_selector %}
+          <div class="pm-field" style="grid-column: 1 / -1;">
+            <button type="submit" class="pm-button pm-button-secondary">Search</button>
+          </div>
+        </form>
+        <div class="pm-results">
+          {% if product_results %}
+            <div class="pm-batch-controls">
+              <button type="button" class="pm-button pm-button-secondary pm-batch-select-all" data-target="product">Select All</button>
+              <button type="button" class="pm-button pm-button-secondary pm-batch-edit-btn" data-target="product" disabled>Edit Selected (0)</button>
+            </div>
+            <ul class="pm-result-list">
+              {% for product in product_results %}
+                <li class="pm-selectable-item" data-entity-type="product" data-entity-id="{{ product.id }}">
+                  <div class="pm-result-row">
+                    <input type="checkbox" class="pm-batch-checkbox" data-entity-type="product" data-entity-id="{{ product.id }}" />
+                    <div>
+                      <span class="pm-result-title" title="{{ product.name }}">{{ product.name }}</span>
+                      <span class="pm-result-meta">
+                        {% if product.brand %}{{ product.brand.name }}{% else %}—{% endif %}
+                        · {{ product.sku|default:'—' }}
+                      </span>
+                    </div>
+                    <form method="post" action="{% url 'product_management:extract_component_from_product' product.id %}" class="pm-inline-form">
+                      {% csrf_token %}
+                      <label class="pm-sr-only" for="component_name_{{ forloop.counter }}">Component name</label>
+                      <input type="text" id="component_name_{{ forloop.counter }}" name="component_name" value="{{ product.name }}" class="pm-input pm-input-inline" />
+                      <label class="pm-sr-only" for="component_sku_{{ forloop.counter }}">Component SKU</label>
+                      <input type="text" id="component_sku_{{ forloop.counter }}" name="component_sku" value="{{ product.sku }}" class="pm-input pm-input-inline" />
+                      <button type="submit" class="pm-button pm-button-link">Extract</button>
+                    </form>
+                    <form method="post" action="{% url 'product_management:undo_last_change' 'product' product.id %}" class="pm-inline-form pm-inline-form-compact">
+                      {% csrf_token %}
+                      <input type="hidden" name="tab" value="relationships" />
+                      <button type="submit" class="pm-button pm-button-link">Undo</button>
+                    </form>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="pm-empty">Search for a product to extract a component snapshot.</p>
+          {% endif %}
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="pm-panel{% if active_tab == 'batch' %} is-active{% endif %}" data-pm-tab-panel="batch" aria-labelledby="batch">
+    <div class="pm-grid pm-grid-wide">
+      {% if batch_component_ids %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Batch Edit Components</h2>
+          <p class="pm-help">Editing selected component(s). Only filled fields will be updated.</p>
+          <form method="post" action="{% url 'product_management:batch_component_edit' %}" class="pm-form">
+            {% csrf_token %}
+            {{ batch_component_form.non_field_errors }}
+            {{ batch_component_form.component_ids }}
+            {% include "product_management/partials/form_fields.html" with form=batch_component_form %}
+            <button type="submit" class="pm-button">Update Selected Components</button>
+          </form>
+        </article>
+      {% elif batch_product_ids %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Batch Edit Products</h2>
+          <p class="pm-help">Editing selected product(s). Only filled fields will be updated.</p>
+          <form method="post" action="{% url 'product_management:batch_product_edit' %}" class="pm-form">
+            {% csrf_token %}
+            {{ batch_product_form.non_field_errors }}
+            {{ batch_product_form.product_ids }}
+            {% include "product_management/partials/form_fields.html" with form=batch_product_form %}
+            <button type="submit" class="pm-button">Update Selected Products</button>
+          </form>
+        </article>
+      {% else %}
+        <article class="pm-card">
+          <h2 class="pm-card-title">Batch Edit</h2>
+          <p class="pm-empty">Go to the Relationships tab, select components or products, then click "Edit Selected" to batch edit them.</p>
+        </article>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="pm-panel{% if active_tab == 'import' %} is-active{% endif %}" data-pm-tab-panel="import" aria-labelledby="import">
+    <div class="pm-grid">
+      <article class="pm-card">
+        <h2 class="pm-card-title">Import from Manufacturer URL</h2>
+        <p class="pm-help">
+          Enter a manufacturer product page URL to automatically extract product data, create components,
+          relationships, attributes, and features. Supported: DEWALT (more brands coming soon).
+        </p>
+        
+        <form method="post" action="{% url 'product_management:manufacturer_import' %}" class="pm-form">
+          {% csrf_token %}
+          {{ import_form.non_field_errors }}
+          <div class="pm-field{% if import_form.manufacturer_url.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.manufacturer_url.id_for_label }}" class="pm-label">
+              {{ import_form.manufacturer_url.label }}
+            </label>
+            {{ import_form.manufacturer_url }}
+            {% if import_form.manufacturer_url.help_text %}
+              <p class="pm-help">{{ import_form.manufacturer_url.help_text }}</p>
+            {% endif %}
+            {% for error in import_form.manufacturer_url.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          <button type="submit" class="pm-button">Fetch & Preview</button>
+        </form>
+        
+        {% if messages %}
+          {% for message in messages %}
+            {% if message.tags == 'error' %}
+              <div class="pm-message pm-message-error" style="margin-top: 1rem;">
+                {{ message }}
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </article>
+    </div>
+  </section>
+{% endblock %}
+
+
+

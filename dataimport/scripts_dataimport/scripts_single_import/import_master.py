@@ -96,7 +96,7 @@ class OutputCapture:
 
 COLUMNS_MAP = {
     'product': {
-        'required': ['action', 'recordtype', 'brand', 'sku'],
+        'required': ['action', 'recordtype', 'brand', 'product_sku'],
         'optional': ['name', 'description', 'image', 'listingtype', 'status', 
                     'motortype', 'releasedate', 'discontinueddate', 'isaccessory',
                     'itemtypefullname', 'subcategoryfullname', 'categoryfullname',
@@ -104,7 +104,7 @@ COLUMNS_MAP = {
         'description': 'Products - Main product records'
     },
     'component': {
-        'required': ['action', 'recordtype', 'brand', 'sku'],
+        'required': ['action', 'recordtype', 'brand', 'component_sku'],
         'optional': ['name', 'description', 'image', 'listingtype', 'motortype',
                     'is_featured', 'standalone_price', 'showcase_priority', 'isaccessory',
                     'itemtypefullname', 'subcategoryfullname', 'categoryfullname',
@@ -117,7 +117,7 @@ COLUMNS_MAP = {
         'description': 'ComponentFeatures - Features associated with components'
     },
     'componentattribute': {
-        'required': ['action', 'recordtype', 'brand', 'sku', 'attribute'],
+        'required': ['action', 'recordtype', 'brand', 'component_sku', 'attribute'],
         'optional': ['value'],
         'description': 'ComponentAttributes - Attributes associated with components'
     },
@@ -954,7 +954,7 @@ def get_expected_columns(recordtype):
     Example:
         >>> cols = get_expected_columns('product')
         >>> print(cols['required'])
-        ['action', 'recordtype', 'brand', 'sku']
+        ['action', 'recordtype', 'brand', 'product_sku']
     """
     recordtype_lower = str(recordtype).lower().strip()
     
@@ -974,7 +974,7 @@ def get_expected_columns(recordtype):
 
 def handle_product(row, i, action, df, sheet_name=""):
     """Handle Product records"""
-    sku = get_col(row, 'sku', df)
+    product_sku = get_col(row, 'product_sku', df)
     brand = get_col(row, 'brand', df)
     name = get_col(row, 'name', df)
     description = get_col(row, 'description', df)
@@ -993,10 +993,10 @@ def handle_product(row, i, action, df, sheet_name=""):
     isaccessory = get_col(row, 'isaccessory', df)
     
     if action == 'delete':
-        if sku and brand:
+        if product_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                product = Products.objects.get(sku=sku, brand=brand_obj)
+                product = Products.objects.get(sku=product_sku, brand=brand_obj)
                 product.delete()
                 print(f"Row {i+1}: Product {product.name} deleted")
             except Brands.DoesNotExist:
@@ -1004,10 +1004,10 @@ def handle_product(row, i, action, df, sheet_name=""):
             except Products.DoesNotExist:
                 print(f"Row {i+1}: Product not found")
     elif action == 'update':
-        if sku and brand:
+        if product_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                product = Products.objects.get(sku=sku, brand=brand_obj)
+                product = Products.objects.get(sku=product_sku, brand=brand_obj)
                 
                 updated_fields = []
                 m2m_added = []
@@ -1133,12 +1133,12 @@ def handle_product(row, i, action, df, sheet_name=""):
             except Products.DoesNotExist:
                 print(f"Row {i+1}: Product not found for update")
     elif action == 'purge':
-        if sku and brand:
+        if product_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                product = Products.objects.get(sku=sku, brand=brand_obj)
+                product = Products.objects.get(sku=product_sku, brand=brand_obj)
                 
-                columns_to_purge = [col for col in df.columns if col.lower() not in ['action', 'brand', 'sku', 'recordtype']]
+                columns_to_purge = [col for col in df.columns if col.lower() not in ['action', 'brand', 'product_sku', 'recordtype']]
                 purged_fields = []
                 
                 for col_name in columns_to_purge:
@@ -1199,11 +1199,11 @@ def handle_product(row, i, action, df, sheet_name=""):
             except Products.DoesNotExist:
                 print(f"Row {i+1}: Product not found")
     elif action == 'create':
-        if sku and brand:
+        if product_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
                 try:
-                    product = Products.objects.get(sku=sku, brand=brand_obj)
+                    product = Products.objects.get(sku=product_sku, brand=brand_obj)
                     print(f"Row {i+1}: Product already exists, updating instead")
                     handle_product(row, i, 'update', df, sheet_name)
                 except Products.DoesNotExist:
@@ -1214,8 +1214,8 @@ def handle_product(row, i, action, df, sheet_name=""):
                         create_data['description'] = description
                     if brand:
                         create_data['brand'] = brand_obj
-                    if sku:
-                        create_data['sku'] = sku
+                    if product_sku:
+                        create_data['sku'] = product_sku
                     if image is not None:
                         create_data['image'] = image
                     if listingtype:
@@ -1286,7 +1286,7 @@ def handle_product(row, i, action, df, sheet_name=""):
 
 def handle_component(row, i, action, df, sheet_name=""):
     """Handle Component records"""
-    sku = get_col(row, 'sku', df)
+    component_sku = get_col(row, 'component_sku', df)
     brand = get_col(row, 'brand', df)
     name = get_col(row, 'name', df)
     description = get_col(row, 'description', df)
@@ -1306,10 +1306,10 @@ def handle_component(row, i, action, df, sheet_name=""):
     isaccessory = get_col(row, 'isaccessory', df)
     
     if action == 'delete':
-        if sku and brand:
+        if component_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                component = Components.objects.get(sku=sku, brand=brand_obj)
+                component = Components.objects.get(sku=component_sku, brand=brand_obj)
                 component.delete()
                 print(f"Row {i+1}: Component {component.name} deleted")
             except Brands.DoesNotExist:
@@ -1317,10 +1317,10 @@ def handle_component(row, i, action, df, sheet_name=""):
             except Components.DoesNotExist:
                 print(f"Row {i+1}: Component not found")
     elif action == 'update':
-        if sku and brand:
+        if component_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                component = Components.objects.get(sku=sku, brand=brand_obj)
+                component = Components.objects.get(sku=component_sku, brand=brand_obj)
                 
                 updated_fields = []
                 m2m_added = []
@@ -1448,12 +1448,12 @@ def handle_component(row, i, action, df, sheet_name=""):
             except Components.DoesNotExist:
                 print(f"Row {i+1}: Component not found for update")
     elif action == 'purge':
-        if sku and brand:
+        if component_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
-                component = Components.objects.get(sku=sku, brand=brand_obj)
+                component = Components.objects.get(sku=component_sku, brand=brand_obj)
                 
-                columns_to_purge = [col for col in df.columns if col.lower() not in ['action', 'brand', 'sku', 'recordtype']]
+                columns_to_purge = [col for col in df.columns if col.lower() not in ['action', 'brand', 'component_sku', 'recordtype']]
                 purged_fields = []
                 
                 for col_name in columns_to_purge:
@@ -1517,11 +1517,11 @@ def handle_component(row, i, action, df, sheet_name=""):
             except Components.DoesNotExist:
                 print(f"Row {i+1}: Component not found")
     elif action == 'create':
-        if sku and brand:
+        if component_sku and brand:
             try:
                 brand_obj = Brands.objects.get(name=brand)
                 try:
-                    component = Components.objects.get(sku=sku, brand=brand_obj)
+                    component = Components.objects.get(sku=component_sku, brand=brand_obj)
                     print(f"Row {i+1}: Component already exists, updating instead")
                     handle_component(row, i, 'update', df, sheet_name)
                 except Components.DoesNotExist:
@@ -1532,8 +1532,8 @@ def handle_component(row, i, action, df, sheet_name=""):
                         create_data['description'] = description
                     if brand:
                         create_data['brand'] = brand_obj
-                    if sku:
-                        create_data['sku'] = sku
+                    if component_sku:
+                        create_data['sku'] = component_sku
                     if image is not None:
                         create_data['image'] = image
                     if listingtype:
@@ -1686,7 +1686,7 @@ def handle_componentfeature(row, i, action, df, sheet_name=""):
 def handle_componentattribute(row, i, action, df, sheet_name=""):
     """Handle ComponentAttribute records"""
     brand = get_col(row, 'brand', df)
-    component_sku = get_col(row, 'sku', df)
+    component_sku = get_col(row, 'component_sku', df)
     attribute = get_col(row, 'attribute', df)
     value = get_col(row, 'value', df)
     
@@ -3100,11 +3100,16 @@ def process_sheet(file_path, sheet_name, excel_file, results_collector=None):
                         if details_before == details_after:
                             # Try to get record identifier for better detail message
                             record_id = ""
-                            if recordtype_lower in ['product', 'component']:
-                                sku = get_col(row, 'sku', df)
+                            if recordtype_lower == 'product':
+                                product_sku = get_col(row, 'product_sku', df)
                                 brand = get_col(row, 'brand', df)
-                                if sku and brand:
-                                    record_id = f"{brand} {sku}"
+                                if product_sku and brand:
+                                    record_id = f"{brand} {product_sku}"
+                            elif recordtype_lower == 'component':
+                                component_sku = get_col(row, 'component_sku', df)
+                                brand = get_col(row, 'brand', df)
+                                if component_sku and brand:
+                                    record_id = f"{brand} {component_sku}"
                             elif recordtype_lower == 'attribute':
                                 name = get_col(row, 'name', df)
                                 if name:
@@ -3120,7 +3125,7 @@ def process_sheet(file_path, sheet_name, excel_file, results_collector=None):
                             updated_fields = []
                             if action_lower in ['update', 'purge']:
                                 # Exclude key/identifier columns and action/recordtype columns
-                                exclude_cols = {'action', 'recordtype', 'brand', 'sku', 'component_sku', 
+                                exclude_cols = {'action', 'recordtype', 'brand', 'component_sku', 
                                                'product_sku', 'component_brand', 'name', 'fullname'}
                                 for col in df.columns:
                                     if col.lower() not in exclude_cols:

@@ -327,7 +327,45 @@
               <p class="pm-error">{{ error }}</p>
             {% endfor %}
           </div>
-          <button type="submit" class="pm-button">Fetch & Preview</button>
+          <button type="submit" name="submit_url" class="pm-button">Parse & Preview</button>
+        </form>
+        
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--pm-border);">
+        
+        <h3 class="pm-card-title" style="margin-top: 1.5rem; font-size: 1.1rem;">Or Paste HTML Source</h3>
+        <p class="pm-help">
+          Paste the complete HTML source code of the product page instead.
+        </p>
+        
+        <form method="post" action="{% url 'product_management:manufacturer_import' %}" class="pm-form">
+          {% csrf_token %}
+          {{ import_html_form.non_field_errors }}
+          <div class="pm-field{% if import_html_form.manufacturer_brand.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_html_form.manufacturer_brand.id_for_label }}" class="pm-label">
+              {{ import_html_form.manufacturer_brand.label }}
+            </label>
+            {{ import_html_form.manufacturer_brand }}
+            {% if import_html_form.manufacturer_brand.help_text %}
+              <p class="pm-help">{{ import_html_form.manufacturer_brand.help_text }}</p>
+            {% endif %}
+            {% for error in import_html_form.manufacturer_brand.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_html_form.page_source.errors %} pm-field-error{% endif %}" style="margin-top: 1.5rem;">
+            <label for="{{ import_html_form.page_source.id_for_label }}" class="pm-label">
+              {{ import_html_form.page_source.label }}
+            </label>
+            {{ import_html_form.page_source }}
+            {% if import_html_form.page_source.help_text %}
+              <p class="pm-help">{{ import_html_form.page_source.help_text }}</p>
+            {% endif %}
+            {% for error in import_html_form.page_source.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          <button type="submit" name="submit_html" class="pm-button">Parse & Preview</button>
         </form>
         
         {% if messages %}

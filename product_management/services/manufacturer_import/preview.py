@@ -34,6 +34,13 @@ class ImportPreview:
     product_data: Dict = field(default_factory=dict)
     component_data: Dict = field(default_factory=dict)
     included_components: List[Dict] = field(default_factory=list)
+    product_specifications: List[Dict] = field(default_factory=list)  # For ProductSpecifications table
+    component_attributes: List[Dict] = field(default_factory=list)  # For ComponentAttributes table
+    component_features: List[Dict] = field(default_factory=list)  # For ComponentFeatures table
+    categories: List[Dict] = field(default_factory=list)  # Mapped categories
+    subcategories: List[Dict] = field(default_factory=list)  # Mapped subcategories
+    itemtypes: List[Dict] = field(default_factory=list)  # Mapped itemtypes
+    # Legacy fields for backwards compatibility
     attributes: List[Dict] = field(default_factory=list)
     features: List[Dict] = field(default_factory=list)
 
@@ -126,30 +133,228 @@ def build_preview(
                 'will_create': True,
             })
     
-    # Map specifications to attributes
-    for spec_key, spec_value in parsed_data.specifications.items():
-        attribute, normalized_value = mapper.map_specification_to_attribute(
-            spec_key, spec_value, {'product_name': parsed_data.product_name}
-        )
-        preview.attributes.append({
-            'attribute_name': attribute.name,
-            'value': normalized_value,
-            'will_create': True,
+    # Product Specifications (from Gemini mapping)
+    from toolanalysis.models import ProductSpecifications
+    product_specs = getattr(parsed_data, '_product_specifications', [])
+    if not product_specs:
+        # Fallback: create from raw specifications dict
+        product_specs = [
+            {'name': key, 'value': value}
+            for key, value in parsed_data.specifications.items()
+        ]
+    
+    for spec in product_specs:
+        spec_name = spec.get('name', '') if isinstance(spec, dict) else ''
+        spec_value = spec.get('value', '') if isinstance(spec, dict) else str(spec)
+        
+        will_create = True
+        existing_value = None
+        if preview.existing_product:
+            existing_spec = ProductSpecifications.objects.filter(
+                product=preview.existing_product,
+                name=spec_name
+            ).first()
+            if existing_spec:
+                will_create = False
+                existing_value = existing_spec.value
+                if existing_value == spec_value:
+                    continue
+        
+        preview.product_specifications.append({
+            'name': spec_name,
+            'value': spec_value,
+            'will_create': will_create,
+            'existing_value': existing_value,
         })
     
-    # Map features
-    for feature_text in parsed_data.features:
-        # Extract feature name (first part before colon or first sentence)
-        feature_name = feature_text.split(':')[0].split('.')[0].strip()
-        if len(feature_name) > 50:
-            feature_name = feature_name[:50]
-        if not feature_name:
-            feature_name = feature_text[:50]
+    # Component Attributes (from Gemini mapping with matched attribute names)
+    from toolanalysis.models import Attributes, ComponentAttributes
+    component_attrs = getattr(parsed_data, '_component_attributes', [])
+    if not component_attrs:
+        # Fallback: use old mapping logic
+        for spec_key, spec_value in parsed_data.specifications.items():
+            attribute, normalized_value = mapper.map_specification_to_attribute(
+                spec_key, spec_value, {'product_name': parsed_data.product_name}
+            )
+            component_attrs.append({
+                'attribute_name': attribute.name,
+                'value': normalized_value,
+                'warning': '',
+            })
+    
+    for attr_data in component_attrs:
+        attr_name = attr_data.get('attribute_name', '') if isinstance(attr_data, dict) else ''
+        attr_value = attr_data.get('value', '') if isinstance(attr_data, dict) else ''
+        warning = attr_data.get('warning', '') if isinstance(attr_data, dict) else ''
         
+        # Try to find existing attribute by name
+        attribute = None
+        if attr_name and not attr_name.startswith('WARNING:'):
+            try:
+                attribute = Attributes.objects.get(name=attr_name)
+            except Attributes.DoesNotExist:
+                warning = f"Attribute '{attr_name}' not found in database"
+        
+        will_create = True
+        existing_value = None
+        if preview.existing_component and attribute:
+            existing_attr = ComponentAttributes.objects.filter(
+                component=preview.existing_component,
+                attribute=attribute
+            ).first()
+            if existing_attr:
+                will_create = False
+                existing_value = existing_attr.value
+                if existing_value == attr_value:
+                    continue
+        
+        preview.component_attributes.append({
+            'attribute_name': attr_name,
+            'attribute_id': str(attribute.id) if attribute else None,
+            'value': attr_value,
+            'warning': warning,
+            'will_create': will_create,
+            'existing_value': existing_value,
+        })
+        # Legacy compatibility
+        preview.attributes.append({
+            'attribute_name': attr_name,
+            'value': attr_value,
+            'will_create': will_create,
+            'existing_value': existing_value,
+            'warning': warning,
+        })
+    
+    # Component Features (from Gemini mapping with matched feature names)
+    from toolanalysis.models import Features, ComponentFeatures
+    component_feats = getattr(parsed_data, '_component_features', [])
+    if not component_feats:
+        # Fallback: use raw features list
+        for feature_text in parsed_data.features:
+            feature_name = feature_text.split(':')[0].split('.')[0].strip()
+            if len(feature_name) > 50:
+                feature_name = feature_name[:50]
+            if not feature_name:
+                feature_name = feature_text[:50]
+            component_feats.append({
+                'feature_name': feature_name,
+                'value': feature_text,
+                'warning': '',
+            })
+    
+    for feat_data in component_feats:
+        feat_name = feat_data.get('feature_name', '') if isinstance(feat_data, dict) else ''
+        feat_value = feat_data.get('value', '') if isinstance(feat_data, dict) else str(feat_data)
+        warning = feat_data.get('warning', '') if isinstance(feat_data, dict) else ''
+        
+        # Try to find existing feature by name
+        feature = None
+        if feat_name and not feat_name.startswith('WARNING:'):
+            try:
+                feature = Features.objects.get(name=feat_name)
+            except Features.DoesNotExist:
+                warning = f"Feature '{feat_name}' not found in database"
+        
+        will_create = True
+        existing_value = None
+        if preview.existing_component and feature:
+            existing_feat = ComponentFeatures.objects.filter(
+                component=preview.existing_component,
+                feature=feature
+            ).first()
+            if existing_feat:
+                will_create = False
+                existing_value = existing_feat.value
+                if existing_value == feat_value:
+                    continue
+        
+        preview.component_features.append({
+            'feature_name': feat_name,
+            'feature_id': str(feature.id) if feature else None,
+            'value': feat_value,
+            'warning': warning,
+            'will_create': will_create,
+            'existing_value': existing_value,
+        })
+        # Legacy compatibility
         preview.features.append({
-            'name': feature_name,
-            'value': feature_text,
-            'will_create': True,
+            'name': feat_name,
+            'value': feat_value,
+            'will_create': will_create,
+            'existing_value': existing_value,
+            'warning': warning,
+        })
+    
+    # Categories, Subcategories, ItemTypes (from Gemini mapping)
+    from toolanalysis.models import Categories, Subcategories, ItemTypes
+    
+    # Categories
+    category_mappings = getattr(parsed_data, '_category_mappings', [])
+    if not category_mappings:
+        category_mappings = [{'name': cat, 'warning': ''} for cat in parsed_data.categories]
+    
+    for cat_data in category_mappings:
+        cat_name = cat_data.get('name', '') if isinstance(cat_data, dict) else str(cat_data)
+        warning = cat_data.get('warning', '') if isinstance(cat_data, dict) else ''
+        
+        category = None
+        if cat_name and not cat_name.startswith('WARNING:'):
+            try:
+                category = Categories.objects.get(name=cat_name)
+            except Categories.DoesNotExist:
+                try:
+                    category = Categories.objects.get(fullname=cat_name)
+                except Categories.DoesNotExist:
+                    warning = f"Category '{cat_name}' not found in database"
+        
+        preview.categories.append({
+            'name': cat_name,
+            'category_id': str(category.id) if category else None,
+            'warning': warning,
+        })
+    
+    # Subcategories
+    subcategory_mappings = getattr(parsed_data, '_subcategory_mappings', [])
+    for sub_data in subcategory_mappings:
+        sub_name = sub_data.get('name', '') if isinstance(sub_data, dict) else str(sub_data)
+        warning = sub_data.get('warning', '') if isinstance(sub_data, dict) else ''
+        
+        subcategory = None
+        if sub_name and not sub_name.startswith('WARNING:'):
+            try:
+                subcategory = Subcategories.objects.get(name=sub_name)
+            except Subcategories.DoesNotExist:
+                try:
+                    subcategory = Subcategories.objects.get(fullname=sub_name)
+                except Subcategories.DoesNotExist:
+                    warning = f"Subcategory '{sub_name}' not found in database"
+        
+        preview.subcategories.append({
+            'name': sub_name,
+            'subcategory_id': str(subcategory.id) if subcategory else None,
+            'warning': warning,
+        })
+    
+    # ItemTypes
+    itemtype_mappings = getattr(parsed_data, '_itemtype_mappings', [])
+    for it_data in itemtype_mappings:
+        it_name = it_data.get('name', '') if isinstance(it_data, dict) else str(it_data)
+        warning = it_data.get('warning', '') if isinstance(it_data, dict) else ''
+        
+        itemtype = None
+        if it_name and not it_name.startswith('WARNING:'):
+            try:
+                itemtype = ItemTypes.objects.get(name=it_name)
+            except ItemTypes.DoesNotExist:
+                try:
+                    itemtype = ItemTypes.objects.get(fullname=it_name)
+                except ItemTypes.DoesNotExist:
+                    warning = f"ItemType '{it_name}' not found in database"
+        
+        preview.itemtypes.append({
+            'name': it_name,
+            'itemtype_id': str(itemtype.id) if itemtype else None,
+            'warning': warning,
         })
     
     # Count what will be created
@@ -157,8 +362,15 @@ def build_preview(
         'product': 0 if preview.existing_product else 1,
         'component': 0 if preview.existing_component else 1,
         'included_components': len(preview.included_components),
-        'attributes': len(preview.attributes),
-        'features': len(preview.features),
+        'product_specifications': len([s for s in preview.product_specifications if s.get('will_create', True)]),
+        'component_attributes': len([a for a in preview.component_attributes if a.get('will_create', True)]),
+        'component_features': len([f for f in preview.component_features if f.get('will_create', True)]),
+        'categories': len(preview.categories),
+        'subcategories': len(preview.subcategories),
+        'itemtypes': len(preview.itemtypes),
+        # Legacy counts
+        'attributes': len([a for a in preview.component_attributes if a.get('will_create', True)]),
+        'features': len([f for f in preview.component_features if f.get('will_create', True)]),
     }
     
     return preview

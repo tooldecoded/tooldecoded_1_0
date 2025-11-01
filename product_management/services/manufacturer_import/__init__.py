@@ -1,11 +1,8 @@
 """Manufacturer URL import system for automatically populating product and component data."""
 
 from .base import ManufacturerParser, ParsedProductData
-from .registry import get_parser_for_url, get_parser_for_brand, MANUFACTURER_PARSERS, register_parser
-from .dewalt import DewaltParser
-
-# Register parsers
-register_parser('DEWALT', DewaltParser)
+from .registry import get_parser_for_brand
+from .generic_parser import GenericManufacturerParser
 
 # Import all services
 from .mapper import ManufacturerDataMapper
@@ -16,11 +13,8 @@ from .gemini_helper import GeminiDataEnhancer
 __all__ = [
     "ManufacturerParser",
     "ParsedProductData",
-    "get_parser_for_url",
     "get_parser_for_brand",
-    "MANUFACTURER_PARSERS",
-    "register_parser",
-    "DewaltParser",
+    "GenericManufacturerParser",
     "ManufacturerDataMapper",
     "build_preview",
     "ImportPreview",

@@ -73,7 +73,9 @@ def _dashboard_forms(request, **overrides) -> Dict[str, object]:
     forms["bundle_selector"] = overrides.get("bundle_selector") or BundleProductSelectorForm(
         request.GET or None, prefix="bundle_filter"
     )
-    forms["import_form"] = overrides.get("import_form") or ManufacturerImportForm()
+    forms["import_form"] = overrides.get("import_form") or ManufacturerImportForm(prefix="url")
+    from product_management.forms.manufacturer_import import ManufacturerHTMLImportForm
+    forms["import_html_form"] = overrides.get("import_html_form") or ManufacturerHTMLImportForm(prefix="html")
     return forms
 
 
@@ -225,6 +227,7 @@ def _dashboard_context(request, **overrides) -> Dict[str, object]:
         "batch_component_ids": overrides.get("batch_component_ids", ""),
         "batch_product_ids": overrides.get("batch_product_ids", ""),
         "import_form": forms["import_form"],
+        "import_html_form": forms["import_html_form"],
         "active_tab": overrides.get("active_tab", request.GET.get("tab", "quick")),
     }
     return context

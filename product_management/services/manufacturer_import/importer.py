@@ -8,7 +8,8 @@ from django.db import transaction
 from toolanalysis.models import (
     Attributes, BatteryVoltages, Brands, Categories, ComponentAttributes,
     ComponentFeatures, Components, Features, ItemTypes, MotorTypes,
-    ProductComponents, Products, Statuses,
+    ProductComponents, Products, ProductSpecifications, Statuses,
+    Subcategories,
 )
 
 from product_management.models import BackofficeAudit
@@ -57,13 +58,19 @@ def execute_import(
     # Get status
     status, _ = Statuses.objects.get_or_create(name="Active", defaults={"sortorder": 1})
     
+    # Use edited values if available (from form), otherwise use parsed data
+    component_name = getattr(parsed_data, '_component_name', None) or parsed_data.product_name
+    component_sku = getattr(parsed_data, '_component_sku', None) or parsed_data.sku
+    component_description = getattr(parsed_data, '_component_description', None) or parsed_data.description or ''
+    component_image = getattr(parsed_data, '_component_image_url', None) or parsed_data.image_url or ''
+    
     # Create or update main component
     component_payload = {
-        'name': parsed_data.product_name,
-        'sku': parsed_data.sku,
+        'name': component_name,
+        'sku': component_sku,
         'brand': brand,
-        'description': parsed_data.description or '',
-        'image': parsed_data.image_url or '',
+        'description': component_description,
+        'image': component_image,
         'isaccessory': False,
         'is_featured': False,
     }
@@ -97,48 +104,127 @@ def execute_import(
         was_update = False
         updated_fields = []
     
-    # Add categories and item types
-    categories = mapper.map_categories(parsed_data)
-    component.categories.set(categories)
+    # Add categories, subcategories, and item types from preview (edited values)
+    # Categories
+    category_ids = []
+    for cat_data in preview.categories:
+        cat_id = cat_data.get('category_id')
+        if cat_id:
+            try:
+                category = Categories.objects.get(id=cat_id)
+                category_ids.append(category.id)
+            except Categories.DoesNotExist:
+                pass
     
-    item_types = mapper.map_item_types(parsed_data)
-    component.itemtypes.set(item_types)
+    # Subcategories
+    subcategory_ids = []
+    for sub_data in preview.subcategories:
+        sub_id = sub_data.get('subcategory_id')
+        if sub_id:
+            try:
+                subcategory = Subcategories.objects.get(id=sub_id)
+                subcategory_ids.append(subcategory.id)
+            except Subcategories.DoesNotExist:
+                pass
     
-    # Create/update component attributes
+    # ItemTypes
+    itemtype_ids = []
+    for it_data in preview.itemtypes:
+        it_id = it_data.get('itemtype_id')
+        if it_id:
+            try:
+                itemtype = ItemTypes.objects.get(id=it_id)
+                itemtype_ids.append(itemtype.id)
+            except ItemTypes.DoesNotExist:
+                pass
+    
+    component.categories.set(category_ids)
+    component.subcategories.set(subcategory_ids)
+    component.itemtypes.set(itemtype_ids)
+    
+    # Create/update ProductSpecifications (from preview)
+    product_specs_created = 0
+    for spec_data in preview.product_specifications:
+        spec_name = spec_data.get('name', '').strip()
+        spec_value = spec_data.get('value', '').strip()
+        if spec_name:
+            ProductSpecifications.objects.update_or_create(
+                product=product,
+                name=spec_name,
+                defaults={'value': spec_value}
+            )
+            product_specs_created += 1
+    
+    # Create/update ComponentAttributes (from preview with matched attributes)
     attributes_created = 0
-    for spec_key, spec_value in parsed_data.specifications.items():
-        attribute, normalized_value = mapper.map_specification_to_attribute(
-            spec_key, spec_value, {'product_name': parsed_data.product_name}
-        )
-        ComponentAttributes.objects.update_or_create(
-            component=component,
-            attribute=attribute,
-            defaults={'value': normalized_value}
-        )
-        attributes_created += 1
+    for attr_data in preview.component_attributes:
+        attr_name = attr_data.get('attribute_name', '').strip()
+        attr_value = attr_data.get('value', '').strip()
+        
+        # Skip warnings
+        if not attr_name or attr_name.startswith('WARNING:'):
+            continue
+        
+        # Get or create attribute
+        attribute = None
+        attr_id = attr_data.get('attribute_id')
+        if attr_id:
+            try:
+                attribute = Attributes.objects.get(id=attr_id)
+            except Attributes.DoesNotExist:
+                pass
+        
+        if not attribute:
+            # Try to find by name
+            try:
+                attribute = Attributes.objects.get(name=attr_name)
+            except Attributes.DoesNotExist:
+                # Create new attribute if it doesn't exist
+                attribute = Attributes.objects.create(name=attr_name, sortorder=0)
+        
+        if attribute and attr_value:
+            ComponentAttributes.objects.update_or_create(
+                component=component,
+                attribute=attribute,
+                defaults={'value': attr_value}
+            )
+            attributes_created += 1
     
-    # Create/update component features
+    # Create/update ComponentFeatures (from preview with matched features)
     features_created = 0
-    for feature_text in parsed_data.features:
-        # Extract feature name
-        feature_name = feature_text.split(':')[0].split('.')[0].strip()
-        if len(feature_name) > 50:
-            feature_name = feature_name[:50]
-        if not feature_name:
-            feature_name = feature_text[:50]
+    for feat_data in preview.component_features:
+        feat_name = feat_data.get('feature_name', '').strip()
+        feat_value = feat_data.get('value', '').strip()
         
-        feature, _ = Features.objects.get_or_create(
-            name=feature_name,
-            defaults={'sortorder': 0}
-        )
+        # Skip warnings
+        if not feat_name or feat_name.startswith('WARNING:'):
+            continue
         
-        ComponentFeatures.objects.update_or_create(
-            component=component,
-            feature=feature,
-            defaults={'value': feature_text}
-        )
-        component.features.add(feature)
-        features_created += 1
+        # Get or create feature
+        feature = None
+        feat_id = feat_data.get('feature_id')
+        if feat_id:
+            try:
+                feature = Features.objects.get(id=feat_id)
+            except Features.DoesNotExist:
+                pass
+        
+        if not feature:
+            # Try to find by name
+            try:
+                feature = Features.objects.get(name=feat_name)
+            except Features.DoesNotExist:
+                # Create new feature if it doesn't exist
+                feature = Features.objects.create(name=feat_name, sortorder=0)
+        
+        if feature and feat_value:
+            ComponentFeatures.objects.update_or_create(
+                component=component,
+                feature=feature,
+                defaults={'value': feat_value}
+            )
+            component.features.add(feature)
+            features_created += 1
     
     # Create included items as components
     included_components = []
@@ -162,13 +248,19 @@ def execute_import(
         )
         included_components.append(included_component)
     
+    # Use edited product values if available, otherwise use parsed data
+    product_name = getattr(parsed_data, '_product_name', None) or parsed_data.product_name
+    product_sku = getattr(parsed_data, '_product_sku', None) or parsed_data.sku
+    product_description = getattr(parsed_data, '_product_description', None) or parsed_data.description or ''
+    product_image = getattr(parsed_data, '_product_image_url', None) or parsed_data.image_url or ''
+    
     # Create or update product
     product_payload = {
-        'name': parsed_data.product_name,
-        'sku': parsed_data.sku,
+        'name': product_name,
+        'sku': product_sku,
         'brand': brand,
-        'description': parsed_data.description or '',
-        'image': parsed_data.image_url or '',
+        'description': product_description,
+        'image': product_image,
         'status': status,
         'isaccessory': False,
     }
@@ -198,6 +290,11 @@ def execute_import(
             component=included_component,
             defaults={'quantity': 1}
         )
+    
+    # Also set categories, subcategories, itemtypes for product
+    product.categories.set(category_ids)
+    product.subcategories.set(subcategory_ids)
+    product.itemtypes.set(itemtype_ids)
     
     # Record audit entries
     record_audit_entry(BackofficeAudit.ENTITY_PRODUCT, product, "create" if not preview.existing_product else "update", user=user)

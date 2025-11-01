@@ -29,205 +29,574 @@
       </div>
     {% endif %}
     
-    <div class="pm-grid pm-grid-wide">
-      <!-- Product Preview -->
-      <article class="pm-card">
-        <h2 class="pm-card-title">
-          Product
-          {% if preview.status == "update" and preview.existing_product %}
-            <span class="pm-badge">Update Existing</span>
-          {% else %}
-            <span class="pm-badge pm-badge-success">New</span>
-          {% endif %}
-        </h2>
-        
-        {% if preview.status == "update" and preview.existing_product %}
-          <div class="pm-diff-view">
-            <table class="pm-table">
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Current Value</th>
-                  <th>New Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for diff in preview.field_diffs %}
-                  {% if diff.field_name in 'name,sku,description,image' %}
-                    <tr class="{% if diff.changed %}pm-diff-changed{% endif %}">
-                      <td><strong>{{ diff.field_name|title }}</strong></td>
-                      <td class="pm-diff-old">{{ diff.old_value|default:"—" }}</td>
-                      <td class="pm-diff-new">{{ diff.new_value|default:"—" }}</td>
-                    </tr>
-                  {% endif %}
-                {% empty %}
-                  <tr>
-                    <td colspan="3" class="pm-empty">No changes to product fields</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% else %}
-          <dl class="pm-data-list">
-            <dt>Name:</dt>
-            <dd>{{ preview.product_data.name }}</dd>
-            <dt>SKU:</dt>
-            <dd>{{ preview.product_data.sku }}</dd>
-            <dt>Brand:</dt>
-            <dd>{{ preview.product_data.brand }}</dd>
-            {% if preview.product_data.description %}
-              <dt>Description:</dt>
-              <dd>{{ preview.product_data.description|truncatewords:50 }}</dd>
-            {% endif %}
-            {% if preview.product_data.image %}
-              <dt>Image:</dt>
-              <dd><img src="{{ preview.product_data.image }}" alt="Product" style="max-width: 200px; max-height: 200px;" /></dd>
-            {% endif %}
-          </dl>
-        {% endif %}
-      </article>
+    <form method="post" action="{% url 'product_management:import_preview_approve' %}" class="pm-form" id="import-form">
+      {% csrf_token %}
+      {{ import_form.approve }}
+      {{ import_form.existing_product_id }}
+      {{ import_form.existing_component_id }}
+      {{ import_form.parsed_data_json }}
+      <input type="hidden" name="preview_data_json" id="preview_data_json" value="{{ import_form.preview_data_json.value|default:'' }}" />
       
-      <!-- Component Preview -->
-      <article class="pm-card">
-        <h2 class="pm-card-title">
-          Main Component
-          {% if preview.status == "update" and preview.existing_component %}
-            <span class="pm-badge">Update Existing</span>
-          {% else %}
-            <span class="pm-badge pm-badge-success">New</span>
-          {% endif %}
-        </h2>
-        
-        {% if preview.status == "update" and preview.existing_component %}
-          <div class="pm-diff-view">
-            <table class="pm-table">
-              <thead>
-                <tr>
-                  <th>Field</th>
-                  <th>Current Value</th>
-                  <th>New Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for diff in preview.field_diffs %}
-                  {% if diff.field_name in 'name,sku,description,image' %}
-                    <tr class="{% if diff.changed %}pm-diff-changed{% endif %}">
-                      <td><strong>{{ diff.field_name|title }}</strong></td>
-                      <td class="pm-diff-old">{{ diff.old_value|default:"—" }}</td>
-                      <td class="pm-diff-new">{{ diff.new_value|default:"—" }}</td>
-                    </tr>
-                  {% endif %}
-                {% empty %}
-                  <tr>
-                    <td colspan="3" class="pm-empty">No changes to component fields</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        {% else %}
-          <dl class="pm-data-list">
-            <dt>Name:</dt>
-            <dd>{{ preview.component_data.name }}</dd>
-            <dt>SKU:</dt>
-            <dd>{{ preview.component_data.sku }}</dd>
-            <dt>Brand:</dt>
-            <dd>{{ preview.component_data.brand }}</dd>
-            {% if preview.component_data.description %}
-              <dt>Description:</dt>
-              <dd>{{ preview.component_data.description|truncatewords:30 }}</dd>
-            {% endif %}
-          </dl>
-        {% endif %}
-      </article>
-      
-      <!-- Specifications/Attributes -->
-      {% if preview.attributes %}
+      <div class="pm-grid pm-grid-wide">
+        <!-- Product Preview -->
         <article class="pm-card">
-          <h2 class="pm-card-title">Attributes ({{ preview.attributes|length }})</h2>
-          <table class="pm-table">
-            <thead>
-              <tr>
-                <th>Attribute</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for attr in preview.attributes %}
-                <tr>
-                  <td>{{ attr.attribute_name }}</td>
-                  <td>{{ attr.value }}</td>
-                </tr>
+          <h2 class="pm-card-title">
+            Product
+            {% if preview.status == "update" and preview.existing_product %}
+              <span class="pm-badge">Update Existing</span>
+            {% else %}
+              <span class="pm-badge pm-badge-success">New</span>
+            {% endif %}
+          </h2>
+          
+          <div class="pm-field{% if import_form.product_name.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.product_name.id_for_label }}" class="pm-label">
+              {{ import_form.product_name.label }} <span class="pm-required">*</span>
+            </label>
+            {{ import_form.product_name }}
+            {% for error in import_form.product_name.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.product_sku.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.product_sku.id_for_label }}" class="pm-label">
+              {{ import_form.product_sku.label }} <span class="pm-required">*</span>
+            </label>
+            {{ import_form.product_sku }}
+            {% for error in import_form.product_sku.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.product_description.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.product_description.id_for_label }}" class="pm-label">
+              {{ import_form.product_description.label }}
+            </label>
+            {{ import_form.product_description }}
+            {% for error in import_form.product_description.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.product_image.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.product_image.id_for_label }}" class="pm-label">
+              {{ import_form.product_image.label }}
+            </label>
+            {{ import_form.product_image }}
+            {% if import_form.product_image.value %}
+              <img src="{{ import_form.product_image.value }}" alt="Product" style="max-width: 200px; max-height: 200px; margin-top: 0.5rem;" />
+            {% endif %}
+            {% for error in import_form.product_image.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </article>
+        
+        <!-- Component Preview -->
+        <article class="pm-card">
+          <h2 class="pm-card-title">
+            Main Component
+            {% if preview.status == "update" and preview.existing_component %}
+              <span class="pm-badge">Update Existing</span>
+            {% else %}
+              <span class="pm-badge pm-badge-success">New</span>
+            {% endif %}
+          </h2>
+          
+          <div class="pm-field{% if import_form.component_name.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.component_name.id_for_label }}" class="pm-label">
+              {{ import_form.component_name.label }} <span class="pm-required">*</span>
+            </label>
+            {{ import_form.component_name }}
+            {% for error in import_form.component_name.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.component_sku.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.component_sku.id_for_label }}" class="pm-label">
+              {{ import_form.component_sku.label }} <span class="pm-required">*</span>
+            </label>
+            {{ import_form.component_sku }}
+            {% for error in import_form.component_sku.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.component_description.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.component_description.id_for_label }}" class="pm-label">
+              {{ import_form.component_description.label }}
+            </label>
+            {{ import_form.component_description }}
+            {% for error in import_form.component_description.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+          
+          <div class="pm-field{% if import_form.component_image.errors %} pm-field-error{% endif %}">
+            <label for="{{ import_form.component_image.id_for_label }}" class="pm-label">
+              {{ import_form.component_image.label }}
+            </label>
+            {{ import_form.component_image }}
+            {% if import_form.component_image.value %}
+              <img src="{{ import_form.component_image.value }}" alt="Component" style="max-width: 200px; max-height: 200px; margin-top: 0.5rem;" />
+            {% endif %}
+            {% for error in import_form.component_image.errors %}
+              <p class="pm-error">{{ error }}</p>
+            {% endfor %}
+          </div>
+        </article>
+      
+        <!-- Product Specifications (Editable) -->
+        {% if preview.product_specifications %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Product Specifications ({{ preview.product_specifications|length }})</h2>
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>Spec Name</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for spec in preview.product_specifications %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ spec.name }}"
+                               data-field="name"
+                               data-type="product_specification" />
+                      </td>
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ spec.value }}"
+                               data-field="value"
+                               data-type="product_specification" />
+                      </td>
+                      <td>
+                        {% if spec.will_create %}
+                          <span class="pm-badge pm-badge-success">New</span>
+                        {% elif spec.existing_value %}
+                          <span class="pm-badge">Update</span>
+                          <small>(was: {{ spec.existing_value }})</small>
+                        {% endif %}
+                        <input type="hidden" value="{{ spec.will_create|yesno:'true,false' }}" data-field="will_create" />
+                        <input type="hidden" value="{{ spec.existing_value|default:'' }}" data-field="existing_value" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- Component Attributes (Editable) -->
+        {% if preview.component_attributes %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Component Attributes ({{ preview.component_attributes|length }})</h2>
+            {% if preview.component_attributes %}
+              {% for attr in preview.component_attributes %}
+                {% if attr.warning %}
+                  <div class="pm-message pm-message-warning">
+                    <strong>Warning:</strong> {{ attr.warning }}
+                  </div>
+                {% endif %}
               {% endfor %}
-            </tbody>
-          </table>
-        </article>
-      {% endif %}
+            {% endif %}
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>Attribute Name</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for attr in preview.component_attributes %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ attr.attribute_name }}"
+                               data-field="attribute_name"
+                               data-type="component_attribute" />
+                      </td>
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ attr.value }}"
+                               data-field="value"
+                               data-type="component_attribute" />
+                      </td>
+                      <td>
+                        {% if attr.will_create %}
+                          <span class="pm-badge pm-badge-success">New</span>
+                        {% elif attr.existing_value %}
+                          <span class="pm-badge">Update</span>
+                          <small>(was: {{ attr.existing_value }})</small>
+                        {% endif %}
+                        {% if attr.warning %}
+                          <div class="pm-text-small pm-text-warning">{{ attr.warning }}</div>
+                        {% endif %}
+                        <input type="hidden" value="{{ attr.attribute_id|default:'' }}" data-field="attribute_id" />
+                        <input type="hidden" value="{{ attr.will_create|yesno:'true,false' }}" data-field="will_create" />
+                        <input type="hidden" value="{{ attr.existing_value|default:'' }}" data-field="existing_value" />
+                        <input type="hidden" value="{{ attr.warning|default:'' }}" data-field="warning" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- Component Features (Editable) -->
+        {% if preview.component_features %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Component Features ({{ preview.component_features|length }})</h2>
+            {% if preview.component_features %}
+              {% for feat in preview.component_features %}
+                {% if feat.warning %}
+                  <div class="pm-message pm-message-warning">
+                    <strong>Warning:</strong> {{ feat.warning }}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>Feature Name</th>
+                    <th>Value</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for feat in preview.component_features %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ feat.feature_name }}"
+                               data-field="feature_name"
+                               data-type="component_feature" />
+                      </td>
+                      <td>
+                        <textarea class="pm-input pm-textarea-small" 
+                                  rows="2"
+                                  data-field="value"
+                                  data-type="component_feature">{{ feat.value }}</textarea>
+                      </td>
+                      <td>
+                        {% if feat.will_create %}
+                          <span class="pm-badge pm-badge-success">New</span>
+                        {% elif feat.existing_value %}
+                          <span class="pm-badge">Update</span>
+                          <small>(was: {{ feat.existing_value }})</small>
+                        {% endif %}
+                        {% if feat.warning %}
+                          <div class="pm-text-small pm-text-warning">{{ feat.warning }}</div>
+                        {% endif %}
+                        <input type="hidden" value="{{ feat.feature_id|default:'' }}" data-field="feature_id" />
+                        <input type="hidden" value="{{ feat.will_create|yesno:'true,false' }}" data-field="will_create" />
+                        <input type="hidden" value="{{ feat.existing_value|default:'' }}" data-field="existing_value" />
+                        <input type="hidden" value="{{ feat.warning|default:'' }}" data-field="warning" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- Categories (Editable) -->
+        {% if preview.categories %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Categories ({{ preview.categories|length }})</h2>
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>Category Name</th>
+                    <th>Warning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cat in preview.categories %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ cat.name }}"
+                               data-field="name"
+                               data-type="category" />
+                        <input type="hidden" value="{{ cat.category_id|default:'' }}" data-field="category_id" />
+                      </td>
+                      <td>
+                        {% if cat.warning %}
+                          <div class="pm-text-small pm-text-warning">{{ cat.warning }}</div>
+                        {% endif %}
+                        <input type="hidden" value="{{ cat.warning|default:'' }}" data-field="warning" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- Subcategories (Editable) -->
+        {% if preview.subcategories %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Subcategories ({{ preview.subcategories|length }})</h2>
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>Subcategory Name</th>
+                    <th>Warning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for sub in preview.subcategories %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ sub.name }}"
+                               data-field="name"
+                               data-type="subcategory" />
+                        <input type="hidden" value="{{ sub.subcategory_id|default:'' }}" data-field="subcategory_id" />
+                      </td>
+                      <td>
+                        {% if sub.warning %}
+                          <div class="pm-text-small pm-text-warning">{{ sub.warning }}</div>
+                        {% endif %}
+                        <input type="hidden" value="{{ sub.warning|default:'' }}" data-field="warning" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- ItemTypes (Editable) -->
+        {% if preview.itemtypes %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">ItemTypes ({{ preview.itemtypes|length }})</h2>
+            <div class="pm-editable-table">
+              <table class="pm-table">
+                <thead>
+                  <tr>
+                    <th>ItemType Name</th>
+                    <th>Warning</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for it in preview.itemtypes %}
+                    <tr data-index="{{ forloop.counter0 }}">
+                      <td>
+                        <input type="text" 
+                               class="pm-input pm-input-small" 
+                               value="{{ it.name }}"
+                               data-field="name"
+                               data-type="itemtype" />
+                        <input type="hidden" value="{{ it.itemtype_id|default:'' }}" data-field="itemtype_id" />
+                      </td>
+                      <td>
+                        {% if it.warning %}
+                          <div class="pm-text-small pm-text-warning">{{ it.warning }}</div>
+                        {% endif %}
+                        <input type="hidden" value="{{ it.warning|default:'' }}" data-field="warning" />
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        {% endif %}
+        
+        <!-- Included Components -->
+        {% if preview.included_components %}
+          <article class="pm-card">
+            <h2 class="pm-card-title">Included Components ({{ preview.included_components|length }})</h2>
+            <ul class="pm-component-list">
+              {% for item in preview.included_components %}
+                <li>{{ item.name }}{% if item.sku %} ({{ item.sku }}){% endif %}</li>
+              {% endfor %}
+            </ul>
+          </article>
+        {% endif %}
+      </div>
       
-      <!-- Features -->
-      {% if preview.features %}
-        <article class="pm-card">
-          <h2 class="pm-card-title">Features ({{ preview.features|length }})</h2>
-          <ul class="pm-feature-list">
-            {% for feature in preview.features %}
-              <li>
-                <strong>{{ feature.name }}:</strong> {{ feature.value }}
-              </li>
-            {% endfor %}
-          </ul>
-        </article>
-      {% endif %}
+      <!-- Summary -->
+      <div class="pm-card" style="margin-top: 1.5rem;">
+        <h2 class="pm-card-title">Import Summary</h2>
+        <dl class="pm-data-list">
+          <dt>Will Create/Update:</dt>
+          <dd>
+            <ul>
+              <li>{{ preview.will_create.product }} Product</li>
+              <li>{{ preview.will_create.component }} Main Component</li>
+              {% if preview.will_create.included_components %}
+                <li>{{ preview.will_create.included_components }} Included Components</li>
+              {% endif %}
+              {% if preview.will_create.product_specifications %}
+                <li>{{ preview.will_create.product_specifications }} Product Specifications</li>
+              {% endif %}
+              {% if preview.will_create.component_attributes %}
+                <li>{{ preview.will_create.component_attributes }} Component Attributes</li>
+              {% endif %}
+              {% if preview.will_create.component_features %}
+                <li>{{ preview.will_create.component_features }} Component Features</li>
+              {% endif %}
+              {% if preview.will_create.categories %}
+                <li>{{ preview.will_create.categories }} Categories</li>
+              {% endif %}
+              {% if preview.will_create.subcategories %}
+                <li>{{ preview.will_create.subcategories }} Subcategories</li>
+              {% endif %}
+              {% if preview.will_create.itemtypes %}
+                <li>{{ preview.will_create.itemtypes }} ItemTypes</li>
+              {% endif %}
+            </ul>
+          </dd>
+        </dl>
+      </div>
       
-      <!-- Included Components -->
-      {% if preview.included_components %}
-        <article class="pm-card">
-          <h2 class="pm-card-title">Included Components ({{ preview.included_components|length }})</h2>
-          <ul class="pm-component-list">
-            {% for item in preview.included_components %}
-              <li>{{ item.name }}{% if item.sku %} ({{ item.sku }}){% endif %}</li>
-            {% endfor %}
-          </ul>
-        </article>
-      {% endif %}
-    </div>
-    
-    <!-- Summary -->
-    <div class="pm-card" style="margin-top: 1.5rem;">
-      <h2 class="pm-card-title">Import Summary</h2>
-      <dl class="pm-data-list">
-        <dt>Will Create/Update:</dt>
-        <dd>
-          <ul>
-            <li>{{ preview.will_create.product }} Product</li>
-            <li>{{ preview.will_create.component }} Main Component</li>
-            {% if preview.will_create.included_components %}
-              <li>{{ preview.will_create.included_components }} Included Components</li>
-            {% endif %}
-            {% if preview.will_create.attributes %}
-              <li>{{ preview.will_create.attributes }} Attributes</li>
-            {% endif %}
-            {% if preview.will_create.features %}
-              <li>{{ preview.will_create.features }} Features</li>
-            {% endif %}
-          </ul>
-        </dd>
-      </dl>
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="pm-action-bar" style="margin-top: 1.5rem;">
-      <form method="post" action="{% url 'product_management:import_preview_approve' %}">
-        {% csrf_token %}
-        <input type="hidden" name="approve" value="true" />
-        <button type="submit" class="pm-button" {% if preview.missing_critical %}disabled{% endif %}>
+      <!-- Action Buttons -->
+      <div class="pm-action-bar" style="margin-top: 1.5rem;">
+        <button type="submit" class="pm-button pm-button-primary" {% if preview.missing_critical %}disabled{% endif %}>
           Approve & Import
         </button>
-      </form>
-      <a href="{% url 'product_management:import_preview_cancel' %}" class="pm-button pm-button-secondary">
-        Cancel
-      </a>
-    </div>
+        <a href="{% url 'product_management:import_preview_cancel' %}" class="pm-button pm-button-secondary">
+          Cancel
+        </a>
+      </div>
+    </form>
   </div>
-{% endblock %}
 
+  <script>
+    // Collect all editable values and store in preview_data_json before form submission
+    document.getElementById('import-form').addEventListener('submit', function(e) {
+      const previewData = {
+        product_specifications: [],
+        component_attributes: [],
+        component_features: [],
+        categories: [],
+        subcategories: [],
+        itemtypes: [],
+        included_components: {{ preview.included_components|safe|default:"[]" }}
+      };
+      
+      // Collect product specifications
+      document.querySelectorAll('tr[data-type="product_specification"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          const field = input.getAttribute('data-field');
+          if (field === 'will_create') {
+            data[field] = input.value === 'true';
+          } else {
+            data[field] = input.value || '';
+          }
+        });
+        previewData.product_specifications.push(data);
+      });
+      
+      // Collect component attributes
+      document.querySelectorAll('tr[data-type="component_attribute"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          const field = input.getAttribute('data-field');
+          if (field === 'will_create') {
+            data[field] = input.value === 'true';
+          } else {
+            data[field] = input.value || '';
+          }
+        });
+        previewData.component_attributes.push(data);
+      });
+      
+      // Collect component features
+      document.querySelectorAll('tr[data-type="component_feature"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], textarea[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          const field = input.getAttribute('data-field');
+          if (field === 'will_create') {
+            data[field] = input.value === 'true';
+          } else {
+            data[field] = input.value || '';
+          }
+        });
+        previewData.component_features.push(data);
+      });
+      
+      // Collect categories
+      document.querySelectorAll('tr[data-type="category"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          data[input.getAttribute('data-field')] = input.value || '';
+        });
+        previewData.categories.push(data);
+      });
+      
+      // Collect subcategories
+      document.querySelectorAll('tr[data-type="subcategory"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          data[input.getAttribute('data-field')] = input.value || '';
+        });
+        previewData.subcategories.push(data);
+      });
+      
+      // Collect itemtypes
+      document.querySelectorAll('tr[data-type="itemtype"]').forEach(function(row) {
+        const data = {};
+        row.querySelectorAll('input[data-field], input[type="hidden"][data-field]').forEach(function(input) {
+          data[input.getAttribute('data-field')] = input.value || '';
+        });
+        previewData.itemtypes.push(data);
+      });
+      
+      // Store in hidden field
+      document.getElementById('preview_data_json').value = JSON.stringify(previewData);
+    });
+  </script>
+
+  <style>
+    .pm-input-small {
+      width: 100%;
+      padding: 0.375rem;
+      font-size: 0.875rem;
+    }
+    .pm-textarea-small {
+      width: 100%;
+      padding: 0.375rem;
+      font-size: 0.875rem;
+      min-height: 3rem;
+    }
+    .pm-editable-table {
+      overflow-x: auto;
+    }
+    .pm-text-small {
+      font-size: 0.75rem;
+    }
+    .pm-text-warning {
+      color: #d97706;
+    }
+  </style>
+{% endblock %}

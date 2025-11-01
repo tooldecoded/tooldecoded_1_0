@@ -49,6 +49,27 @@ class ManufacturerParser(ABC):
         """
         pass
     
+    def parse_from_html(self, html: str, source_url: str = "") -> ParsedProductData:
+        """
+        Parse product data from HTML source code directly.
+        
+        Args:
+            html: The HTML source code of the product page
+            source_url: Optional URL where the HTML came from (for reference)
+            
+        Returns:
+            ParsedProductData containing all extractable information
+            
+        Raises:
+            ValueError: If HTML cannot be parsed
+        """
+        # Default implementation: subclasses should override if they need custom logic
+        # This allows parsers to implement parse_from_html directly without needing parse()
+        raise NotImplementedError(
+            f"{self.__class__.__name__} does not support parsing from HTML directly. "
+            "Please provide a URL instead."
+        )
+    
     @abstractmethod
     def detect_manufacturer(self, url: str) -> str:
         """

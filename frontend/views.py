@@ -950,10 +950,10 @@ def home(request):
     total_brands = Brands.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     total_categories = Categories.objects.filter(Q(products__isnull=False) | Q(components__isnull=False)).distinct().count()
     
-    # Get latest published articles (first 4)
+    # Get latest published articles (first 3), ignoring pin status
     latest_articles = LearningArticle.objects.filter(
         is_published=True
-    ).prefetch_related('tags')[:4]
+    ).order_by('-published_at', '-created_at').prefetch_related('tags')[:3]
     
     # Get flagship components preview (first 4 featured components, ordered by showcase priority)
     flagship_preview = Components.objects.filter(
